@@ -380,17 +380,11 @@ def unlock_disks(request):
     """
     def fin1():
         testflow.teardown("unlock disks")
-        hl_disks.unlock_disks(
-            vdc=config.VDC_HOST,
-            vdc_pass=config.VDC_ROOT_PASSWORD
-        )
+        hl_disks.unlock_disks(engine=config.ENGINE)
         test_utils.wait_for_tasks(config.ENGINE, config.DC_NAME[0])
         time.sleep(20)
         testflow.teardown("Check there are no disks in locked status")
-        assert hl_disks.check_no_locked_disks(
-            vdc=config.VDC_HOST,
-            vdc_pass=config.VDC_ROOT_PASSWORD
-        )
+        assert hl_disks.check_no_locked_disks(engine=config.ENGINE)
 
     def fin2():
         testflow.teardown("Remove vms")

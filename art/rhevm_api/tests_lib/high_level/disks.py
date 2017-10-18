@@ -1,6 +1,5 @@
 import logging
 import art.rhevm_api.tests_lib.low_level.general as ll_general
-from utilities.rhevm_tools.base import Setup
 from art.test_handler.settings import ART_CONFIG
 from art.rhevm_api.tests_lib.low_level import (
     disks as ll_disks,
@@ -88,62 +87,33 @@ def add_new_disk(sd_name, size, block, shared=False, **kwargs):
 
 
 @ll_general.generate_logs()
-def unlock_disks(
-    vdc,
-    vdc_pass,
-    psql_username=RHEVM_UTILS_ENUMS['RHEVM_DB_USER'],
-    psql_db=RHEVM_UTILS_ENUMS['RHEVM_DB_NAME'],
-    psql_password=RHEVM_UTILS_ENUMS['RHEVM_DB_PASSWORD']
-):
+def unlock_disks(engine):
     """
     Update locked disks to unlocked, using DB query
 
     Args:
-        vdc (str): engine host
-        vdc_pass (str): engine password
-        psql_username (str): psql username
-        psql_password (str): psql password
-        psql_db (str): name of the DB
-
+        engine (Engine) engine host
 
     Returns:
          str: query output
     """
 
-    setup = Setup(
-        vdc, 'root', vdc_pass, dbuser=psql_username, dbpassw=psql_password
-    )
     query = "update images set imagestatus=1 where imagestatus=2;"
-    return setup.psql(query, psql_db=psql_db)
+    return engine.db.psql(query)
 
 
 @ll_general.generate_logs()
-def check_no_locked_disks(
-    vdc,
-    vdc_pass,
-    psql_username=RHEVM_UTILS_ENUMS['RHEVM_DB_USER'],
-    psql_db=RHEVM_UTILS_ENUMS['RHEVM_DB_NAME'],
-    psql_password=RHEVM_UTILS_ENUMS['RHEVM_DB_PASSWORD']
-):
+def check_no_locked_disks(engine):
     """
     Check there are no disks in locked status, using DB query
 
-        Args:
-        vdc (str): engine host
-        vdc_pass (str): engine password
-        psql_username (str): psql username
-        psql_password (str): psql password
-        psql_db (str): name of the DB
-
+    Args:
+    engine (Engine): engine host
 
     Returns:
          bool: True is all disk are not locked, else False
-
     """
-    setup = Setup(
-        vdc, 'root', vdc_pass, dbuser=psql_username, dbpassw=psql_password
-    )
     query = "select imagestatus from images;"
-    res = setup.psql(query, psql_db=psql_db)
+    res = engine.db.psql(query)
     logger.info("images status %s", res)
     return not ['2'] in res
