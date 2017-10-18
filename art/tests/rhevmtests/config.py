@@ -107,6 +107,8 @@ FCP_STORAGE_MANAGER = (
     GE['extra_configuration_options'].get('storage_managers', {}).get('fcp')
 )
 
+HE_DETAILS = GE.get('hosted_engine_details', {})
+
 # Hosted engine constants
 HE_VM = "HostedEngine"
 HE_STORAGE_DOMAIN = "hosted_storage"

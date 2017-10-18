@@ -1,11 +1,11 @@
 import pytest
 import logging
 import config
-import helpers
 from art.rhevm_api.tests_lib.low_level import (
     hosts as ll_hosts,
     storagedomains as ll_sd,
 )
+import rhevmtests.helpers as rhevm_helpers
 from art.unittest_lib import testflow
 from rhevmtests.storage.fixtures import (
     unblock_connectivity_storage_domain_teardown
@@ -81,8 +81,9 @@ def deactivate_hsm_hosts(request, storage, activate_hosts):
         testflow.teardown("Activate hosts: %s ", self.hsm_hosts)
         self.hosts_to_activate = self.hsm_hosts
     request.addfinalizer(finalizer)
-
-    helpers.deactivate_and_verify_hosts(hosts=self.hsm_hosts)
+    rhevm_helpers.maintenance_and_activate_hosts(
+        hosts=self.hsm_hosts, activate=False
+    )
 
 
 @pytest.fixture()

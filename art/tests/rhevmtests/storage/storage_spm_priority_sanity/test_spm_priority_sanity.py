@@ -6,7 +6,7 @@ Storage/3_2_Storage_SPM_Priority
 import logging
 import pytest
 import config
-import helpers
+import rhevmtests.helpers as rhevm_helpers
 from art.core_api import apis_exceptions
 from art.rhevm_api.tests_lib.low_level import (
     hosts as ll_hosts,
@@ -141,7 +141,9 @@ class SPMHostsMinusOnePriorityFlow(BasicEnvironment):
         Basic flow for minus one SPM hosts priority
         """
         self.set_priorities(priorities=priorities, hosts=hosts)
-        helpers.deactivate_and_verify_hosts(hosts=hosts)
+        rhevm_helpers.maintenance_and_activate_hosts(
+            hosts=hosts, activate=False
+        )
         self.activate_and_verify_hosts(hosts=hosts)
 
         testflow.step("Waiting for SPM to be elected")
@@ -261,6 +263,9 @@ class TestCase6212(BasicEnvironment):
         ), "Set SPM priority to illegal value succeded"
 
 
+@pytest.mark.skipif(
+    bool(config.HE_DETAILS), reason="Can't execute on hosted engine"
+)
 @pytest.mark.usefixtures(
     check_hosts_status.__name__
 )
@@ -284,6 +289,9 @@ class TestCase6217(SPMHostsMinusOnePriorityFlow):
         self.basic_flow(priorities=min_priorities)
 
 
+@pytest.mark.skipif(
+    bool(config.HE_DETAILS), reason="Can't execute on hosted engine"
+)
 @pytest.mark.usefixtures(
     deactivate_hsm_hosts.__name__
 )
@@ -324,6 +332,9 @@ class TestCase6205(SPMHostsMinusOnePriorityFlow):
             )
 
 
+@pytest.mark.skipif(
+    bool(config.HE_DETAILS), reason="Can't execute on hosted engine"
+)
 @pytest.mark.usefixtures(
     initialize_hosts_params.__name__
 )
@@ -338,7 +349,7 @@ class TestCase6206(BasicEnvironment):
         """
         Deactivate Hosts, set new priorities, activate hosts and wait for SPM
         """
-        helpers.deactivate_and_verify_hosts()
+        rhevm_helpers.maintenance_and_activate_hosts(activate=False)
         self.set_priorities(priorities=self.priorities, hosts=self.hosts)
         self.activate_and_verify_hosts(hosts=self.hosts)
         assert self.wait_for_spm_host_and_verify_identity(
@@ -394,7 +405,9 @@ class TestCase6224(BasicEnvironment):
         :type priority: int
         :raise: HostException
         """
-        helpers.deactivate_and_verify_hosts(hosts=[host_name])
+        rhevm_helpers.maintenance_and_activate_hosts(
+            hosts=[host_name], activate=False
+        )
         testflow.step(
             "Change SPM priority to %s in the DB to %s", host_name, priority
         )
@@ -557,7 +570,9 @@ class TestCase6215(BasicEnvironment):
         self.engine_ip = utils.getIpAddressByHostName(config.VDC)
         new_priority = range(1, len(self.hsm_hosts) + 1)
         self.set_priorities(priorities=new_priority, hosts=self.hsm_hosts)
-        helpers.deactivate_and_verify_hosts(hosts=[self.spm_host])
+        rhevm_helpers.maintenance_and_activate_hosts(
+            hosts=[self.spm_host], activate=False
+        )
         logger.info(
             "Blocking connection between %s and %s", self.engine_ip,
             self.high_spm_priority_host
