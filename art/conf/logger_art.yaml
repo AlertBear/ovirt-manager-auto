@@ -3,7 +3,7 @@ formatters:
   fileFormatter:
     format: "%(asctime)s - %(threadName)s - %(name)s - %(levelname)s - %(message)s"
   flow:
-    class: utilities.logger_utils.ColoredFormatter
+    class: art.test_handler.logger_utils.ColoredFormatter
     format: "%(asctime)s %(levelname)s %(message)s"
 handlers:
   consoleHandler:
@@ -12,10 +12,10 @@ handlers:
     formatter: flow
     stream: ext://sys.stdout
   devnull:
-    class: utilities.logger_utils.NullHandler
+    class: art.test_handler.logger_utils.NullHandler
     level: DEBUG
   duplicateFileHandlerDebug:
-    class: utilities.logger_utils.DuplicateFileHandler
+    class: art.test_handler.logger_utils.DuplicateFileHandler
     level: DEBUG
     formatter: fileFormatter
     1filename: "%(logfile)s.debug"
@@ -23,7 +23,7 @@ handlers:
     3maxBytes: 31457280
     4backupCount: 100
   duplicateFileHandler:
-    class: utilities.logger_utils.DuplicateFileHandler
+    class: art.test_handler.logger_utils.DuplicateFileHandler
     level: INFO
     formatter: fileFormatter
     1filename: "%(logfile)s"

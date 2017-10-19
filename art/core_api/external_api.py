@@ -21,7 +21,7 @@ import os
 import logging
 from time import strftime
 from art.core_api.apis_exceptions import APICommandError
-from utilities.logger_utils import initialize_logger
+from art.test_handler.logger_utils import initialize_logger
 
 opts = {}
 
