@@ -33,6 +33,7 @@ def write_on_vms_ro_disks(vm_name):
 
     for disk in vm_disks:
         disk_alias = disk.get_alias()
+        disk_id = disk.get_id()
         logger.info(
             "Checking if disk %s visible to %s", disk_alias, vm_name
         )
@@ -43,13 +44,13 @@ def write_on_vms_ro_disks(vm_name):
             )
         logger.info("disk %s is visible to %s", disk_alias, vm_name)
         logger.info("Checking if disk '%s' is readonly", disk_alias)
-        if not ll_disks.get_read_only(vm_name, disk.get_id()):
+        if not ll_disks.get_read_only(vm_name, disk_id):
             raise exceptions.DiskException(
                 "Disk '%s' is not read only, aborting test", disk_alias
             )
 
         logger.info("Trying to write to read only disk...")
-        status, out = helpers.perform_dd_to_disk(vm_name, disk_alias)
+        status, out = helpers.perform_dd_to_disk(vm_name, disk_id, key='id')
         status = (not status) and (READ_ONLY in out or NOT_PERMITTED in out)
         if not status:
             raise exceptions.DiskException(

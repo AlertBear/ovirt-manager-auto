@@ -1222,6 +1222,7 @@ class TestCase4926(DefaultEnvironment):
         assert ll_vms.waitForVMState(self.vm_name)
 
         ll_vms.move_vm_disk(self.vm_name, bootable, self.storage_domain_1)
+        storage_helpers.wait_for_disks_and_snapshots([self.vm_name])
 
 
 class TestCase4930(DefaultEnvironment):
