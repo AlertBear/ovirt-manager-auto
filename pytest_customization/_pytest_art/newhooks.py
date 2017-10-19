@@ -24,24 +24,6 @@ def pytest_art_release_resources(config):
     """
 
 
-def pytest_package_setup(entry):
-    """
-    It gets executed just before package_setup function.
-
-    :param entry: reference to package
-    :type entry: instance of package_fixtures.Entry
-    """
-
-
-def pytest_package_teardown(entry):
-    """
-    It gets executed just after package_teardown function.
-
-    :param entry: reference to package
-    :type entry: instance of package_fixtures.Entry
-    """
-
-
 def pytest_rhv_setup(team):
     """
     It gets executed at package setup

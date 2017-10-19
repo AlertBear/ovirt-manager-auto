@@ -7,17 +7,13 @@ suites.
 
 artlib.py: Responsible to load ART_CONFIG and initalize library.
 matrix.py: Generate test-classes as we used to do in ART.
-           TEST x STORAGE x API
-           Responsible to switch API & STORAGE backends.
+           TEST x STORAGE x API Responsible to switch API & STORAGE backends.
 marks.py:  Adds pytest's way to mark testcases.
            Extends junit-plugin to include polarion, bz, jira, storage,
            api fields to junit xml report.
-           Added -A option to match attr expressions.
-ssl.py:    Deals with rhevm certificates.
-package_fixtures.py:
-           It adds ability to exec setup_package.
-newhooks.py:
-           It defines new ART related hooks.
+           Added '-A' option to match attr expressions.
+ssl.py: Deals with rhevm certificates.
+newhooks.py: It defines new ART related hooks.
 
 
 Please read doc string of every module to get more information.

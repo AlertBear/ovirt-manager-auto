@@ -289,22 +289,6 @@ class ARTLogging(object):
         else:
             self.log_filter.flush()
 
-    @pytest.hookimpl(hookwrapper=True)
-    def pytest_runtest_teardown(self, item, nextitem):
-        """
-        :param item: test item to perform teardown for
-        :type item: instance of pytest.Item
-        """
-        logger.info(DELIMITER)
-        logger.info("TEARDOWN %s", item)
-        yield
-
-    def pytest_package_setup(self, entry):
-        logger.info("PACKAGE SETUP: %s", entry)
-
-    def pytest_package_teardown(self, entry):
-        logger.info("PACKAGE TEARDOWN: %s", entry)
-
     def pytest_unconfigure(self, config):
         flow_logger.removeFilter(self.log_filter)
 
