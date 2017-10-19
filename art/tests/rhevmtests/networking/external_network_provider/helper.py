@@ -451,6 +451,22 @@ def get_provider_from_engine(provider_name):
     return ovn_conf.OVN_PROVIDER.test_connection()
 
 
+def get_float(str_float):
+    """
+    Convert a given string to float number
+
+    Args:
+        str_float (str): String to be converted to float
+
+    Returns:
+        tuple: True/False for conversion result, and converted float value
+    """
+    try:
+        return True, float(str_float)
+    except ValueError:
+        return False, 0.0
+
+
 def collect_performance_counters(hosts):
     """
     Collect host(s) CPU and memory performance counters
@@ -459,11 +475,12 @@ def collect_performance_counters(hosts):
         hosts (list): List of host resources to benchmark
 
     Returns:
-        list: List of two float values, first represents the average CPU
-            usage, and second represents the average memory usage, or empty
-            list if collection failed
+        tuple: average rounded CPU usage value, average rounded memory usage
+            value, or empty tuple if error occurred during collection
     """
-    counters = []
+    cpu_counters = []
+    memory_counters = []
+    cpu_counter = mem_counter = 0.0
 
     while any(ovn_conf.COLLECT_PERFORMANCE_FLAGS):
         for host in hosts:
@@ -472,38 +489,34 @@ def collect_performance_counters(hosts):
                 cpu_rc, cpu_out, _ = host.run_command(
                     ovn_conf.OVN_CMD_GET_CPU_USAGE.split(" ")
                 )
-                if cpu_rc:
+                is_float, cpu_counter = get_float(str_float=cpu_out)
+                if cpu_rc or not is_float:
                     logger.error(
-                        "Failed to collect CPU performance: %s", cpu_out
+                        "Unexpected CPU collection output: %s", cpu_out
                     )
-                    return []
-                logger.info(
-                    "Collecting CPU counter from host: %s -> value: %s",
-                    host.fqdn, cpu_out
-                )
+                    return ()
             # Memory counter collection
             if ovn_conf.COLLECT_PERFORMANCE_FLAGS[1]:
                 mem_rc, mem_out, _ = host.run_command(
                     ovn_conf.OVN_CMD_GET_MEM_USAGE.split(" ")
                 )
-                if mem_rc:
+                is_float, mem_counter = get_float(str_float=mem_out)
+                if mem_rc or not is_float:
                     logger.error(
-                        "Failed to collect memory performance: %s", mem_out
+                        "Unexpected memory collection output: %s", mem_out
                     )
-                    return []
-                logger.info(
-                    "Collecting memory counter from host: %s -> value: %s",
-                    host.fqdn, mem_out
-                )
+                    return ()
+            # Save counters on list
+            cpu_counters.append(cpu_counter)
+            memory_counters.append(mem_counter)
 
-            if counters:
-                counters[0] = round((counters[0] + float(cpu_out)) / 2.0, 2)
-                counters[1] = round((counters[1] + float(mem_out)) / 2.0, 2)
-            else:
-                counters.append(float(cpu_out))
-                counters.append(float(mem_out))
+    # Calculate average values and round them
+    avg_cpu = round(sum(cpu_counters) / len(cpu_counters))
+    avg_memory = round(sum(memory_counters) / len(memory_counters))
 
-    return counters
+    logger.info("Collected CPU counters: %s", cpu_counters)
+    logger.info("Collected memory counters: %s", memory_counters)
+    return avg_cpu, avg_memory
 
 
 def copy_file_benchmark(**kwargs):

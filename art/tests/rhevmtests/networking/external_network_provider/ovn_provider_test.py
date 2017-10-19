@@ -21,7 +21,7 @@ from art.core_api.apis_utils import TimeoutingSampler
 from art.rhevm_api.tests_lib.low_level import (
     networks as ll_networks, vms as ll_vms
 )
-from art.test_handler.tools import bz, polarion
+from art.test_handler.tools import polarion
 from art.unittest_lib import NetworkTest, testflow, tier2, tier3
 from fixtures import (  # noqa: F401
     check_running_on_rhevh,
@@ -119,7 +119,6 @@ class TestOVNDeployment(NetworkTest):
             )
 
 
-@bz({"1497820": {}})
 @pytest.mark.usefixtures(
     check_ldap_availability.__name__,
     setup_ldap_integration.__name__,
@@ -217,7 +216,6 @@ class TestOVNAuthorization(NetworkTest):
         assert positive == ovn_conf.OVN_PROVIDER.test_connection()
 
 
-@bz({"1497820": {}})
 @pytest.mark.incremental
 @pytest.mark.usefixtures(
     configure_ovn.__name__,
@@ -606,7 +604,6 @@ class TestOVNComponent(NetworkTest):
         for vm in [vm_0_rsc, vm_1_rsc]:
             assert helper.set_vm_non_mgmt_interface_mtu(vm=vm, mtu=1500)
 
-    @bz({"1494944": {}})
     @tier2
     @polarion("RHEVM3-17236")
     def test_12_ovn_network_with_subnet(self):
@@ -754,7 +751,6 @@ class TestOVNComponent(NetworkTest):
             assert ovn_conf.OVN_PROVIDER.import_network(
                 network=net_name, datacenter=self.dc, cluster=self.cl
             )
-
             ip = ""
             for vm in (net_conf.VM_0, net_conf.VM_1):
                 testflow.step(
@@ -778,12 +774,6 @@ class TestOVNComponent(NetworkTest):
             assert helper.check_ping(vm=net_conf.VM_0, dst_ip=ip, count=3)
 
 
-@bz(
-    {
-        "1494944": {},
-        "1497820": {}
-    }
-)
 @pytest.mark.usefixtures(
     configure_ovn.__name__,
     get_default_ovn_provider.__name__,
@@ -864,26 +854,40 @@ class TestOVNPerformance(NetworkTest):
         )
         assert copy_file_res[0], "Failed to copy file over OVN tunnel"
 
-        # Calculate expected values:
-        # 1. CPU and memory usage should be at maximum 30% higher
-        # 2. Maximum usage values are 100%
-        # 3. VM-to-VM transfer rate should be at minimum 20% slower
-        cpu_value = round(ovn_conf.OVN_HOST_PERF_COUNTERS[0] * 1.3)
-        max_cpu_value = max(min(cpu_value, 100), cpu_value)
-        mem_value = round(ovn_conf.OVN_HOST_PERF_COUNTERS[1] * 1.3)
-        max_mem_value = max(min(mem_value, 100), mem_value)
-        min_transfer_rate = round(ovn_conf.OVN_HOST_PERF_COUNTERS[2] * 0.8)
+        # 1. CPU usage should be at lower than maximum 150% of baseline
+        # In total, CPU usage should be lower than 70% usage
+        cpu_value = round(ovn_conf.OVN_HOST_PERF_COUNTERS[0] * 1.5)
+        cpu_baseline_value = max(min(cpu_value, 70), cpu_value)
+        testflow.step(
+            "Checking if CPU benchmark value: %s <= expected value: %s ",
+            hosts_perf[0], cpu_baseline_value
+        )
+        assert hosts_perf[0] <= cpu_baseline_value, (
+            "VM-to-VM host CPU average: %s > %s (expected value)"
+            % (hosts_perf[0], cpu_baseline_value)
+        )
 
-        assert hosts_perf[0] < max_cpu_value, (
-            "VM-to-VM Host CPU average: %s >= %s (expected value)"
-            % (hosts_perf[0], max_cpu_value)
+        # 2. Memory usage should be at maximum 120% of baseline
+        # In total, memory usage CPU usage should be lower than 90% usage
+        mem_value = round(ovn_conf.OVN_HOST_PERF_COUNTERS[1] * 1.2)
+        mem_baseline_value = max(min(mem_value, 90), mem_value)
+        testflow.step(
+            "Checking if memory benchmark value: %s <= expected value: %s ",
+            hosts_perf[1], mem_baseline_value
         )
-        assert hosts_perf[1] < max_mem_value, (
-            "VM-to-VM Host memory average: %s >= %s (expected value)"
-            % (hosts_perf[1], max_mem_value)
+        assert hosts_perf[1] <= mem_baseline_value, (
+            "VM-to-VM host memory average: %s > %s (expected value)"
+            % (hosts_perf[1], mem_baseline_value)
         )
-        assert copy_file_res[1] > min_transfer_rate, (
-            "VM-to-VM Transfer rate (MB/s): %s "
-            "<= minimum transfer rate (MB/s): %s (expected value)" %
+
+        # 3. VM-to-VM transfer rate should be at minimum 80% of baseline
+        min_transfer_rate = round(ovn_conf.OVN_HOST_PERF_COUNTERS[2] * 0.8)
+        testflow.step(
+            "Checking if transfer benchmark value: %s >= expected value: %s ",
+            copy_file_res[1], min_transfer_rate
+        )
+        assert copy_file_res[1] >= min_transfer_rate, (
+            "VM-to-VM transfer rate (MB/s): %s "
+            "< minimum transfer rate (MB/s): %s (expected value)" %
             (copy_file_res[1], min_transfer_rate)
         )
