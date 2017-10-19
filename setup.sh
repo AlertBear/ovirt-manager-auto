@@ -76,21 +76,26 @@ fi
 export PYCURL_SSL_LIBRARY=nss
 
 $YUM install -y \
-    python-virtualenv \
+    autofs \
+    expect \
     gcc \
+    libcurl \
+    libcurl-devel \
     libffi-devel \
     libvirt-devel \
     libxml2-devel \
     libxslt-devel \
+    nfs-utils \
     openssl-devel \
-    xz-devel \
+    python-cffi \
     python-devel \
-    expect \
-    vdsm-cli \
-    autofs \
-    krb5-workstation \
+    python-jinja2 \
+    python-pip \
+    python-virtualenv \
+    PyYAML \
     redhat-rpm-config \
-    libcurl
+    vdsm-client \
+    xz-devel
 
 rm -rf .art
 virtualenv --system-site-packages .art
