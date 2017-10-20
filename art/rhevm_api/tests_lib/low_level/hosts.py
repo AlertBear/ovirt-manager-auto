@@ -1391,7 +1391,7 @@ def start_vdsm(host, password, datacenter):
         logger.error("Unable to start vdsm on host %s", host)
         return False
 
-    if not activate_host(True, host):
+    if not is_host_up(True, host) and not activate_host(True, host):
         logger.error("Unable to activate host %s", host)
         return False
 
@@ -1400,7 +1400,7 @@ def start_vdsm(host, password, datacenter):
 
 def stop_vdsm(host, password):
     """
-    Stop vdsm. Before that stop all vms and deactivate host.
+    Stop vdsm. Before that stop all vms running on the host.
 
     Args:
         host (str): Host name in RHEVM
@@ -1422,12 +1422,18 @@ def stop_vdsm(host, password):
             if not stopVm(True, vm.name):
                 return False
 
-    if not deactivate_host(True, host):
+    ip = get_host_ip(host)
+    if not stopVdsmd(vds=ip, password=password):
         logger.error("Unable to deactivate host %s", host)
         return False
 
-    ip = get_host_ip(host)
-    return stopVdsmd(vds=ip, password=password)
+    return wait_for_hosts_states(
+        True, host, [
+            ENUMS['host_state_down'],
+            ENUMS["host_state_non_responsive"],
+            ENUMS["host_state_connecting"]
+        ]
+    )
 
 
 def kill_vm_process(resource, vm_name):
