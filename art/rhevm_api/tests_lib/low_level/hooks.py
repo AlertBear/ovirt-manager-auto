@@ -18,8 +18,12 @@
 # 02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
 import logging
-import tempfile
 from os import path
+
+from art.core_api.apis_utils import TimeoutingSampler
+from art.core_api.apis_exceptions import APITimeout
+
+HOOK_TIMEOUT = 60
 
 logger = logging.getLogger("art.ll_lib.hooks")
 
@@ -39,19 +43,20 @@ def check_for_file_existence_and_content(
     Returns:
         bool: True if there were no errors checking file existence.
     """
-    new_filename = path.join(tempfile.gettempdir(), path.basename(filename))
-
     try:
-        host.fs.get(filename, new_filename)
-    except IOError as err:
-        logger.error(err)
-        return False
+        for sample in TimeoutingSampler(
+            timeout=HOOK_TIMEOUT, sleep=1,
+            func=host.fs.exists, path=filename
+        ):
+            if sample:
+                break
+    except APITimeout:
+        if positive:
+            return False
 
     if content:
         content = content.strip()
-        with open(new_filename, "r") as f:
-            file_content = f.read().strip()
-
+        file_content = host.fs.read_file(filename).strip()
         if file_content != content:
             logger.error(
                 (
@@ -61,7 +66,6 @@ def check_for_file_existence_and_content(
                 ).format(content, file_content)
             )
             return False
-
     return positive
 
 
@@ -83,7 +87,7 @@ def create_one_line_shell_script(
         any errors.
     """
     content = (
-        "#!/usr/bin/env bash\n\n"
+        "#!/bin/bash\n\n"
         "{0} {1}\n"
     ).format(command, arguments)
 
