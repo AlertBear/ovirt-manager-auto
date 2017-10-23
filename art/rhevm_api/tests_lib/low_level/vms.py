@@ -3765,12 +3765,13 @@ def snapshot_action(positive, vm, action,
                 disks_coll.add_disk(new_disk)
 
             action_args['disks'] = disks_coll
+
     status = bool(VM_API.syncAction(**action_args))
     if status and positive:
-        return VM_API.waitForElemStatus(vmObj, ENUMS['vm_state_down'],
-                                        VM_SNAPSHOT_ACTION)
-
-    return status
+        return VM_API.waitForElemStatus(
+            vmObj, ENUMS['vm_state_down'], VM_SNAPSHOT_ACTION
+        )
+    return status or not positive
 
 
 def is_snapshot_with_memory_state(vm_name, snapshot):
