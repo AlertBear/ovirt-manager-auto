@@ -114,8 +114,8 @@ class TestHugepagesFilter03(SlaTest):
         """
         src_host = ll_vms.get_vm_host(vm_name=sla_conf.VM_NAME[0])
         dst_host = (
-            sla_conf.HOSTS[0] if src_host == sla_conf.HOSTS[0]
-            else sla_conf.HOSTS[1]
+            sla_conf.HOSTS[1] if src_host == sla_conf.HOSTS[0]
+            else sla_conf.HOSTS[0]
         )
 
         assert ll_vms.migrateVm(positive=True, vm=sla_conf.VM_NAME[0])
