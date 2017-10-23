@@ -260,8 +260,9 @@ def startVdsmd(vds, password):
        * vds - name of the host
        * password - ssh password for the host
     '''
-    machine = Machine(vds, 'root', password).util(LINUX)
-    return machine.startService('vdsmd')
+    machine = Host(vds)
+    machine.users.append(RootUser(password))
+    return machine.service(VDSMD).start()
 
 
 def restartVdsmd(vds, password, supervdsm=False):
@@ -274,13 +275,14 @@ def restartVdsmd(vds, password, supervdsm=False):
        *  *supervdsm* - flag to stop supervdsm service (start vdsm also start
            supervdsm)
     '''
-    machine = Machine(vds, 'root', password).util(LINUX)
+    machine = Host(vds)
+    machine.users.append(RootUser(password))
     if supervdsm:
-        if not machine.stopService(SUPERVDSMD):
+        if not machine.service(SUPERVDSMD).stop():
             logger.error("Stop supervdsm service failed")
             return False
 
-    return machine.restartService('vdsmd')
+    return machine.service(VDSMD).restart()
 
 
 def stopVdsmd(vds, password):
@@ -291,8 +293,9 @@ def stopVdsmd(vds, password):
        * vds - name of the host
        * password - ssh password for the host
     '''
-    machine = Machine(vds, 'root', password).util(LINUX)
-    return machine.stopService('vdsmd')
+    machine = Host(vds)
+    machine.users.append(RootUser(password))
+    return machine.service(VDSMD).stop()
 
 
 def update_vm_status_in_database(vm_name, status, vdc, vdc_pass,
