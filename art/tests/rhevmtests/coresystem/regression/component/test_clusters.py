@@ -3,6 +3,11 @@
 test clusters
 -----------------
 """
+import rhevmtests.compute.sla.config as sla_conf
+from art.rhevm_api.tests_lib.low_level import (
+    datacenters as ll_dc,
+    clusters as ll_cluster,
+)
 from art.test_handler.tools import bz
 from art.unittest_lib import (
     CoreSystemTest as TestCase,
@@ -10,19 +15,12 @@ from art.unittest_lib import (
     tier1,
     tier2,
 )
-from art.rhevm_api.tests_lib.low_level import (
-    datacenters as ll_dc,
-    clusters as ll_cluster,
-)
-
 from rhevmtests.config import (
     CLUSTER_NAME as clusters_names,
     COMP_VERSION as comp_version,
     CPU_NAME as cpu_name,
     DC_NAME as dcs_names,
 )
-
-import rhevmtests.sla.config as sla_conf
 
 
 class TestCaseCluster(TestCase):
