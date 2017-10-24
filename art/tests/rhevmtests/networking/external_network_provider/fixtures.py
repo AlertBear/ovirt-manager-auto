@@ -236,7 +236,9 @@ def remove_ifcfg_from_vms(request):
 def configure_ovn(request):
     """
     1. Configure ovirt-provider-ovn-driver component on OVN hosts 1 and 2
-    2. Verify that firewalld is running on OVN central and hosts
+    2. Verify that firewalld service is stopped on OVN hosts_1 and 2 until
+       RFE: https://bugzilla.redhat.com/show_bug.cgi?id=1432354 is resolved.
+    3. Verify that firewalld is running on OVN central
     """
     ovn_central = net_config.ENGINE_HOST
     ovn_hosts = net_config.VDS_HOSTS_LIST[:2]
@@ -284,12 +286,37 @@ def configure_ovn(request):
 
     # OVN driver configuration
     for host in ovn_hosts:
+        # Stop firewall services that blocks OVN traffic
         testflow.setup(
-            "Verifying that firewalld is started on OVN host: %s", host.fqdn
+            "Checking if firewalld is started on OVN host: %s", host.fqdn
         )
-        assert helper.service_handler(
+        if helper.service_handler(
             host=host, service="firewalld", action="active"
-        )
+        ):
+            testflow.setup(
+                "Stopping firewall firewalld service on host: %s", host.fqdn
+            )
+            assert helper.service_handler(host=host, service="firewalld")
+
+            testflow.setup(
+                "Restarting libvirtd service on host: %s", host.fqdn
+            )
+            assert helper.service_handler(
+                host=host, service="libvirtd", action="restart"
+            )
+            enp_conf.OVN_FIREWALLD_STARTED_SERVERS.append(host)
+
+        # Start ovn-controller
+        # TODO: removed once BZ:
+        # https://bugzilla.redhat.com/show_bug.cgi?id=1490104 is resolved
+        if not helper.service_handler(
+            host=host, service=enp_conf.OVN_CONTROLLER_SERVICE, action="active"
+        ):
+            testflow.setup(
+                "Starting ovn-controller service on host: %s", host.fqdn
+            )
+            assert host.service(name=enp_conf.OVN_CONTROLLER_SERVICE).start()
+
         testflow.setup("Configuring vdsm-tool on host: %s", host.fqdn)
         assert not host.run_command(
             shlex.split(
@@ -348,7 +375,7 @@ def save_vm_resources(request):
 def benchmark_file_transfer(request):
     """
     Benchmark Host-to-Host file transfer rate and collect performance counters
-    from hosts to be used as baseline for the tests
+    from hosts
     """
     testflow.setup(
         "Benchmarking file transfer from host: %s to host: %s",
