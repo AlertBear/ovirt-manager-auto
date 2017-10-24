@@ -1355,3 +1355,18 @@ def remove_template_disk_from_storagedomain(
     return DISK_ATTACHMENTS_API.delete(
         disk_obj, positive, operations=operations
     )
+
+
+def get_template_boot_sequence(template_name):
+    """
+    Get template boot sequence
+
+    Args:
+        template_name (str): template name
+
+    Returns:
+        list: list of vm boot devices
+    """
+    template_obj = get_template_obj(template_name)
+    boots = template_obj.get_os().get_boot()
+    return boots.get_devices().get_device()

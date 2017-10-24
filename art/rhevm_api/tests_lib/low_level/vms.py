@@ -4900,6 +4900,23 @@ def get_vm_nic_statistics(vm, nic):
     )
 
 
+def get_vm_stateless_status(vm_name):
+    """
+    Get VM stateless status.
+
+    Args:
+        vm_name (str): VM name.
+
+    Returns:
+        bool: True if VM is stateless, otherwise - False.
+
+    Raises:
+        EntityNotFound: In case of non-existing VM name entered.
+    """
+    vm_obj = get_vm_obj(vm_name)
+    return vm_obj.get_stateless()
+
+
 def get_vm_memory(vm_name):
     """
     Get vm memory size from engine
