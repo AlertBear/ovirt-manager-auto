@@ -54,7 +54,8 @@ EXTERNAL_VM_IMPORTS = {
         "password": VM_WARE_PASSWORD,
         "provider": VM_WARE_PROVIDER,
         "url": VM_WARE_URL,
-        "engine_url": ENGINE_URL
+        "engine_url": ENGINE_URL,
+        "sparse": False,
     },
     'kvm': {
         "name": KVM_RHEL_7,
@@ -65,7 +66,8 @@ EXTERNAL_VM_IMPORTS = {
         "password": KVM_PASSWORD,
         "provider": KVM_PROVIDER,
         "url": KVM_URL,
-        "engine_url": ENGINE_URL
+        "engine_url": ENGINE_URL,
+        "sparse": False,
     },
 }
 # Configuration to compare imported VM to
