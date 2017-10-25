@@ -25,7 +25,7 @@ class Inventory(object):
         self.whitelisted_attr = [
             "used", "available",
             "actual_size", "committed",
-            "stop_time"
+            "stop_time", "total_size", "update_available"
         ]
         self._summary = {}
 
