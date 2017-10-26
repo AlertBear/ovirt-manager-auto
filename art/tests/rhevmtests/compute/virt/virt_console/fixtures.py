@@ -139,11 +139,13 @@ def setup_vm(request):
         instance_type_name=vcons_conf.VIRT_CONSOLE_VM_INSTANCE_TYPE,
         **vcons_conf.INSTANCE_TYPE_PARAMS
     ), "Failed to create instance_type."
-
+    vm_name = vcons_conf.VM_NAME[0]
+    testflow.setup("Stop VM {} safely".format(vm_name))
+    assert ll_vms.stop_vms_safely([vm_name])
     testflow.setup("Create a Template for Virt console test cases execution.")
     assert ll_templates.createTemplate(
         positive=True,
-        vm=vcons_conf.VM_NAME[0],
+        vm=vm_name,
         name=vcons_conf.VIRT_CONSOLE_TEMPLATE,
         cluster=vcons_conf.CLUSTER_NAME[0]
     ), "Was not able to create template."
