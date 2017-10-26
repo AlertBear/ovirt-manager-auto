@@ -36,7 +36,7 @@ class TestClusterLevelMigrationPoliciesAndBandwidth(VirtTest):
     """
 
     vm_name = config.MIGRATION_VM_LOAD
-    load_size = 1500
+    load_size = 500
     time_to_run_load = 1800
 
     @tier2

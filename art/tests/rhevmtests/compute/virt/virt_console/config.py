@@ -27,7 +27,7 @@ VIRT_NEW_DISK_ALIAS = "GlanceDisk-{rand_ind}".format(
 
 VIRT_CONSOLE_VM_NIC = net_conf.VM_NICS[-1]
 
-VIRSH_DUMP_CMD_RAM = 'virsh -r dumpxml {vm_id} | grep ram'
+VIRSH_DUMP_CMD_QXL = "virsh -r dumpxml {vm_id} | grep qxl | grep ram"
 VIRSH_DUMP_CMD_GC = "virsh -r dumpxml {vm_id} | grep 'graphics type'"
 KVM_PROCESS_INFO_CMD = 'ps -fade | grep kvm'
 

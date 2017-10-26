@@ -178,7 +178,7 @@ class TestCPUHotPlug(VirtTest):
         )
         assert not ll_vms.updateVm(
             True, config.CPU_HOTPLUG_VM_LOAD, cpu_socket=2
-        ), "hot plug  worked while migrating VM "
+        ), "hot plug worked while migrating VM "
 
     @tier3
     @polarion("RHEVM-22074")

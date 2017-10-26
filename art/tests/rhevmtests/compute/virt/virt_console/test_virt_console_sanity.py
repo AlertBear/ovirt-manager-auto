@@ -72,7 +72,7 @@ class TestVirtConsoleSanityClass(VirtTest):
                         )
                     )
                     rc, out, err = host.run_command(
-                        vcons_conf.VIRSH_DUMP_CMD_RAM.format(
+                        vcons_conf.VIRSH_DUMP_CMD_QXL.format(
                             vm_id=vm_obj.get_id()
                         ).split(' ')
                     )

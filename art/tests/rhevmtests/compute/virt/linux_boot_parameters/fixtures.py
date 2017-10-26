@@ -16,6 +16,7 @@ from art.rhevm_api.tests_lib.low_level import (
 from art.test_handler import exceptions
 from art.unittest_lib.common import testflow
 from rhevmtests.compute.virt import config
+from rhevmtests.compute.virt.helper import detach_iso_domains
 
 ISO_UPLOADER_FILE = "/etc/ovirt-engine/isouploader.conf"
 
@@ -25,6 +26,7 @@ def attach_iso(request):
     """
     Attach iso domain
     """
+
     def fin():
         """
         Move the ISO domain to maintenance and detach it.
@@ -33,19 +35,29 @@ def attach_iso(request):
             "Move ISO Domain %s to maintenance", config.ISO_DOMAIN_NAME
         )
         assert ll_sd.deactivateStorageDomain(
-            True, config.DC_NAME[0], storagedomain=config.ISO_DOMAIN_NAME
+            positive=True,
+            datacenter=config.DC_NAME[0],
+            storagedomain=config.ISO_DOMAIN_NAME
         )
         testflow.teardown("Detach ISO domain %s", config.ISO_DOMAIN_NAME)
         assert ll_sd.detachStorageDomain(
-            True, config.DC_NAME[0], storagedomain=config.ISO_DOMAIN_NAME
+            positive=True,
+            datacenter=config.DC_NAME[0],
+            storagedomain=config.ISO_DOMAIN_NAME
         )
 
     request.addfinalizer(fin)
-
-    testflow.setup("Attach ISO domain %s", config.ISO_DOMAIN_NAME)
-    assert ll_sd.attachStorageDomain(
-        True, config.DC_NAME[0], storagedomain=config.ISO_DOMAIN_NAME
-    )
+    iso_domains = ll_sd.findIsoStorageDomains(config.DC_NAME[0])
+    if config.ISO_DOMAIN_NAME not in iso_domains:
+        if iso_domains:
+            testflow.setup("Detach ISO domains from DC")
+            detach_iso_domains(dc_name=config.DC_NAME[0])
+        testflow.setup("Attach ISO domain %s", config.ISO_DOMAIN_NAME)
+        assert ll_sd.attachStorageDomain(
+            positive=True,
+            datacenter=config.DC_NAME[0],
+            storagedomain=config.ISO_DOMAIN_NAME
+        )
 
 
 @pytest.fixture(scope="class")

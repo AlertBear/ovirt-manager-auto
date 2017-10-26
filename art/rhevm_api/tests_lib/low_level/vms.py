@@ -5300,6 +5300,7 @@ def thaw_vm(positive, vm):
     return VM_API.syncAction(vmObj, 'thawfilesystems', positive)
 
 
+@ll_general.generate_logs(step=True)
 def reboot_vm(positive, vm):
     """
     Reboot vm

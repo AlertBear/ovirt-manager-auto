@@ -1764,3 +1764,28 @@ def suspend_resume_vm_test(vm_name):
         timeout=2 * config_virt.VM_ACTION_TIMEOUT
     )
     return True
+
+
+@ll_general.generate_logs(step=True)
+def detach_iso_domains(dc_name):
+    """
+    Detach every ISO storage domain from a data center.
+
+    Args:
+        dc_name(str): name of the data center
+    """
+    dc_isos = ll_sd.findIsoStorageDomains(dc_name)
+    for domain in dc_isos:
+        logger.info(
+            "Move ISO Domain %s to maintenance", domain)
+        assert ll_sd.deactivateStorageDomain(
+            positive=True,
+            datacenter=dc_name,
+            storagedomain=domain
+        )
+        logger.info("Detach ISO domain %s", domain)
+        assert ll_sd.detachStorageDomain(
+            positive=True,
+            datacenter=dc_name,
+            storagedomain=domain
+        )

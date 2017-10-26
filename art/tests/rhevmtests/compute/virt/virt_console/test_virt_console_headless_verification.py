@@ -187,10 +187,9 @@ class TestVirtConsoleHeadlessClass(VirtTest):
         )
 
         testflow.step("Reboot VM")
-        assert ll_vms.reboot_vms(
-            vms=[vcons_conf.VIRT_CONSOLE_VM_SYSTEM]
+        assert hl_vms.reboot_to_state(
+            vm=vcons_conf.VIRT_CONSOLE_VM_SYSTEM
         ), "Failed to reboot VM."
-
         testflow.step("Verify VM is not headless.")
         assert not helper.verify_object_headless(
             object_name=vcons_conf.VIRT_CONSOLE_VM_SYSTEM, object_type="vm"

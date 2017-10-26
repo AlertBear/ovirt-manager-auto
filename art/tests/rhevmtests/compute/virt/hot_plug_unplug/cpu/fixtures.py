@@ -17,6 +17,7 @@ from art.rhevm_api.tests_lib.low_level import (
 )
 from art.unittest_lib.common import testflow
 from rhevmtests.compute.virt import config
+from art.rhevm_api.utils.test_utils import wait_for_tasks
 from rhevmtests.compute.virt.fixtures import (  # flake8: noqa
     create_vm_class
 )
@@ -145,6 +146,7 @@ def migrate_vm_for_test(request):
         assert ll_vms.updateVm(
             True, config.CPU_HOTPLUG_VM_LOAD, cpu_socket=1
         ), "Failed to update CPU."
+        wait_for_tasks(config.ENGINE, datacenter=config.DC_NAME[0])
 
     request.addfinalizer(fin)
 

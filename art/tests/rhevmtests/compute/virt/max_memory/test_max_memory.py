@@ -73,14 +73,11 @@ class TestMaxMemory(VirtTest):
             vm_name=self.vm_name,
             memory_to_expand=memory_to_expand
         )
-        assert ll_vms.restartVm(
-            vm=self.vm_name,
-            wait_for_status='up'
-        )
+        assert hl_vms.reboot_to_state(vm=self.vm_name)
         vm = ll_vms.get_vm(self.vm_name)
         assert vm.memory == memory_before + memory_to_expand
-        # TODO(vshyp) Enable this check once behaviour is clear
-        # assert vm.memory_policy.max == vm.memory * config.MEMORY_TO_MAX_RATIO
+        memory_max = vm.memory * config.MEMORY_TO_MAX_RATIO
+        assert not vm.memory_policy.max == memory_max
 
     @tier2
     @polarion("RHEVM-19330")
@@ -117,10 +114,7 @@ class TestMaxMemory(VirtTest):
             **upd_maxmem
         )
         global_helper.wait_for_tasks(config.ENGINE, config.DC_NAME[0])
-        assert ll_vms.restartVm(
-            vm=self.vm_name,
-            wait_for_status='up'
-        )
+        assert hl_vms.reboot_to_state(vm=self.vm_name)
         vm = ll_vms.get_vm(self.vm_name)
         testflow.step('Positive: Check vm memory')
         assert vm.memory_policy.max == config.MEM_FOR_UPDATE

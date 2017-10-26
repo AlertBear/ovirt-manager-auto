@@ -1043,3 +1043,25 @@ def get_boot_device_logical_name(vm_name):
     """
     boot_disk = vms.get_vm_bootable_disk(vm_name)
     return vms.get_vm_disk_logical_name(vm_name, boot_disk)
+
+
+def reboot_to_state(vm, state='up'):
+    """
+    Reboot VM to a chosen state. Default is up state.
+
+    Args:
+        vm(str): name of vm
+        state(str): vm status should wait for
+        [unassigned, up, down, powering_up, powering_down,
+        paused, migrating_from, migrating_to, unknown,
+        not_responding, wait_for_launch, reboot_in_progress,
+        saving_state, restoring_state, suspended,
+        image_illegal, image_locked]
+
+    Returns:
+        bool: True if vm was rebooted properly to the chosen state,
+        False otherwise.
+    """
+    if not vms.reboot_vm(positive=True, vm=vm):
+        return False
+    return vms.waitForVMState(vm=vm, state=state)

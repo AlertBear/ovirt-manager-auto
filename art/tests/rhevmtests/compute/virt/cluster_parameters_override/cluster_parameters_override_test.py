@@ -21,6 +21,7 @@ from art.unittest_lib import (
     testflow,
     tier2,
 )
+from art.rhevm_api.utils.test_utils import wait_for_tasks
 from fixtures import (
     set_cpu_model_param,
     check_if_higher_cpu_model_tests_should_run,
@@ -36,6 +37,7 @@ from rhevmtests.compute.virt.reg_vms.fixtures import (
 from rhevmtests.compute.virt.vm_pools import config as vm_pools_config
 from rhevmtests.compute.virt import helper as virt_helper
 from rhevmtests.compute.virt.vm_pools.fixtures import vm_pool_teardown
+from art.core_api import apis_exceptions
 
 
 @pytest.mark.usefixtures(
@@ -223,6 +225,16 @@ class TestClusterParamsOverrideBasicTest(VirtTest):
             import_storagedomain=master_sd,
             cluster=config.CLUSTER_NAME[0],
         )
+        try:
+            wait_for_tasks(
+                engine=config.ENGINE,
+                datacenter=config.DC_NAME[0]
+            )
+        except apis_exceptions.APITimeout:
+            testflow.step(
+                "Error - engine has async tasks that still running"
+            )
+            assert False, "The engine still has unfinished tasks"
 
     @tier2
     @polarion("RHEVM3-10662")
