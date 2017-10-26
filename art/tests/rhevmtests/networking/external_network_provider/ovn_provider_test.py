@@ -260,7 +260,7 @@ class TestOVNComponent(NetworkTest):
     )
 
     # import_ovn_networks fixture parameters
-    remove_ovn_networks_from_engine = ovn_conf.OVN_NETS.keys()
+    remove_ovn_networks_from_engine = remove_ovn_networks_from_provider.keys()
 
     # remove_vnics_from_vms fixture parameters
     remove_vnics_vms_params = {
