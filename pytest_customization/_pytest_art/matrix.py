@@ -101,6 +101,7 @@ class ARTMatrix(object):
         This method will parametrize tests which are decorated with @storages
         """
 
+        self.storage_parameter_set = dict()
         # Use markers from function if defined
         storages = self.get_storages_from_marks(
             getattr(metafunc.function, 'pytestmark', [])
@@ -133,7 +134,6 @@ class ARTMatrix(object):
             metafunc.parametrize(
                 ['storage'], storages, indirect=True, scope="class"
             )
-            self.storage_parameter_set = dict()
 
     def pytest_generate_tests(self, metafunc):
         if 'storage' in metafunc.fixturenames:
