@@ -21,7 +21,7 @@ from art.core_api.apis_utils import TimeoutingSampler
 from art.rhevm_api.tests_lib.low_level import (
     networks as ll_networks, vms as ll_vms
 )
-from art.test_handler.tools import polarion
+from art.test_handler.tools import bz, polarion
 from art.unittest_lib import NetworkTest, testflow, tier2, tier3
 from fixtures import (  # noqa: F401
     check_running_on_rhevh,
@@ -48,7 +48,8 @@ from rhevmtests.networking.fixtures import (
 class TestOVNDeployment(NetworkTest):
     """
     1. Test deployment of OVN packages on engine (OVN central)
-    2. Test deployment of OVN packages on hosts (HOST-0 and HOST-1)
+    2. Test deployment of OVN packages on hosts
+    3. Test deployment of firewalld service
     """
 
     @tier2
@@ -65,25 +66,32 @@ class TestOVNDeployment(NetworkTest):
     @polarion("RHEVM-22396")
     def test_ovn_host(self):
         """
-        Test deployment of OVN packages on OVN hosts (HOST-0 and HOST-1)
+        Test deployment of OVN packages on OVN hosts
         """
-        for ovn_host in net_conf.VDS_HOSTS[:2]:
+        for ovn_host in net_conf.VDS_HOSTS:
             assert ovn_host.package_manager.exist(
                 package="ovirt-provider-ovn-driver"
             ), "OVN driver is not installed on host: %s" % ovn_host.fqdn
 
     @tier2
-    @polarion("RHEVM-23230")
+    @polarion("RHEVM-24245")
     def test_firewalld_service(self):
         """
-        # TODO: add additional test for OVN host configuration
-
-        Test if the firewalld service is running on engine (OVN central)
+        1. Test if firewalld service is running on engine (OVN central)
+        2. Test if firewalld service is running on OVN hosts
         """
-        testflow.step("Test if the firewalld service is running on engine")
+        testflow.step("Testing if firewalld service is running on engine")
         assert helper.service_handler(
             host=net_conf.ENGINE_HOST, service="firewalld", action="active"
         )
+        for ovn_host in net_conf.VDS_HOSTS:
+            testflow.step(
+                "Testing if firewalld service is running on host: %s",
+                ovn_host.fqdn
+            )
+            assert helper.service_handler(
+                host=ovn_host, service="firewalld", action="active"
+            )
 
     @tier2
     @polarion("RHEVM-23228")
@@ -231,21 +239,25 @@ class TestOVNComponent(NetworkTest):
     """
     1. Test the default OVN provider
     2. Create networks on OVN provider
-    3. Import networks from OVN provider
-    4. Start VM with OVN network
-    5. Hot-add vNIC with OVN network on a live VM
-    6. Ping between VM's on the same OVN network and host
-    7. Hot-unplug and hot-plug vNIC with OVN network
-    8. Hot-update (unplug and plug) vNIC profile with OVN network
-    9. OVN networks separation ping tests
-    10. Migrate a VM with OVN network
-    11. Copy big file between two VM's with OVN network that hosted on
+    3. Add subnet to OVN network
+    4. Try to add additional subnet to OVN network with subnet
+    5. Import networks from OVN provider
+    6. Start VM with OVN network
+    7. Hot-add vNIC with OVN network on a live VM
+    8. Ping between VM's on the same OVN network and host
+    9. Hot-unplug and hot-plug vNIC with OVN network
+    10. Hot-update (unplug and plug) vNIC profile with OVN network
+    11. OVN networks separation ping tests
+    12. Migrate a VM with OVN network
+    13. Copy big file between two VM's with OVN network that hosted on
         different hosts
-    12. OVN network with subnet DHCP
-    13. OVN network with subnet configuration validation tests
-    14. OVN network with subnet ping test
-    15. Change MAC address of vNIC attached to OVN network
-    16. Migrate a VM with OVN network and subnet
+    14. OVN network with subnet DHCP
+    15. OVN network with subnet configuration validation tests
+    16. OVN network with subnet ping test
+    17. Change MAC address of vNIC attached to OVN network
+    18. Migrate a VM with OVN network and subnet
+    19. Check assignments of long network names
+    20. VM IP assignment on OVN subnet without gateway
     """
     # Common settings
     provider_name = ovn_conf.OVN_PROVIDER_NAME
@@ -302,8 +314,47 @@ class TestOVNComponent(NetworkTest):
             )
 
     @tier2
+    @polarion("RHEVM-24246")
+    def test_03_add_subnet_to_ovn_network(self):
+        """
+        1. Create OVN subnet
+        2. Attach subnet to OVN network
+        """
+        net_id = ovn_conf.OVN_PROVIDER.get_network_id(
+            network_name=ovn_conf.OVN_NET_SUB_TO_BE_ATTACHED
+        )
+        assert net_id, (
+            "Unable to get network ID of network: %s" %
+            ovn_conf.OVN_NET_SUB_TO_BE_ATTACHED
+        )
+        ovn_conf.TEST_SUBNET_ATTACHMENT_1["network_id"] = net_id
+        assert ovn_conf.OVN_PROVIDER.create_subnet(
+            subnet=ovn_conf.TEST_SUBNET_ATTACHMENT_1
+        )
+
+    @tier2
+    @polarion("RHEVM-24286")
+    def test_04_add_additional_subnet_to_ovn_network(self):
+        """
+        1. Create OVN subnet
+        2. Try to attach additional OVN subnet to OVN network
+           (only one subnet is allowed per OVN network)
+        """
+        net_id = ovn_conf.OVN_PROVIDER.get_network_id(
+            network_name=ovn_conf.OVN_NET_SUB_TO_BE_ATTACHED
+        )
+        assert net_id, (
+            "Unable to get network ID of network: %s" %
+            ovn_conf.OVN_NET_SUB_TO_BE_ATTACHED
+        )
+        ovn_conf.TEST_SUBNET_ATTACHMENT_2["network_id"] = net_id
+        assert not ovn_conf.OVN_PROVIDER.create_subnet(
+            subnet=ovn_conf.TEST_SUBNET_ATTACHMENT_2
+        )
+
+    @tier2
     @polarion("RHEVM3-17046")
-    def test_03_import_networks_from_ovn_provider(self):
+    def test_05_import_networks_from_ovn_provider(self):
         """
         Import networks from OVN provider
         """
@@ -318,7 +369,7 @@ class TestOVNComponent(NetworkTest):
 
     @tier2
     @polarion("RHEVM3-17439")
-    def test_04_start_vm_with_ovn_network(self):
+    def test_06_start_vm_with_ovn_network(self):
         """
         1. Add vNIC attached to network: OVN_NET_1 to VM-0
         2. Start VM-0
@@ -328,7 +379,7 @@ class TestOVNComponent(NetworkTest):
         )
         assert ll_vms.addNic(
             positive=True, vm=net_conf.VM_0, name=ovn_conf.OVN_VNIC,
-            network=ovn_conf.OVN_NET_1, plugged=True
+            network=ovn_conf.OVN_NET_NO_SUB_1, plugged=True
         )
         # Remove vNIC during teardown
         self.remove_vnics_vms_params[net_conf.VM_0]["1"] = {
@@ -344,7 +395,7 @@ class TestOVNComponent(NetworkTest):
 
     @tier2
     @polarion("RHEVM3-17296")
-    def test_05_hot_add_vnic_with_ovn_network_on_live_vm(self):
+    def test_07_hot_add_vnic_with_ovn_network_on_live_vm(self):
         """
         1. Start VM-1 on HOST-0
         2. Hot-add vNIC attached to network: OVN_NET_1 on VM-1
@@ -358,11 +409,11 @@ class TestOVNComponent(NetworkTest):
 
         testflow.step(
             "Hot-adding vNIC: %s with OVN network: %s on live VM: %s",
-            ovn_conf.OVN_VNIC, ovn_conf.OVN_NET_1, net_conf.VM_1
+            ovn_conf.OVN_VNIC, ovn_conf.OVN_NET_NO_SUB_1, net_conf.VM_1
         )
         assert ll_vms.addNic(
             positive=True, vm=net_conf.VM_1, name=ovn_conf.OVN_VNIC,
-            network=ovn_conf.OVN_NET_1, plugged=True
+            network=ovn_conf.OVN_NET_NO_SUB_1, plugged=True
         )
         # Remove vNIC during teardown
         self.remove_vnics_vms_params[net_conf.VM_1]["1"] = {
@@ -371,7 +422,7 @@ class TestOVNComponent(NetworkTest):
 
     @tier2
     @polarion("RHEVM3-16927")
-    def test_06_ping_same_ovn_network_and_host(self):
+    def test_08_ping_same_ovn_network_and_host(self):
         """
         1. Assign static IP on VM-0 OVN vNIC
         2. Assign static IP on VM-1 OVN vNIC
@@ -394,7 +445,7 @@ class TestOVNComponent(NetworkTest):
 
     @tier2
     @polarion("RHEVM3-16928")
-    def test_07_hot_unplug_and_hot_plug_vnic_with_ovn_network(self):
+    def test_09_hot_unplug_and_hot_plug_vnic_with_ovn_network(self):
         """
         1. Hot-unplug OVN vNIC on VM-0
         2. Hot-plug OVN vNIC on VM-0
@@ -427,7 +478,7 @@ class TestOVNComponent(NetworkTest):
 
     @tier2
     @polarion("RHEVM3-16930")
-    def test_08_hot_update_vnic_profile_with_ovn_network(self):
+    def test_10_hot_update_vnic_profile_with_ovn_network(self):
         """
         1. Create vNIC profile: OVN_VNIC_PROFILE attached to net: OVN_NET_1
         2. Hot-unplug OVN vNIC on VM-0
@@ -438,16 +489,17 @@ class TestOVNComponent(NetworkTest):
         """
         testflow.step(
             "Creating vNIC profile: %s attached to network: %s",
-            ovn_conf.OVN_VNIC_PROFILE, ovn_conf.OVN_NET_1
+            ovn_conf.OVN_VNIC_PROFILE, ovn_conf.OVN_NET_NO_SUB_1
         )
         assert ll_networks.add_vnic_profile(
             positive=True, name=ovn_conf.OVN_VNIC_PROFILE,
-            data_center=self.dc, cluster=self.cl, network=ovn_conf.OVN_NET_1
+            data_center=self.dc, cluster=self.cl,
+            network=ovn_conf.OVN_NET_NO_SUB_1
         )
         # Remove vNIC profile during teardown
         self.remove_vnic_profile_params["1"] = {
             "name": ovn_conf.OVN_VNIC_PROFILE,
-            "network": ovn_conf.OVN_NET_1
+            "network": ovn_conf.OVN_NET_NO_SUB_1
         }
 
         testflow.step(
@@ -457,7 +509,8 @@ class TestOVNComponent(NetworkTest):
         )
         assert helper.check_hot_unplug_and_plug(
             vm=net_conf.VM_0, vnic=ovn_conf.OVN_VNIC,
-            vnic_profile=ovn_conf.OVN_VNIC_PROFILE, network=ovn_conf.OVN_NET_1
+            vnic_profile=ovn_conf.OVN_VNIC_PROFILE,
+            network=ovn_conf.OVN_NET_NO_SUB_1
         )
 
         testflow.step(
@@ -478,7 +531,7 @@ class TestOVNComponent(NetworkTest):
 
     @tier2
     @polarion("RHEVM3-17064")
-    def test_09_ovn_networks_separation(self):
+    def test_11_ovn_networks_separation(self):
         """
         1. Hot-unplug OVN vNIC from VM-0
         2. Attach VM-0 OVN vNIC with OVN network: OVN_NET_2
@@ -494,11 +547,12 @@ class TestOVNComponent(NetworkTest):
         testflow.step(
             "Hot-unplug vNIC: %s on VM: %s, change vNIC network to: %s, "
             "and hot-plug it back", ovn_conf.OVN_VNIC, net_conf.VM_0,
-            ovn_conf.OVN_NET_2
+            ovn_conf.OVN_NET_NO_SUB_2
         )
         assert helper.check_hot_unplug_and_plug(
             vm=net_conf.VM_0, vnic=ovn_conf.OVN_VNIC,
-            vnic_profile=ovn_conf.OVN_NET_2, network=ovn_conf.OVN_NET_2
+            vnic_profile=ovn_conf.OVN_NET_NO_SUB_2,
+            network=ovn_conf.OVN_NET_NO_SUB_2
         )
 
         testflow.step(
@@ -520,11 +574,11 @@ class TestOVNComponent(NetworkTest):
         testflow.step(
             "Hot-unplug vNIC: %s on VM: %s, change vNIC network to: %s, "
             "and hot-plug it back", ovn_conf.OVN_VNIC, net_conf.VM_1,
-            ovn_conf.OVN_NET_2
+            ovn_conf.OVN_NET_NO_SUB_2
         )
         assert helper.check_hot_unplug_and_plug(
             vm=net_conf.VM_1, vnic=ovn_conf.OVN_VNIC,
-            network=ovn_conf.OVN_NET_2
+            network=ovn_conf.OVN_NET_NO_SUB_2
         )
 
         testflow.step(
@@ -545,7 +599,7 @@ class TestOVNComponent(NetworkTest):
 
     @tier2
     @polarion("RHEVM3-17062")
-    def test_10_migrate_vm_different_host(self):
+    def test_12_migrate_vm_different_host(self):
         """
         1. Migrate VM-0 from host-0 to host-1
         2. Test ping from VM-1 to VM-0 IP during migration
@@ -576,7 +630,7 @@ class TestOVNComponent(NetworkTest):
 
     @tier2
     @polarion("RHEVM3-21702")
-    def test_11_copy_test_file_between_vms_on_different_hosts(self):
+    def test_13_copy_test_file_between_vms_on_different_hosts(self):
         """
         Copy big file between two VM's with OVN network that hosted on
         different hosts
@@ -606,7 +660,7 @@ class TestOVNComponent(NetworkTest):
 
     @tier2
     @polarion("RHEVM3-17236")
-    def test_12_ovn_network_with_subnet(self):
+    def test_14_ovn_network_with_subnet(self):
         """
         1. Create ifcfg file that prevents default route change
         2. Hot-unplug OVN vNIC on VM-0
@@ -630,11 +684,11 @@ class TestOVNComponent(NetworkTest):
             testflow.step(
                 "Hot-unplug vNIC: %s on VM: %s, change vNIC network to: %s, "
                 "and hot-plug it back", ovn_conf.OVN_VNIC, vm_name,
-                ovn_conf.OVN_NET_3
+                ovn_conf.OVN_NET_SUB
             )
             assert helper.check_hot_unplug_and_plug(
                 vm=vm_name, vnic=ovn_conf.OVN_VNIC,
-                vnic_profile=ovn_conf.OVN_NET_3, network=ovn_conf.OVN_NET_3
+                vnic_profile=ovn_conf.OVN_NET_SUB, network=ovn_conf.OVN_NET_SUB
             )
 
             testflow.step("Requesting IP from DHCP on VM: %s", vm_name)
@@ -650,7 +704,7 @@ class TestOVNComponent(NetworkTest):
 
     @tier2
     @polarion("RHEVM3-17436")
-    def test_13_ovn_network_with_subnet_validation(self):
+    def test_15_ovn_network_with_subnet_validation(self):
         """
         1. Check that VM-0 has DNS configured
         2. Check that VM-1 has DNS configured
@@ -670,7 +724,7 @@ class TestOVNComponent(NetworkTest):
 
     @tier2
     @polarion("RHEVM3-17437")
-    def test_14_ovn_network_with_subnet_ping(self):
+    def test_16_ovn_network_with_subnet_ping(self):
         """
         Test ping from VM-0 to VM-1 IP address
         """
@@ -681,7 +735,7 @@ class TestOVNComponent(NetworkTest):
 
     @tier2
     @polarion("RHEVM-19599")
-    def test_15_static_mac_change_on_ovn_network(self):
+    def test_17_static_mac_change_on_ovn_network(self):
         """
         Change MAC address of vNIC attached to OVN network and check
         network connectivity
@@ -708,7 +762,7 @@ class TestOVNComponent(NetworkTest):
 
     @tier2
     @polarion("RHEVM3-17365")
-    def test_16_migrate_vm_with_subnet(self):
+    def test_18_migrate_vm_with_subnet(self):
         """
         1. Migrate VM-0 from host-1 to host-0
         2. Test ping from VM-1 to VM-0 IP during VM-0 migration
@@ -739,7 +793,7 @@ class TestOVNComponent(NetworkTest):
 
     @tier2
     @polarion("RHEVM-22212")
-    def test_17_long_network_names(self):
+    def test_19_long_network_names(self):
         """
         1. Import network with long name to engine
         2. Attach network to OVN vNIC on VM-0 and VM-1
@@ -772,6 +826,36 @@ class TestOVNComponent(NetworkTest):
                 "Testing ping from VM: %s to IP: %s", net_conf.VM_0, ip
             )
             assert helper.check_ping(vm=net_conf.VM_0, dst_ip=ip, count=3)
+
+    @tier2
+    @bz({"1503566": {}})
+    @polarion("RHEVM-24247")
+    def test_20_ovn_subnet_without_gateway(self):
+        """
+        VM IP assignment on OVN network subnet without gateway
+        """
+        testflow.step(
+            "Hot-unplug vNIC: %s on VM: %s, change vNIC network to: %s, "
+            "and hot-plug it back", ovn_conf.OVN_VNIC, net_conf.VM_0,
+            ovn_conf.OVN_NET_SUB_NO_GW
+        )
+        assert helper.check_hot_unplug_and_plug(
+            vm=net_conf.VM_0, vnic=ovn_conf.OVN_VNIC,
+            vnic_profile=ovn_conf.OVN_NET_SUB_NO_GW,
+            network=ovn_conf.OVN_NET_SUB_NO_GW
+        )
+
+        testflow.step("Requesting IP from DHCP on VM: %s", net_conf.VM_0)
+        ip = helper.set_ip_non_mgmt_nic(
+            vm=net_conf.VM_0, address_type="dynamic"
+        )
+
+        testflow.step(
+            "Verifying that VM: %s received valid IP: %s", net_conf.VM_0, ip
+        )
+        assert netaddr.IPAddress(ip) in netaddr.IPNetwork(
+            ovn_conf.OVN_NETS_CIDR
+        )
 
 
 @pytest.mark.usefixtures(
@@ -806,13 +890,13 @@ class TestOVNPerformance(NetworkTest):
         net_conf.VM_0: {
             "1": {
                 "name": ovn_conf.OVN_VNIC,
-                "network": ovn_conf.OVN_NET_4
+                "network": ovn_conf.OVN_NET_PERF
             }
         },
         net_conf.VM_1: {
             "1": {
                 "name": ovn_conf.OVN_VNIC,
-                "network": ovn_conf.OVN_NET_4
+                "network": ovn_conf.OVN_NET_PERF
             }
         }
     }

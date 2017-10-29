@@ -45,7 +45,7 @@ OVN_EXTERNAL_PROVIDER_PARAMS = {
 }
 
 # OVN authorization tests parameters
-# JDBC internal settings
+# JDBC settings
 OVN_JDBC_GROUP = "OvnAdmins"
 OVN_JDBC_USERNAME = "ovn_admin@internal"
 OVN_JDBC_USERNAME_PASSWORD = "123456"
@@ -64,7 +64,7 @@ OVN_LDAP_USERNAME_PASSWORD = "Heslo123"
 # Negative authorization test password
 OVN_WRONG_PASSWORD = "1234567"
 
-# OVN Configuration file (values to be changed)
+# OVN configuration file (values to be changed)
 OVN_AUTHENTICATION_BY_GROUP_CONF = {
     "AUTH": {
         "auth-plugin": "auth.plugins.ovirt:AuthorizationByGroup"
@@ -82,41 +82,64 @@ OVN_AUTHENTICATION_BY_GROUP_CONF = {
 OVN_PROVIDER = None
 
 # OVN networks
-OVN_NET_NAMES = ["ovn_net_%s" % i for i in range(1, 5)]
-OVN_NET_1 = OVN_NET_NAMES[0]
-OVN_NET_2 = OVN_NET_NAMES[1]
-OVN_NET_3 = OVN_NET_NAMES[2]
-OVN_NET_4 = OVN_NET_NAMES[3]
-
-# OVN DHCP subnet settings
-OVN_NETS_CIDR = "172.16.0.0/24"
-OVN_NETS_DNS = ["8.8.8.8"]
-
-# External provider long network names test settings
+OVN_NET_NO_SUB_1 = "ovn_net_no_subnet_1"
+OVN_NET_NO_SUB_2 = "ovn_net_no_subnet_2"
+OVN_NET_SUB_TO_BE_ATTACHED = "ovn_net_subnet_attachment"
+OVN_NET_SUB = "ovn_net_subnet"
+OVN_NET_SUB_NO_GW = "ovn_net_subnet_no_gw"
+OVN_NET_PERF = "ovn_net_performance"
+# Long network names test
 OVN_LONG_NET_SPECIAL_CHARS = "A*_-&$()@"
 OVN_LONG_NET_15_CHARS_SPECIAL = "a" * 6 + OVN_LONG_NET_SPECIAL_CHARS
 OVN_LONG_NET_20_CHARS = "a" * 20
 OVN_LONG_NET_256_CHARS_SPECIAL = "A" * 247 + OVN_LONG_NET_SPECIAL_CHARS
 OVN_LONG_NET_256_CHARS = "a" * 256
 
+# OVN DHCP subnet settings
+OVN_NETS_CIDR = "172.16.0.0/24"
+OVN_NETS_DNS = ["8.8.8.8"]
+
 # OVN networks for TestOVNComponent
 OVN_NETS = {
-    OVN_NET_1: None,
-    OVN_NET_2: None,
-    OVN_NET_3: {
-        "name": "%s_subnet" % OVN_NET_3,
+    OVN_NET_NO_SUB_1: None,
+    OVN_NET_NO_SUB_2: None,
+    OVN_NET_SUB: {
+        "name": "%s_subnet" % OVN_NET_SUB,
         "cidr": OVN_NETS_CIDR,
         "enable_dhcp": True,
         "network_id": None,
         "dns_nameservers": OVN_NETS_DNS,
         "ip_version": 4,
         "gateway_ip": "172.16.0.254"
-    }
+    },
+    OVN_NET_SUB_NO_GW: {
+        "name": "%s_subnet" % OVN_NET_SUB_NO_GW,
+        "cidr": OVN_NETS_CIDR,
+        "enable_dhcp": True,
+        "ip_version": 4
+    },
+    OVN_NET_SUB_TO_BE_ATTACHED: None
+}
+
+TEST_SUBNET_ATTACHMENT_1 = {
+    "name": "ovn_network_attachment_subnet_1",
+    "cidr": "10.0.0.0/24",
+    "enable_dhcp": True,
+    "ip_version": 4,
+    "network_id": None
+}
+
+TEST_SUBNET_ATTACHMENT_2 = {
+    "name": "ovn_network_attachment_subnet_2",
+    "cidr": "10.1.0.0/24",
+    "enable_dhcp": True,
+    "ip_version": 4,
+    "network_id": None
 }
 
 # OVN networks for TestOVNPerformance
 OVN_NETS_PERF = {
-    OVN_NET_4: None
+    OVN_NET_PERF: None
 }
 
 OVN_LONG_NETS = {
@@ -177,7 +200,8 @@ OVN_VMS_RESOURCES = {
 }
 
 # Hosts performance counters to be used as baseline for VM-to-VM benchmark
-# List of two elements: avg CPU usage and avg memory usage
+# List of three elements:
+# avg CPU usage, avg memory usage and file transfer rate
 OVN_HOST_PERF_COUNTERS = None
 
 # get_performance_counters parameters:
@@ -219,7 +243,7 @@ OVN_DRIVER_REMOVE_RPMS = [
     "python-openvswitch"
 ]
 
-# List of OVN servers with for firewalld started state
+# List of OVN servers with firewalld service started state
 OVN_FIREWALLD_STARTED_SERVERS = []
 
 # OVN network service ports

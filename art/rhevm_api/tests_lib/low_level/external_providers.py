@@ -674,7 +674,7 @@ class ExternalNetworkProvider(OpenStackProvider):
         Handler for provider HTTP server requests
 
         Args:
-            request (str): Server request type: "get", post" or "delete"
+            request (str): Server request type: "get", post", "put" or "delete"
             url (str): Server URL address
             json (dict): JSON request to be used in conjunction with post
                 request
@@ -742,7 +742,7 @@ class ExternalNetworkProvider(OpenStackProvider):
 
         logger.debug("Keystone service returned response: %s", response)
 
-        if ret_code != requests.codes.ok:
+        if ret_code not in self._create_valid_return_codes:
             logger.error("Keystone returned unexpected error: %s", ret_code)
             raise apis_exceptions.APITokenError
 
@@ -952,9 +952,6 @@ class ExternalNetworkProvider(OpenStackProvider):
                 "ip_version": 4,
                 "gateway_ip": "192.168.1.254"
             }
-
-            The network_id value should be set to None, it gets filled at
-            runtime
 
         """
         logger.info("Adding subnet: %s to provider", subnet.get("name"))
