@@ -35,7 +35,7 @@ from art.rhevm_api.tests_lib.low_level.vms import (
     getVmDisks,
 )
 from art.test_handler.settings import ART_CONFIG
-from utilities.jobs import Job, JobsSet
+from art.rhevm_api.utils.jobs import Job, JobsSet
 from art.rhevm_api.utils.test_utils import searchForObj
 import art.test_handler.exceptions as errors
 from art.test_handler import exceptions

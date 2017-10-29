@@ -8,7 +8,7 @@ import shlex
 import urllib
 
 from concurrent.futures import ThreadPoolExecutor
-from utilities.timeout import TimeoutingSampler
+from art.core_api.timeout import TimeoutingSampler
 from art.rhevm_api.tests_lib.low_level import (
     disks as disks,
     general as ll_general,

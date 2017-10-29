@@ -23,7 +23,7 @@ from Queue import Queue
 from threading import Thread
 
 from concurrent.futures import ThreadPoolExecutor
-from utilities.jobs import Job, JobsSet
+from art.rhevm_api.utils.jobs import Job, JobsSet
 from utilities.machine import Machine, LINUX
 
 import art.rhevm_api.tests_lib.low_level.general as ll_general

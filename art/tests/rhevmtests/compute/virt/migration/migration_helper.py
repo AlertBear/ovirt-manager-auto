@@ -18,7 +18,7 @@ import config
 import rhevmtests.compute.virt.helper as helper
 import rhevmtests.helpers as helpers
 from art.unittest_lib.common import testflow
-from utilities import jobs
+from art.rhevm_api.utils import jobs
 
 logger = logging.getLogger("Virt_Network_Migration_Init")
 

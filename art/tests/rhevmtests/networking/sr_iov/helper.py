@@ -20,7 +20,7 @@ from art.rhevm_api.tests_lib.low_level import (
     events as ll_events,
     hosts as ll_hosts
 )
-from utilities import jobs
+from art.rhevm_api.utils import jobs
 
 logger = logging.getLogger("SR_IOV_Helper")
 

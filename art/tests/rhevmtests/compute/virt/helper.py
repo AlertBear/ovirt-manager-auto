@@ -38,7 +38,8 @@ from art.test_handler import exceptions
 from art.unittest_lib import testflow
 from rhevmtests import helpers
 from rhevmtests.networking import config
-from utilities import jobs, utils
+from utilities import utils
+from art.rhevm_api.utils import jobs
 from utilities.rhevm_tools import errors
 
 logger = logging.getLogger("Virt_Helper")

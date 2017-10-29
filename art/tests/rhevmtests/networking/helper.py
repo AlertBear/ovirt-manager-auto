@@ -11,7 +11,7 @@ import random
 import re
 import shlex
 
-from utilities import jobs
+from art.rhevm_api.utils import jobs
 from rhevmtests.networking import config
 from rhevmtests import helpers
 

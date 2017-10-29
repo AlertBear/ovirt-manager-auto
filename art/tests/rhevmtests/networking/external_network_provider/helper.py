@@ -23,7 +23,7 @@ from art.rhevm_api.tests_lib.low_level import (
 )
 from art.test_handler import exceptions
 from art.unittest_lib import testflow
-from utilities import jobs
+from art.rhevm_api.utils import jobs
 
 logger = logging.getLogger("external_network_provider_helper")
 

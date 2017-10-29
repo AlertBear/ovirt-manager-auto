@@ -9,7 +9,7 @@ import logging
 from datetime import datetime
 
 import config
-import utilities.timeout as timeout_api
+import art.core_api.timeout as timeout_api
 from art.rhevm_api.tests_lib.high_level import (
     vmpools as hl_vmpools,
 )

@@ -21,7 +21,7 @@ from art.rhevm_api.tests_lib.low_level import (
     vms as ll_vms,
     hosts as ll_hosts
 )
-from utilities import jobs
+from art.rhevm_api.utils import jobs
 
 logger = logging.getLogger("Migration_Network_Helper")
 

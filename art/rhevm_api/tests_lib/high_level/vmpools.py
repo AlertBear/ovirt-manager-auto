@@ -28,7 +28,7 @@ from art.rhevm_api.tests_lib.low_level import (
 )
 from art.test_handler.settings import ART_CONFIG
 from art.test_handler import exceptions
-import utilities.timeout as timeout_api
+import art.core_api.timeout as timeout_api
 
 ENUMS = ART_CONFIG['elements_conf']['RHEVM Enums']
 

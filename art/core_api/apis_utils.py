@@ -23,7 +23,7 @@ import logging
 from collections import namedtuple
 
 from utilities.utils import generateShortGuid
-from utilities.timeout import TimeoutingSampler as _TimeoutingSampler
+from timeout import TimeoutingSampler as _TimeoutingSampler
 from art.core_api.apis_exceptions import APITimeout, EntityNotFound
 import art.test_handler.settings as settings
 
