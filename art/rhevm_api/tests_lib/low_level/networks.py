@@ -1579,15 +1579,20 @@ def get_network_cluster(network, datacenter=None):
     Returns:
         Cluster: Cluster object or None
     """
+    clusters_and_datacenter_ids_from_clusters = []
     net_obj = find_network(network=network, data_center=datacenter)
     network_dc = ll.datacenters.get_data_center(
         datacenter=datacenter or net_obj.data_center.id, key=(
             "id" if not datacenter else "name"
         )
     )
-    clusters_and_datacenter_ids_from_clusters = [
-        (i, i.data_center.id) for i in ll.clusters.get_cluster_list()
-    ]
+    for cl in ll.clusters.get_cluster_list():
+        dc = cl.data_center
+        if dc:
+            clusters_and_datacenter_ids_from_clusters.append(
+                (cl, dc.id)
+            )
+
     cluster = [
         x[0] for x in clusters_and_datacenter_ids_from_clusters if
         x[1] == network_dc.id
