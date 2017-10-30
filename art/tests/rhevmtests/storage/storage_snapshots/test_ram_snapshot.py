@@ -195,7 +195,7 @@ class TestCase5139(ReturnToSnapshot):
         self.return_to_ram_snapshot()
 
 
-@bz({'1461811': {}})
+@bz({'1507511': {}})
 class TestCase5138(ReturnToSnapshot):
     """
     Polarion Test Case 5138 - Restore RAM Snapshot
