@@ -272,7 +272,7 @@ class TestCase18215(BaseTestCase):
     """
     __test__ = True
 
-    @polarion("RHEVM3-18215")
+    @polarion("RHEVM-18215")
     @tier2
     def test_upgrade_dc(self):
         self.data_center_upgrade()
@@ -285,7 +285,7 @@ class TestCase18303(TestCase):
     __test__ = True
     storage_format = 'v4'
 
-    @polarion("RHEVM3-18303")
+    @polarion("RHEVM-18303")
     @tier2
     def test_verify_new_domain_version(self):
         storage_domain_name = ll_sd.getStorageDomainNamesForType(
@@ -311,7 +311,7 @@ class TestCase18307(BaseTestCase):
     """
     __test__ = True
 
-    @polarion("RHEVM3-18307")
+    @polarion("RHEVM-18307")
     @tier3
     @bz({'1450692': {}})
     def test_verify_new_domain_version(self):
@@ -351,7 +351,7 @@ class TestCase18336(BaseTestCase2):
     snap_count = 2
     installation = False
 
-    @polarion("RHEVM3-18336")
+    @polarion("RHEVM-18336")
     @tier4
     @bz({'1482454': {}})
     def test_failure_engine_during_amend(self):
@@ -416,7 +416,7 @@ class TestCase18337(BaseTestCase2):
     snap_count = 5
     installation = False
 
-    @polarion("RHEVM3-18337")
+    @polarion("RHEVM-18337")
     @tier4
     @bz({'1450692': {}})
     def test_failure_of_SPM_during_amend(self):
@@ -497,7 +497,7 @@ class TestCase18338(BaseTestCase3):
     polarion_test_case = '18338'
     snap_count = 5
 
-    @polarion("RHEVM3-18338")
+    @polarion("RHEVM-18338")
     @tier2
     def test_import_vm_with_snapshot_from_export_domain(self):
         testflow.step(
@@ -587,7 +587,7 @@ class TestCase18340(TestCase):
     __test__ = True
     new_disks_names = []
 
-    @polarion("RHEVM3-18340")
+    @polarion("RHEVM-18340")
     @tier2
     @bz({'1490119': {}})
     def test_create_new_thin_vm_from_template(self):
@@ -664,7 +664,7 @@ class TestCase18305(BaseTestCase):
     """
     __test__ = True
 
-    @polarion("RHEVM3-18305")
+    @polarion("RHEVM-18305")
     @tier4
     @bz({'1482454': {}})
     def test_restart_engine_during_upgrade_cluster(self):
@@ -704,7 +704,7 @@ class TestCase18334(BaseTestCase):
     """
     __test__ = True
 
-    @polarion("RHEVM3-18334")
+    @polarion("RHEVM-18334")
     @tier4
     @bz({'1482454': {}})
     def test_restart_engine_during_upgrade_dc(self):
@@ -745,7 +745,7 @@ class TestCase18343(BaseTestCase3):
     snap_count = 2
     new_storage_domains_count = 2
 
-    @polarion("RHEVM3-18343")
+    @polarion("RHEVM-18343")
     @tier2
     @bz({'1497117': {}})
     def test_live_migration_old_image(self):
@@ -770,7 +770,7 @@ class TestCase18344(BaseTestCase3):
     snap_count = 2
     new_storage_domains_count = 2
 
-    @polarion("RHEVM3-18344")
+    @polarion("RHEVM-18344")
     @tier2
     def test_cold_migration_old_image(self):
         self.migration_test(live=config.COLD_MIGRATION)
@@ -809,7 +809,7 @@ class TestCase18346(BaseTestCase):
     image_name = config.GLANCE_QCOW2v2_IMAGE_NAME
 
     @bz({'1497424': {}})
-    @polarion("RHEVM3-18346")
+    @polarion("RHEVM-18346")
     @tier2
     def test_live_merge_old_version_image_with_new_version_image(self):
         testflow.step(
@@ -939,7 +939,7 @@ class TestCase18339(BaseTestCase3):
     snap_count = 5
     new_storage_domains_count = 2
 
-    @polarion("RHEVM3-18339")
+    @polarion("RHEVM-18339")
     @tier3
     def test_storage_migration_old_version_to_new_version_dc(self):
         self.disk_name0 = ll_vms.getVmDisks(self.vm_name)[0].get_alias()
@@ -1053,7 +1053,7 @@ class TestCase18335(BaseTestCase):
     polarion_test_case = '18335'
     new_storage_domains_count = 2
 
-    @polarion("RHEVM3-18335")
+    @polarion("RHEVM-18335")
     @tier4
     def test_spm_failure_after_upgrade_dc_and_activate_sd(self):
         testflow.step("Deactivate non master domain %s", self.sd_names[1])
@@ -1099,7 +1099,7 @@ class TestCase18347(BaseTestCase2):
     snap_count = 1
     installation = False
 
-    @polarion("RHEVM3-18347")
+    @polarion("RHEVM-18347")
     @tier3
     def test_amend_volume_while_vm_up(self):
         self.disk_name = ll_vms.getVmDisks(self.vm_name)[0].get_alias()
@@ -1130,7 +1130,7 @@ class TestCase18348(BaseTestCase2):
     snap_count = 1
     installation = False
 
-    @polarion("RHEVM3-18348")
+    @polarion("RHEVM-18348")
     @tier3
     def test_amend_old_dc(self):
         self.disk_name = ll_vms.getVmDisks(self.vm_name)[0].get_alias()
@@ -1163,7 +1163,7 @@ class TestCase18349(TestCase):
     volume_format = config.DISK_FORMAT_RAW
     volume_type = False
 
-    @polarion("RHEVM3-18349")
+    @polarion("RHEVM-18349")
     @tier3
     def test_amend_template_disk(self):
         testflow.step(
@@ -1198,7 +1198,7 @@ class TestCase18350(BaseTestCase2):
     snap_count = 1
     installation = False
 
-    @polarion("RHEVM3-18350")
+    @polarion("RHEVM-18350")
     @tier3
     def test_amend_sd_in_maintenance(self):
         self.disk_name = ll_vms.getVmDisks(self.vm_name)[0].get_alias()
@@ -1230,7 +1230,7 @@ class TestCase18351(BaseTestCase2):
     snap_count = 1
     installation = False
 
-    @polarion("RHEVM3-18351")
+    @polarion("RHEVM-18351")
     @tier3
     def test_amend_non_existing_disk(self):
         self.disk_name = storage_helpers.create_unique_object_name(

@@ -198,7 +198,7 @@ class TestCase17616(BaseStorageVmLeaseTestWithFixtures):
     """
     __test__ = False
 
-    @polarion("RHEVM3-17616")
+    @polarion("RHEVM-17616")
     @tier4
     def test_ha_failover_unreachable_host_loosing_power(self):
         # TODO: write test
@@ -215,7 +215,7 @@ class TestCase17618(BaseStorageVmLeaseTestWithFixtures):
     5. Access the vm after it's active on the other host
     """
 
-    @polarion("RHEVM3-17618")
+    @polarion("RHEVM-17618")
     @tier2
     def test_ha_failove_unreachable_host_storage_inaccesible(self):
         self.create_vms()
@@ -235,7 +235,7 @@ class TestCase17619(BaseStorageVmLeaseTestWithFixtures):
     5. Access the vm after it's active on the other host
     """
 
-    @polarion("RHEVM3-17619")
+    @polarion("RHEVM-17619")
     @tier2
     def test_ha_failover_unreachable_host_vm_terminated(self):
         self.create_vms()
@@ -259,7 +259,7 @@ class TestCase17620(BaseStorageVmLeaseTestWithFixtures):
     # Is that test case is supposed to run only on NFS? Ask Raz.
     __test__ = config.STORAGE_TYPE_NFS in ART_CONFIG['RUN']['storages']
 
-    @polarion("RHEVM3-17620")
+    @polarion("RHEVM-17620")
     @tier2
     def test_ha_failover_unreachable_host_storage_accessible(self):
         self.create_vms()
@@ -280,7 +280,7 @@ class TestCase17621(BaseStorageVmLeaseTestWithFixtures):
         won't failover to another host
     """
 
-    @polarion("RHEVM3-17621")
+    @polarion("RHEVM-17621")
     @tier3
     def test_ha_failover_storage_innaccessible_all_hosts(self):
         self.create_vms()
@@ -328,7 +328,7 @@ class TestCase17623(BaseStorageVmLeaseTestWithFixtures):
     """
     vm_lease = False
 
-    @polarion("RHEVM3-17623")
+    @polarion("RHEVM-17623")
     @tier2
     def test_ha_failover_existing_ha_vm(self):
         self.create_vms()
@@ -355,7 +355,7 @@ class TestCase17624(BaseStorageVmLeaseTestWithFixtures):
         stays in status UNKNOWN
     """
 
-    @polarion("RHEVM3-17624")
+    @polarion("RHEVM-17624")
     @tier3
     def test_ha_failover_removing_vm_lease(self):
         self.create_vms()
@@ -381,7 +381,7 @@ class TestCase18184(BaseStorageVmLeaseTestWithFixtures):
     vm_lease = False
 
     @bz({'1484053': {}})
-    @polarion("RHEVM3-18184")
+    @polarion("RHEVM-18184")
     @tier3
     def test_create_lease_while_vm_up(self):
         self.create_vms()
@@ -409,7 +409,7 @@ class TestCase18185(BaseStorageVmLeaseTestWithFixtures):
     """
 
     @bz({'1484053': {}})
-    @polarion("RHEVM3-18185")
+    @polarion("RHEVM-18185")
     @tier3
     def test_ha_remove_lease_while_vm_up(self):
         self.create_vms()
@@ -438,7 +438,7 @@ class TestCase18186(BaseStorageVmLeaseTestWithFixtures):
     """
     vm_lease = False
 
-    @polarion("RHEVM3-18186")
+    @polarion("RHEVM-18186")
     @tier4
     def test_ha_spm_unreachable(self):
         self.spm = ll_hosts.get_spm_host(config.HOSTS)
@@ -485,7 +485,7 @@ class TestCase17625(BaseStorageVmLeaseTestWithFixtures):
     """
 
     @bz({'1484053': {}})
-    @polarion("RHEVM3-17625")
+    @polarion("RHEVM-17625")
     @tier4
     def test_ha_failover_multiple_hosts_unreachable(self):
         self.create_vms()
@@ -535,7 +535,7 @@ class TestCase17629(BaseStorageVmLeaseTestWithFixtures):
     6. Access the vm after it's active on the other host
     """
 
-    @polarion("RHEVM3-17629")
+    @polarion("RHEVM-17629")
     @tier4
     def test_ha_failover_host_unreachable_engine_restart(self):
         self.create_vms()
@@ -557,7 +557,7 @@ class TestCase17630(BaseStorageVmLeaseTestWithFixtures):
     5. Restart sanlock -> VM lease is release and VM starts in another host
     """
 
-    @polarion("RHEVM3-17630")
+    @polarion("RHEVM-17630")
     @tier4
     def test_ha_failover_while_sanlock_restart(self):
         self.create_vms()
@@ -585,7 +585,7 @@ class TestCase17634(BaseStorageVmLeaseTestWithFixtures):
     """
     vm_lease = False
 
-    @polarion("RHEVM3-17634")
+    @polarion("RHEVM-17634")
     @tier4
     def test_ha_failover_master_storage_domain_inaccessible(self):
         self.create_vms()
@@ -637,7 +637,7 @@ class TestCase17635(BaseStorageVmLeaseTestWithFixtures):
     __test__ = False
     num_of_vms = 2
 
-    @polarion("RHEVM3-17635")
+    @polarion("RHEVM-17635")
     @tier4
     def test_ha_failover_multiple_ha_vms(self):
         self.create_vms()
@@ -650,7 +650,7 @@ class TestCase17635(BaseStorageVmLeaseTestWithFixtures):
 class TestCase17637(BaseStorageVmLeaseTestWithFixtures):
     __test__ = False
 
-    @polarion("RHEVM3-17637")
+    @polarion("RHEVM-17637")
     @tier4
     def test_ha_failover_upgrade_storage_domain_v4(self):
         # TODO: write test
@@ -679,7 +679,7 @@ class TestCase18333(BaseStorageVMLeaseTest):
     vm_args = {'clone_from_template': False}
     vm_lease = False
 
-    @polarion("RHEVM3-18333")
+    @polarion("RHEVM-18333")
     @tier4
     def test_ha_failover_attach_v3_storage_domain(self):
         self.create_vms()
@@ -704,7 +704,7 @@ class TestCase17638(BaseStorageVmLeaseTestWithFixtures):
     """
     __test__ = False
 
-    @polarion("RHEVM3-17638")
+    @polarion("RHEVM-17638")
     @tier4
     def test_ha_failover_xleases_corrupted(self):
         # TODO: write test
@@ -720,7 +720,7 @@ class TestCase17639(BaseStorageVmLeaseTestWithFixtures):
     """
     __test__ = False
 
-    @polarion("RHEVM3-17639")
+    @polarion("RHEVM-17639")
     @tier4
     def test_ha_failover_wiouth_rw_permissions_xleases_volume(self):
         # TODO: write test
@@ -738,7 +738,7 @@ class TestCase18187(BaseStorageVmLeaseTestWithFixtures):
     """
 
     @bz({'1484053': {}})
-    @polarion("RHEVM3-18187")
+    @polarion("RHEVM-18187")
     @tier3
     def test_take_snapshot_vm_with_lease(self):
         self.create_vms()
@@ -830,7 +830,7 @@ class TestCase18162(TestCaseBaseSnapshot):
     """
 
     @bz({'1484863': {}})
-    @polarion("RHEVM3-18162")
+    @polarion("RHEVM-18162")
     @tier3
     def test_ha_failover_with_preview_snapshot(self):
         self.snapshot_failover_flow()
@@ -850,7 +850,7 @@ class TestCase17641(TestCaseBaseSnapshot):
     live_snapshot = True
 
     @bz({'1484863': {}})
-    @polarion("RHEVM3-17641")
+    @polarion("RHEVM-17641")
     @tier3
     def test_ha_failover_with_live_preview_snapshot(self):
         self.snapshot_failover_flow()
@@ -882,7 +882,7 @@ class TestCase17644(BaseStorageVMLeaseTest):
     """
     vm_args = {'clone_from_template': False}
 
-    @polarion("RHEVM3-17644")
+    @polarion("RHEVM-17644")
     @tier4
     def test_ha_failover_imported_vm_from_another_dc(self):
         self.create_vms()
@@ -955,7 +955,7 @@ class TestCase18217(BaseStorageVMLeaseTest):
     """
     vm_args = {'clone_from_template': False}
 
-    @polarion("RHEVM3-18217")
+    @polarion("RHEVM-18217")
     @tier4
     def test_ha_failover_attached_storage_domain(self):
         self.create_vms()
@@ -1008,7 +1008,7 @@ class TestCase17665(BaseStorageVmLeaseTestWithFixtures):
     vm_lease = False
 
     @bz({'1459156': {}})
-    @polarion("RHEVM3-17665")
+    @polarion("RHEVM-17665")
     @tier4
     def test_ha_failover_disk_different_storage_domains(self):
         self.create_vms()
@@ -1045,7 +1045,7 @@ class TestCase18188(BaseStorageVmLeaseTestWithFixtures):
     ssh_vm = False
 
     @bz({'1484053': {}})
-    @polarion("RHEVM3-18188")
+    @polarion("RHEVM-18188")
     @tier3
     def test_ha_failover_diskless(self):
         assert ll_vms.addVm(
@@ -1088,7 +1088,7 @@ class TestCase18216(BaseStorageVMLeaseTest):
     """
 
     @bz({'1481691': {}})
-    @polarion("RHEVM3-18216")
+    @polarion("RHEVM-18216")
     @tier3
     def test_ha_failover_from_template_with_lease(self):
         self.create_vms()
@@ -1129,7 +1129,7 @@ class TestCase18218(BaseStorageVmLeaseTestWithFixtures):
     """
     vm_leases = False
 
-    @polarion("RHEVM3-18218")
+    @polarion("RHEVM-18218")
     @tier4
     def test_detach_storage_domain_with_leases(self):
         self.create_vms()

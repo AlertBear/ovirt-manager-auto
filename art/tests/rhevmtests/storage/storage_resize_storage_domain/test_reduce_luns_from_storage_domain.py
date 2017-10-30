@@ -86,7 +86,7 @@ class TestCase17508(ReduceLUNVerifyDataIntegrity):
     """
     __test__ = True
 
-    @polarion("RHEVM3-17508")
+    @polarion("RHEVM-17508")
     @tier2
     def test_reduce_single_lun_data_integrity(self):
         self.reduce_lun_with_data_integrity()
@@ -100,7 +100,7 @@ class TestCase17423(ReduceLUNVerifyDataIntegrity):
     __test__ = True
     extend_indices = [1, 2]
 
-    @polarion("RHEVM3-17423")
+    @polarion("RHEVM-17423")
     @tier3
     def test_reduce_multiple_luns_data_integrity(self):
         self.reduce_lun_with_data_integrity()
@@ -112,7 +112,7 @@ class TestCase18164(BaseTestCase):
     """
     __test__ = True
 
-    @polarion("RHEVM3-17510")
+    @polarion("RHEVM-17510")
     @tier2
     def test_reduce_single_lun(self):
         self.reduce_lun()
@@ -124,7 +124,7 @@ class TestCase17510(BaseTestCase):
     """
     __test__ = True
 
-    @polarion("RHEVM3-17510")
+    @polarion("RHEVM-17510")
     @tier3
     def test_reduce_and_extend_single_lun(self):
         self.reduce_lun()
@@ -147,7 +147,7 @@ class TestCase17427(BaseTestCase):
     __test__ = True
     wait = False
 
-    @polarion("RHEVM3-17427")
+    @polarion("RHEVM-17427")
     @tier3
     def test_reduce_and_extend_single_lun(self):
         self.reduce_lun()
@@ -179,7 +179,7 @@ class TestCase17549(BaseTestCase):
     __test__ = True
     positive = False
 
-    @polarion("RHEVM3-17427")
+    @polarion("RHEVM-17427")
     @tier3
     def test_treshold_on_remaining_lun(self):
         testflow.step(

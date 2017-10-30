@@ -142,7 +142,7 @@ class TestCase19569(BaseTestCase):
     """
     __test__ = True
 
-    @polarion("RHEVM3-19569")
+    @polarion("RHEVM-19569")
     @tier2
     def test_update_discard_flag_on_storage_domain(self):
         """
@@ -178,7 +178,7 @@ class DiscardVariousDeleteVerbs(BaseDelete):
     """
     __test__ = True
 
-    @polarion("RHEVM3-17273")
+    @polarion("RHEVM-17273")
     @tier2
     def test_discard_data_after_delete_disk(self):
         """
@@ -188,7 +188,7 @@ class DiscardVariousDeleteVerbs(BaseDelete):
         self.delete_verb = config.DELETE_DISK
         self.discard_both_allocation_policies()
 
-    @polarion("RHEVM3-17572")
+    @polarion("RHEVM-17572")
     @tier3
     def test_discard_data_after_live_merge(self):
         """
@@ -198,7 +198,7 @@ class DiscardVariousDeleteVerbs(BaseDelete):
         self.delete_verb = config.LIVE_MERGE
         self.discard_snapshot_flows()
 
-    @polarion("RHEVM3-17573")
+    @polarion("RHEVM-17573")
     @tier3
     def test_discard_data_after_cold_merge(self):
         """
@@ -208,7 +208,7 @@ class DiscardVariousDeleteVerbs(BaseDelete):
         self.delete_verb = config.COLD_MERGE
         self.discard_snapshot_flows()
 
-    @polarion("RHEVM3-17574")
+    @polarion("RHEVM-17574")
     @tier3
     def test_discard_data_after_merge_with_memory(self):
         """
@@ -218,7 +218,7 @@ class DiscardVariousDeleteVerbs(BaseDelete):
         self.delete_verb = config.COLD_MERGE_WITH_MEMORY
         self.discard_snapshot_flows()
 
-    @polarion("RHEVM3-17575")
+    @polarion("RHEVM-17575")
     @tier3
     def test_discard_data_after_restore_snapshot(self):
         """
@@ -228,7 +228,7 @@ class DiscardVariousDeleteVerbs(BaseDelete):
         self.delete_verb = config.RESTORE_SNAPSHOT
         self.discard_snapshot_flows()
 
-    @polarion("RHEVM3-17576")
+    @polarion("RHEVM-17576")
     @tier3
     def test_discard_data_after_snapshot_preview_and_undo(self):
         """
@@ -238,7 +238,7 @@ class DiscardVariousDeleteVerbs(BaseDelete):
         self.delete_verb = config.PREVIEW_UNDO_SNAPSHOT
         self.discard_snapshot_flows()
 
-    @polarion("RHEVM3-19397")
+    @polarion("RHEVM-19397")
     @tier3
     def test_discard_data_after_restore_snapshot_with_memory(self):
         """
@@ -248,7 +248,7 @@ class DiscardVariousDeleteVerbs(BaseDelete):
         self.delete_verb = config.RESTORE_SNAPSHOT_WITH_MEMORY
         self.discard_snapshot_flows()
 
-    @polarion("RHEVM3-19398")
+    @polarion("RHEVM-19398")
     @tier3
     def test_discard_data_after_remove_snapshot_single_disk(self):
         """
@@ -258,7 +258,7 @@ class DiscardVariousDeleteVerbs(BaseDelete):
         self.delete_verb = config.REMOVE_SNAPSHOT_SINGLE_DISK
         self.discard_snapshot_flows()
 
-    @polarion("RHEVM3-17571")
+    @polarion("RHEVM-17571")
     @tier3
     def test_discard_data_after_cold_move(self):
         """
@@ -268,7 +268,7 @@ class DiscardVariousDeleteVerbs(BaseDelete):
         self.delete_verb = config.COLD_MOVE
         self.discard_both_allocation_policies()
 
-    @polarion("RHEVM3-19396")
+    @polarion("RHEVM-19396")
     @tier3
     def test_discard_data_after_live_storage_migration(self):
         """

@@ -167,7 +167,7 @@ class TestCase18863(BasicEnvironmentSetUp):
             "Snapshot operation failed"
         )
 
-    @polarion("RHEVM3-18863")
+    @polarion("RHEVM-18863")
     @tier2
     def test_live_snapshot(self):
         """
@@ -515,7 +515,7 @@ class TestCase18886(TestCase):
     snap_count = 2
     polarion_test_case = '18886'
 
-    @polarion("RHEVM3-18886")
+    @polarion("RHEVM-18886")
     @tier3
     def test_commit_snapshot(self):
 

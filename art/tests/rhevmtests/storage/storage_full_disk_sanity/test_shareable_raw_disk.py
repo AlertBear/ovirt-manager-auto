@@ -225,7 +225,7 @@ class TestCase16687(TestCase):
         'shareable': True,
     }
 
-    @polarion("RHEVM3-16687")
+    @polarion("RHEVM-16687")
     @tier3
     def test_move_shared_disk_to_gluster_domain(self):
         """
@@ -247,7 +247,7 @@ class TestCase16688(TestCase):
     __test__ = config.STORAGE_TYPE_GLUSTER in ART_CONFIG['RUN']['storages']
     polarion_test_case = '16688'
 
-    @polarion("RHEVM3-16688")
+    @polarion("RHEVM-16688")
     @tier3
     def test_create_shared_disk_on_gluster_domain(self):
         """
@@ -283,7 +283,7 @@ class TestCase16685(TestCase):
         'sparse': False,
     }
 
-    @polarion("RHEVM3-16685")
+    @polarion("RHEVM-16685")
     @tier2
     def test_update_disk_to_shared(self):
         """
@@ -312,7 +312,7 @@ class TestCase16783(TestCase):
         'sparse': False,
     }
 
-    @polarion("RHEVM3-16783")
+    @polarion("RHEVM-16783")
     @tier3
     def test_update_disk_to_shared_when_vm_is_powering_up(self):
         """
@@ -348,7 +348,7 @@ class TestCase16686(TestCase):
         'sparse': False,
     }
 
-    @polarion("RHEVM3-16686")
+    @polarion("RHEVM-16686")
     @tier3
     def test_update_disk_with_snapshot_to_shared(self):
         """
@@ -369,7 +369,7 @@ class TestCase16740(TestCase):
     polarion_test_case = '16740'
     installation = False
 
-    @polarion("RHEVM3-16740")
+    @polarion("RHEVM-16740")
     @tier3
     def test_attach_non_shared_disk_to_second_vm(self):
         """
@@ -404,7 +404,7 @@ class TestCase16781(TestCase):
         'sparse': False,
     }
 
-    @polarion("RHEVM3-16781")
+    @polarion("RHEVM-16781")
     @tier2
     def test_update_shared_disk_of_2_vms_to_non_shared(self):
         """

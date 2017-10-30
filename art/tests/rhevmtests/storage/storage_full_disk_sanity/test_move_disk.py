@@ -34,7 +34,7 @@ class TestCase16757(TestCase):
     """
     __test__ = True
 
-    @polarion("RHEVM3-16757")
+    @polarion("RHEVM-16757")
     @tier3
     def test_move_disk_to_source_domain(self):
         """
@@ -56,7 +56,7 @@ class TestCase16758(TestCase):
     __test__ = True
     disk_size = 10 * config.GB
 
-    @polarion("RHEVM3-16758")
+    @polarion("RHEVM-16758")
     @tier3
     def test_move_locked_disk(self):
         """
@@ -85,7 +85,7 @@ class TestCase16759(TestCase):
     """
     __test__ = True
 
-    @polarion("RHEVM3-16759")
+    @polarion("RHEVM-16759")
     @tier3
     def test_move_template_disk(self):
         """
@@ -114,7 +114,7 @@ class TestCase16760(TestCase):
     __test__ = True
     sd_to_deactivate_index = 1
 
-    @polarion("RHEVM3-16760")
+    @polarion("RHEVM-16760")
     @tier3
     def test_move_disk_to_deactivated_sd(self):
         """
@@ -139,7 +139,7 @@ class TestCase16762(TestCase):
     """
     __test__ = True
 
-    @polarion("RHEVM3-16762")
+    @polarion("RHEVM-16762")
     @tier3
     def test_move_disk_based_on_template_to_sd_without_a_copy(self):
         """

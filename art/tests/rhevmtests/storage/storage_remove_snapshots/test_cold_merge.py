@@ -272,7 +272,7 @@ class TestCase18975(ColdMergeBaseClass):
     __test__ = True
     test_case = '18975'
 
-    @polarion("RHEVM3-18975")
+    @polarion("RHEVM-18975")
     @tier2
     def test_basic_snapshot_cold_merge_sdm_merge_by_hsm(self):
         self.basic_flow()
@@ -302,7 +302,7 @@ class TestCase18976(ColdMergeBaseClass):
     __test__ = True
     test_case = '18976'
 
-    @polarion("RHEVM3-18976")
+    @polarion("RHEVM-18976")
     @tier2
     def test_basic_snapshot_merge_after_adding_hsm(self):
         self.basic_flow(4)
@@ -360,7 +360,7 @@ class TestCase18932(basePlan.BaseTestCase):
     test_case = '18932'
     dc_verison = "4.0"
 
-    @polarion("RHEVM3-18932")
+    @polarion("RHEVM-18932")
     @tier3
     def test_basic_flow_with_previous_compatibility_version(self):
         self.basic_flow()
@@ -382,7 +382,7 @@ class TestCase18972(ColdMergeBaseClass):
     __test__ = True
     test_case = '18972'
 
-    @polarion("RHEVM3-18972")
+    @polarion("RHEVM-18972")
     @tier4
     def test_basic_flow_restart_vdsm_during_prepare_merge(self):
         self.basic_flow()
@@ -459,7 +459,7 @@ class TestCase18974(ColdMergeBaseClass):
                 "Host %s failed to reach status UP" % host
             )
 
-    @polarion("RHEVM3-18974")
+    @polarion("RHEVM-18974")
     @tier4
     def test_basic_flow_restart_vdsm_after_sdm_merge_starts(self):
         self.basic_flow()

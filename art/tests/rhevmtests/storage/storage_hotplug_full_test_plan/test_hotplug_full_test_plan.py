@@ -719,7 +719,7 @@ class TestCase16753(TestCase):
     __test__ = True
     polarion_test_case = '16753'
 
-    @polarion("RHEVM3-16753")
+    @polarion("RHEVM-16753")
     @tier3
     def test_hot_plug_disk_unsupported_interface(self):
         """

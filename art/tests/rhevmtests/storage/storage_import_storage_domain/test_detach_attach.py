@@ -813,7 +813,7 @@ class TestCase16771(DomainImportWithTemplate):
     installation = False
     diskless_vm = True
 
-    @polarion("RHEVM3-16771")
+    @polarion("RHEVM-16771")
     @tier2
     def test_register_vm_from_diskless_template(self):
         """

@@ -629,7 +629,7 @@ class TestCase16716(TestCase):
         "virtio_scsi": False
     }
 
-    @polarion("RHEVM3-16716")
+    @polarion("RHEVM-16716")
     @tier3
     def test_attach_virtio_scsi_disk_to_unsupported_vm(self):
         """

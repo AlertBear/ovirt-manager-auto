@@ -645,7 +645,7 @@ class TestCase16779(BasicEnvironment):
     polarion_test_case = '16779'
     commit = False
 
-    @polarion("RHEVM3-16779")
+    @polarion("RHEVM-16779")
     @tier2
     def test_create_snapshot_from_vm_configuration(self):
         """

@@ -47,7 +47,7 @@ class NegativeAttachDetach(TestCase):
     disk_size = 20 * config.GB
     installation = False
 
-    @polarion("RHEVM3-16776")
+    @polarion("RHEVM-16776")
     @tier2
     def test_attach_locked_disk_to_vm(self):
         """
@@ -71,7 +71,7 @@ class NegativeAttachDetach(TestCase):
         )
         self.disks_to_remove.append(self.disk_name)
 
-    @polarion("RHEVM3-16775")
+    @polarion("RHEVM-16775")
     @tier2
     @pytest.mark.usefixtures(poweroff_vm.__name__)
     def test_detach_disk_from_powering_up_vm(self):
@@ -86,7 +86,7 @@ class NegativeAttachDetach(TestCase):
         )
         ll_vms.wait_for_vm_states(self.vm_name)
 
-    @polarion("RHEVM3-16736")
+    @polarion("RHEVM-16736")
     @tier2
     @pytest.mark.usefixtures(poweroff_vm.__name__)
     def test_attach_disk_to_vm_in_powering_up_state(self):
@@ -111,7 +111,7 @@ class NegativeAttachDetach(TestCase):
         ll_vms.wait_for_vm_states(self.vm_name)
         self.disks_to_remove.append(self.disk_name)
 
-    @polarion("RHEVM3-16739")
+    @polarion("RHEVM-16739")
     @tier2
     def test_attach_disk_to_vm_as_bootable(self):
         """
@@ -143,7 +143,7 @@ class TestCase16737(TestCase):
     installation = False
     storage_domain = None
 
-    @polarion("RHEVM3-16737")
+    @polarion("RHEVM-16737")
     @tier3
     def test_attach_ovf_disk_to_vm(self):
         """
@@ -179,7 +179,7 @@ class TestCase16738(TestCase):
     __test__ = True
     installation = False
 
-    @polarion("RHEVM3-16738")
+    @polarion("RHEVM-16738")
     @tier3
     def test_attach_disk_to_vm_in_preview(self):
         """
@@ -202,7 +202,7 @@ class TestCase16741(TestCase):
     __test__ = True
     installation = False
 
-    @polarion("RHEVM3-16741")
+    @polarion("RHEVM-16741")
     @tier3
     def test_attach_disk_of_stateless_snapshot_to_vm(self):
         """
@@ -231,7 +231,7 @@ class TestCase16743(TestCase):
     __test__ = True
     installation = False
 
-    @polarion("RHEVM3-16743")
+    @polarion("RHEVM-16743")
     @tier3
     def test_detach_snapshot_disk_to_vm(self):
         """
@@ -260,7 +260,7 @@ class TestCase16774(TestCase):
     """
     __test__ = True
 
-    @polarion("RHEVM3-16774")
+    @polarion("RHEVM-16774")
     @tier3
     def test_remove_ovf_disk(self):
         """
@@ -288,7 +288,7 @@ class TestCase16777(TestCase):
     """
     __test__ = True
 
-    @polarion("RHEVM3-16777")
+    @polarion("RHEVM-16777")
     @tier3
     @helpers.wait_for_jobs_deco([config.JOB_MOVE_COPY_DISK])
     def test_remove_locked_disk(self):
@@ -318,7 +318,7 @@ class TestCase16780(TestCase):
     """
     __test__ = True
 
-    @polarion("RHEVM3-16780")
+    @polarion("RHEVM-16780")
     @tier3
     def test_delete_disk_of_locked_template(self):
         """
@@ -353,7 +353,7 @@ class TestCase16782(TestCase):
     """
     __test__ = True
 
-    @polarion("RHEVM3-16782")
+    @polarion("RHEVM-16782")
     @tier2
     def test_delete_disk_of_template(self):
         """
@@ -386,7 +386,7 @@ class TestCase16784(TestCase):
         'read_only': True,
     }
 
-    @polarion("RHEVM3-16784")
+    @polarion("RHEVM-16784")
     @tier3
     def test_update_disk_size_of_RO_disk(self):
         """
@@ -409,7 +409,7 @@ class TestCase16785(TestCase):
     __test__ = True
     installation = False
 
-    @polarion("RHEVM3-16785")
+    @polarion("RHEVM-16785")
     @tier3
     def test_resize_snapshot_disk(self):
         """
@@ -435,7 +435,7 @@ class TestCase16786(TestCase):
     __test__ = True
     installation = False
 
-    @polarion("RHEVM3-16786")
+    @polarion("RHEVM-16786")
     @tier2
     def test_update_disk_size_to_smaller_size(self):
         """
@@ -461,7 +461,7 @@ class TestCase16787(TestCase):
     installation = False
     sd_to_deactivate_index = 0
 
-    @polarion("RHEVM3-16787")
+    @polarion("RHEVM-16787")
     @tier3
     def test_update_disk_size_to_smaller_size(self):
         """

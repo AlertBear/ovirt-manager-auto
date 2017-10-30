@@ -344,7 +344,7 @@ class TestCase19059(BaseKillSpmVdsm):
     __test__ = False
     regex = "CopyDataCommand"
 
-    @polarion("RHEVM3-19059")
+    @polarion("RHEVM-19059")
     @tier4
     def test_kill_spm_vdsm_during_copy_data_cmd(self):
         """
@@ -451,7 +451,7 @@ class TestCase19060_during_CopyImageGroupWithDataCmd(BaseRestartEngine):
     __test__ = False
     regex = "CopyImageGroupWithDataCommand"
 
-    @polarion("RHEVM3-19060")
+    @polarion("RHEVM-19060")
     @tier4
     def test_restart_engine_during_copy_image_group_with_data_cmd(self):
         self.basic_flow()
@@ -469,7 +469,7 @@ class TestCase19060_during_CloneImageGroupVolumesStructureCmd(
     __test__ = False
     regex = "CloneImageGroupVolumesStructureCommand"
 
-    @polarion("RHEVM3-19060")
+    @polarion("RHEVM-19060")
     @tier4
     def test_restart_enigne_during_clone_image_group_vol_structure_cmd(self):
         self.basic_flow()
@@ -485,7 +485,7 @@ class TestCase19060_during_CreateVolumeContainerCommand(BaseRestartEngine):
     __test__ = False
     regex = "CreateVolumeContainerCommand"
 
-    @polarion("RHEVM3-19060")
+    @polarion("RHEVM-19060")
     @tier4
     def test_restart_engine_during_create_vol_container_cmd(self):
         self.basic_flow()
@@ -501,7 +501,7 @@ class TestCase19061(BaseRestartEngine):
     __test__ = False
     regex = "CopyImageGroupVolumesDataCommand"
 
-    @polarion("RHEVM3-19061")
+    @polarion("RHEVM-19061")
     @tier4
     def test_restart_engine_during_two_commands(self):
         self.basic_flow()
@@ -636,7 +636,7 @@ class TestCase19095(BaseBlockConnection):
     """
     __test__ = False
 
-    @polarion("RHEVM3-19095")
+    @polarion("RHEVM-19095")
     @tier4
     def test_disconnect_engine_and_hsm_during_CopyVolumeDataVDSCommand(self):
         """
@@ -666,7 +666,7 @@ class TestCase19028(BaseBlockConnection):
     """
     __test__ = False
 
-    @polarion("RHEVM3-19028")
+    @polarion("RHEVM-19028")
     @tier4
     def test_disconnect_source_domain_and_hsm_during_CopyVolumeDataVDSCommand(
         self
@@ -704,7 +704,7 @@ class TestCase19007(BaseBlockConnection):
 
     regex = 'CloneImageGroupVolumesStructureCommand'
 
-    @polarion("RHEVM3-19007")
+    @polarion("RHEVM-19007")
     @tier4
     def test_disconnect_spm_host_and_hsm_during_CopyVolumeDataVDSCommand(self):
         """
@@ -746,7 +746,7 @@ class TestCase19012(ColdMoveBase):
     __test__ = False
     num_of_vms = 4
 
-    @polarion("RHEVM3-19012")
+    @polarion("RHEVM-19012")
     @tier3
     def test_move_multiple_vms_with_multiple_disks(self):
         """
@@ -811,7 +811,7 @@ class TestCase19016(ColdMoveBase):
         else:
             return config.STORAGE_TYPE_NFS
 
-    @polarion("RHEVM3-19016")
+    @polarion("RHEVM-19016")
     @tier3
     def test_move_to_upgraded_domain(self):
         """
@@ -873,7 +873,7 @@ class TestCase19035(basePlan.BaseTestCase, ColdMoveBase):
     Storage_4_0/4_1_Storage_Cold_Move
     """
 
-    @polarion("RHEVM3-19035")
+    @polarion("RHEVM-19035")
     @tier2
     def test_move_vm_with_extended_snapshot(self):
         """
@@ -957,7 +957,7 @@ class TestCase19020(basePlan.BaseTestCase, ColdMoveBase):
                 )
         assert ll_vms.stop_vms_safely(vms_list=[self.vm_name])
 
-    @polarion("RHEVM3-19020")
+    @polarion("RHEVM-19020")
     @tier2
     def test_move_vm_with_multiple_snapshots(self):
         """

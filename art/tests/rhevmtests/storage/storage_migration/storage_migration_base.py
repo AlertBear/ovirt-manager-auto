@@ -235,7 +235,7 @@ class BaseTestCase21798(BaseConcurrentlyTests):
     create_on_same_domain = True
 
     @tier2
-    @polarion("RHEVM3-21798")
+    @polarion("RHEVM-21798")
     def test_vm_disks_concurrent_live_migration(self):
         """
         Actions:
@@ -263,7 +263,7 @@ class BaseTestCase21907(BaseConcurrentlyTests):
     polarion_test_case = '21907'
 
     @tier2
-    @polarion("RHEVM3-21907")
+    @polarion("RHEVM-21907")
     def test_vm_disks_concurrent_live_migration_during_dd(self):
         """
         Actions:

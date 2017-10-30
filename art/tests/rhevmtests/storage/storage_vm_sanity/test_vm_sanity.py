@@ -505,7 +505,7 @@ class TestCase18979(BaseClassKillProc):
     polarion_test_case = '18979'
     regex = 'CreateVolumeContainerCommand'
 
-    @polarion("RHEVM3-18979")
+    @polarion("RHEVM-18979")
     @tier4
     def test_kill_vdsm_on_spm_after_regex_copy_image(self):
         self.kill_vdsm_on_spm_after_regex_copy_image()
@@ -519,7 +519,7 @@ class TestCase18980(BaseClassKillProc):
     polarion_test_case = '18980'
     regex = 'CopyVolumeDataVDSCommand'
 
-    @polarion("RHEVM3-18980")
+    @polarion("RHEVM-18980")
     @tier4
     def test_kill_vdsm_on_spm_after_regex_copy_image(self):
         self.kill_vdsm_on_spm_after_regex_copy_image()
@@ -533,7 +533,7 @@ class TestCase16794(BaseClassKillProc):
     polarion_test_case = '16794'
     regex = 'CopyVolumeDataVDSCommand'
 
-    @polarion("RHEVM3-16794")
+    @polarion("RHEVM-16794")
     @tier4
     def test_restart_ovirt_engine_copy_image(self):
         self.get_lv_count_before()
@@ -568,7 +568,7 @@ class TestCase18981(BaseClassKillProc):
     polarion_test_case = '18981'
     hsm_host = None
 
-    @polarion("RHEVM3-18981")
+    @polarion("RHEVM-18981")
     @tier4
     def test_restart_hsm_after_regex_copy_data(self):
         self.get_lv_count_before()
@@ -620,7 +620,7 @@ class TestCase18982(BaseClassKillProc):
     __test__ = True
     polarion_test_case = '18982'
 
-    @polarion("RHEVM3-18982")
+    @polarion("RHEVM-18982")
     @tier3
     def test_create_vm_from_template_with_spm_only(self):
         self.get_lv_count_before()
