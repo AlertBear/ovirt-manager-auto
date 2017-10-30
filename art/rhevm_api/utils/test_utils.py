@@ -33,7 +33,6 @@ from art.core_api.apis_utils import TimeoutingSampler
 from art.core_api.validator import compareCollectionSize
 from art.rhevm_api.resources import Host, RootUser
 from utilities.machine import Machine, LINUX
-from utilities.rhevm_tools.base import Setup
 from utilities.utils import (
     convertMacToIp,
     createDirTree,
@@ -298,34 +297,24 @@ def stopVdsmd(vds, password):
     return machine.service(VDSMD).stop()
 
 
-def update_vm_status_in_database(vm_name, status, vdc, vdc_pass,
-                                 psql_username=RHEVM_UTILS_ENUMS[
-                                     'RHEVM_DB_USER'],
-                                 psql_db=RHEVM_UTILS_ENUMS['RHEVM_DB_NAME'],
-                                 psql_password=RHEVM_UTILS_ENUMS[
-                                     'RHEVM_DB_PASSWORD']):
+def update_vm_status_in_database(vm_name, status, engine):
     """
     Update vm status in the database
-    Author: jvorcak
-    Parameters:
-       * vmName - name of the vm to be modified in the database
-       * status - status to be set to the vm
-         0-down, 1-up, 2-powering up, 15-locked
-       * vdc - address of the setup
-       * vdc_pass - password for the vdc
-       * psql_username - psql username
-       * psql_db - name of the DB
-    Return: (True if sql command has been executed successfully,
-             False otherwise)
+
+    Args:
+       vm_name (str): Name of the vm to be modified in the database
+       status (int): Status to be set to the vm
+                     0-down, 1-up, 2-powering up, 15-locked
+       engine (Engine): instance of resources.Engine
+    Returns:
+         bool: True if sql command has been executed successfully,
+         False otherwise
     """
     util = get_api('vm', 'vms')
     vm = util.find(vm_name)
-    setup = Setup(vdc, 'root', vdc_pass,
-                  dbuser=psql_username,
-                  dbpassw=psql_password)
     query = ("UPDATE vm_dynamic SET status=%d WHERE vm_guid=\'%s\';"
              % (status, vm.get_id()))
-    return setup.psql(query, psql_db=psql_db)
+    return engine.db.psql(query)
 
 
 def cleanupData(path):

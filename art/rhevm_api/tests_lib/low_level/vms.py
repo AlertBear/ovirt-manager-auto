@@ -1767,34 +1767,32 @@ def removeNic(positive, vm, nic):  # noqa: N802
     return status
 
 
-def remove_locked_vm(vm_name, vdc, vdc_pass,
-                     psql_username=RHEVM_UTILS_ENUMS['RHEVM_DB_USER'],
-                     psql_db=RHEVM_UTILS_ENUMS['RHEVM_DB_NAME'],
-                     psql_password=RHEVM_UTILS_ENUMS['RHEVM_DB_PASSWORD']):
+def remove_locked_vm(vm_name, engine):
     """
     Remove locked vm with flag force=true
     Make sure that vm no longer exists, otherwise set it's status to down,
     and remove it
     Author: jvorcak
-    Parameters:
-       * vm_name - name of the VM
-       * vdc - address of the setup
-       * vdc_pass - password for the vdc
-       * psql_username - psql username
-       * psql_db - name of the DB
-    """
-    vm_obj = VM_API.find(vm_name)
 
-    if removeVm(True, vm_obj.get_name(), force='true'):
+    Args:
+        vm_name (str): VM name to remove
+        engine (Engine): engine - instance of resources.Engine
+
+    Returns:
+        bool: True if VM was removed properly, False otherwise
+    """
+
+    if removeVm(positive=True, vm=vm_name, force='true'):
         return True
 
     # clean if vm has not been removed
     logger.error('Locked vm has not been removed with force flag')
 
-    update_vm_status_in_database(vm_obj.get_name(), 0, vdc, vdc_pass,
-                                 psql_username, psql_db, psql_password)
-
-    return removeVm("true", vm_obj.get_name())
+    if update_vm_status_in_database(vm_name=vm_name, status=0, engine=engine):
+        return removeVm(positive=True, vm=vm_name)
+    else:
+        logger.error('Could not update locked VM status')
+        return False
 
 
 def _getVmSnapshots(vm, get_href=True, all_content=False):

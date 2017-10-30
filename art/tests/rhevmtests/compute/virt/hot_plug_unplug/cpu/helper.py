@@ -31,7 +31,7 @@ def get_number_of_cores(resource):
         "Run %s on %s in order to get the number of cores",
         NPROC_COMMAND, resource
     )
-    rc, out, _ = resource.run_cmd([NPROC_COMMAND])
+    rc, out, _ = resource.run_command([NPROC_COMMAND])
     if rc:
         return 0
     logger.info("Number of cores on:%s is:%s", resource, out)

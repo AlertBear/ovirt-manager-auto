@@ -369,8 +369,7 @@ def remove_locked_vm(request):
         testflow.teardown("Remove locked VM")
         assert ll_vms.remove_locked_vm(
             vm_name=vm_name,
-            vdc=config.VDC_HOST,
-            vdc_pass=config.VDC_ROOT_PASSWORD
+            engine=config.ENGINE
         )
     request.addfinalizer(fin)
 
@@ -393,8 +392,7 @@ def unlock_disks(request):
         for vm_name in [config.BASE_VM_VIRT, config.CLONE_VM_TEST]:
             assert ll_vms.remove_locked_vm(
                 vm_name=vm_name,
-                vdc=config.VDC_HOST,
-                vdc_pass=config.VDC_ROOT_PASSWORD
+                engine=config.ENGINE
             )
 
     request.addfinalizer(fin2)

@@ -218,11 +218,10 @@ class CloneVmNegativeCase3(VirtTest):
     @polarion("RHEVM-17354")
     def test_negative_locked_vm(self):
         testflow.step("lock VM in DB")
-        test_utils.update_vm_status_in_database(
+        assert test_utils.update_vm_status_in_database(
             vm_name=self.base_vm_name,
-            vdc=config.VDC_HOST,
             status=int(config.ENUMS['vm_status_locked_db']),
-            vdc_pass=config.VDC_ROOT_PASSWORD
+            engine=config.ENGINE
         )
         test_utils.wait_for_tasks(config.ENGINE, config.DC_NAME[0])
         time.sleep(20)

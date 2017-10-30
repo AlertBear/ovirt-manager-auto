@@ -285,17 +285,15 @@ class TestLockVM(VirtTest):
         Change vm status in database to locked and try to remove it
         """
         testflow.step("remove locked vm")
-        test_utils.update_vm_status_in_database(
-            self.base_vm_name,
-            vdc=config.VDC_HOST,
+        assert test_utils.update_vm_status_in_database(
+            vm_name=self.base_vm_name,
             status=int(config.ENUMS['vm_status_locked_db']),
-            vdc_pass=config.VDC_ROOT_PASSWORD
+            engine=config.ENGINE
         )
         test_utils.wait_for_tasks(config.ENGINE, config.DC_NAME[0])
         assert ll_vms.remove_locked_vm(
-            self.base_vm_name,
-            vdc=config.VDC_HOST,
-            vdc_pass=config.VDC_ROOT_PASSWORD
+            vm_name=self.base_vm_name,
+            engine=config.ENGINE
         )
 
 

@@ -18,7 +18,7 @@ VIRT_CONSOLE_VM_IMPORT_NEW = "virt_console_vm_imported"
 
 VIRT_CONSOLE_TEMPLATE_IMPORT_NEW = "virt_console_template_imported"
 VIRT_CONSOLE_TEMPLATE = "virt_console_template"
-VIRT_GLANCE_IMAGE = "rhv40_el73_ge_Disk1"
+VIRT_GLANCE_IMAGE = "rhel7.4_ovirt4.2_guest_disk"
 VIRT_CONSOLE_VM_INSTANCE_TYPE = "virt_console_instance_type"
 
 VIRT_NEW_DISK_ALIAS = "GlanceDisk-{rand_ind}".format(
