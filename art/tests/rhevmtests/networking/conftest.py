@@ -25,6 +25,9 @@ def prepare_env_networking(request):
         """
         Run teardown inventory
         """
+        for vds_host in config.VDS_HOSTS[:2]:
+            logger.info("Deleting dummy interfaces from %s", vds_host.fqdn)
+            helper.delete_dummies(host_resource=vds_host)
         pytest.config.hook.pytest_rhv_teardown(team="network")
     request.addfinalizer(fin)
 
