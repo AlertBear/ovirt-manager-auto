@@ -171,7 +171,6 @@ class TestImportExportCase03(NetworkTest):
         )
 
     @tier2
-    @bz({"1478007": {}})
     @polarion("RHEVM3-3761")
     def test_03_start_vm(self):
         """
@@ -197,6 +196,7 @@ class TestImportExportCase03(NetworkTest):
         )
 
     @tier2
+    @bz({"1507834": {}})
     @polarion("RHEVM3-3772")
     def test_04_start_vm_from_template(self):
         """
