@@ -52,6 +52,7 @@ GLUSTERFS = config.STORAGE_TYPE_GLUSTER
     create_vm.__name__,
     initialize_variables.__name__,
 )
+@bz({'1507824': {}})
 class BasicEnvironment(BaseTestCase):
     """
     This class implements the common functions including the setUp and
@@ -1048,7 +1049,6 @@ class TestCase6262(BasicEnvironment):
 
     @polarion("RHEVM3-6262")
     @tier3
-    @bz({'1454821': {}})
     def test_ovf_for_a_template(self):
         """ Polarion case 6262 """
         ll_sd.update_ovf_store(self.storage_domain)
