@@ -27,7 +27,7 @@ PMS = {
         PM_USERNAME: "USERID",
         PM_PASSWORD: "PASSW0RD",
         PM_TYPE: "bladecenter",
-        PM_SLOT: 5
+        PM_SLOT: 11
     },
     "cyan-vdsf.qa.lab.tlv.redhat.com": {
         PM_ADDRESS: APC_SNMP_ADDRESS,

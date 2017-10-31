@@ -182,15 +182,6 @@ def block_connection_to_storage(request):
         pytest.skip(conf.HE_ISCSI_STORAGE_DOMAIN_MSG)
 
     def fin():
-        u_libs.testflow.teardown(
-            "%s: wait for status UP", test_class.he_vm_host
-        )
-        helpers.wait_for_host_he_up_to_date(
-            command_executor=test_class.command_executor,
-            host_resource=test_class.he_vm_host,
-            timeout=conf.WAIT_FOR_STATE_TIMEOUT
-        )
-
         cmd = ['iptables-restore', conf.IPTABLES_BACKUP_FILE]
         u_libs.testflow.teardown(
             "%s: restore iptables from the file %s",
