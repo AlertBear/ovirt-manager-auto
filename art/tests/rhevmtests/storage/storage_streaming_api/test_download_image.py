@@ -58,7 +58,7 @@ class TestCase18258(BaseTestCase):
 
     @polarion("RHEVM3-18258")
     @tier1
-    @bz({'1506677': {}})
+    @bz({'1506677': {'storage': ['glusterfs']}})
     def test_floating_disks_matrix_downloads(self):
         sapi_obj = ll_sapi.StreamingApi(config.TARGET_FILE_PATH, None)
         testflow.step("Check md5sums and sizes of disks %s pre download", (
