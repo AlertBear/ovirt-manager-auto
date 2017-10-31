@@ -45,7 +45,7 @@ class TestMultipleQueueNics01(NetworkTest):
     3) Check that queues survive VM migration
     """
     # General params
-    vm_name = conf.VM_0
+    vm_name = conf.LAST_VM
     num_queues_0 = multiple_queue_conf.NUM_QUEUES[0]
     num_queues_1 = multiple_queue_conf.NUM_QUEUES[1]
     prop_queues = multiple_queue_conf.PROP_QUEUES[1]
