@@ -115,7 +115,7 @@ def _check_host_state(host_num, service, job_status):
 
 
 @tier2
-@bz({"1502741": {}})
+@bz({"1508023": {}})
 class SoftFencing(TestCase):
     """
     Soft fencing base class

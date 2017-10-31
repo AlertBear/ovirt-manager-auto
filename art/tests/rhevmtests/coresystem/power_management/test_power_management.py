@@ -127,7 +127,7 @@ def _remove_power_management(host=None, testflow_func=testflow.teardown):
 
 
 @tier2
-@bz({"1502741": {}})
+@bz({"1508023": {}})
 class WithHighAvailableVm(TestCase):
     """
     Base test class for tests with high available vm
@@ -186,6 +186,7 @@ class WithHighAvailableVm(TestCase):
 
 
 @tier2
+@bz({"1508023": {}})
 class PMWithBadParameters(TestCase):
     """
     Base class for tests with wrong parameters
@@ -215,7 +216,7 @@ class PMWithBadParameters(TestCase):
 
 
 @tier2
-@bz({"1488755": {}})
+@bz({"1508023": {}})
 class FenceOnHost(TestCase):
     """
     Base class for fence tests
@@ -240,7 +241,7 @@ class FenceOnHost(TestCase):
 
 
 @tier2
-@bz({"1488755": {}})
+@bz({"1508023": {}})
 class FenceHostWithTwoPMAgents(TestCase):
     """
     Base class for fence tests with two power management agents
@@ -315,7 +316,7 @@ class FenceHostWithTwoPMAgents(TestCase):
 
 
 @tier2
-@bz({"1488755": {}})
+@bz({"1508023": {}})
 class FenceProxySelection(TestCase):
     """
     Base class for fencing proxy selection tests
