@@ -230,10 +230,12 @@ class ARTLogging(object):
         )
         for line in description:
             flow_logger.info("    %s", line)
-        for attr in ('api', 'storage'):
-            value = getattr(item.parent.obj, attr, None)
-            if value:
-                flow_logger.info("  %s: %s", attr.upper(), str(value).upper())
+        if hasattr(item, "callspec"):
+            parametrized_params = getattr(item.callspec, "params", {})
+            if "storage" in parametrized_params:
+                storage = parametrized_params["storage"]
+                flow_logger.info("STORAGE: %s", storage.upper())
+
         m = item.get_marker("polarion-testcase-id")
         if m:
             message = "  POLARION: %s"
