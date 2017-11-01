@@ -18,6 +18,7 @@ from art.rhevm_api.tests_lib.low_level import (
 from art.test_handler.tools import polarion
 from art.unittest_lib import VirtTest
 from art.unittest_lib import (
+    tier1,
     tier2,
     storages
 )
@@ -55,7 +56,7 @@ class TestSparsifySanityBlockDevice(SparsifySanityBase):
     new_lun_id = None
     new_lun_identifier = None
 
-    @tier2
+    @tier1
     @polarion('RHEVM-18289')
     @pytest.mark.usefixtures(
         set_storage_domain_name.__name__,
