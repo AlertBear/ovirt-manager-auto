@@ -440,7 +440,7 @@ def generate_logs(info=True, error=True, step=False, warn=False):
             """
             kwargs_for_log = kwargs.copy()
             stack = inspect.stack()
-            called_from = get_called_from_test(stack=stack)
+            called_from, scope = get_called_from_test(stack=stack)
             func_doc = inspect.getdoc(func)
             func_argspec = inspect.getargspec(func)
 
@@ -478,7 +478,12 @@ def generate_logs(info=True, error=True, step=False, warn=False):
             )
             if step and called_from:
                 test_flow_call = getattr(testflow, called_from)
-                test_flow_call(log_info)
+                scope_log = "[{scope}] ".format(scope=scope) if scope else ""
+                test_flow_call(
+                    "{scope_log}{log_info}".format(
+                        scope_log=scope_log, log_info=log_info
+                    )
+                )
 
             if info:
                 util.logger.info(log_info)
@@ -502,16 +507,27 @@ def get_called_from_test(stack):
         stack (list): stack (inspect.stack()) list
 
     Returns:
-        str: From where the function called (step (test), setup or teardown)
+        tuple: From where the function called (step (test), setup or teardown)
+            and if called from fixture the fixture scope as well
     """
+    scope = ""
     call_args = [i[3] for i in stack]
+    frames = [i[0] for i in stack]
     if "pytest_runtest_call" in call_args:
-        return "step"
+        return "step", scope
 
     if "pytest_fixture_setup" in call_args:
-        return "setup"
+        for f in frames:
+            fixture_def = f.f_locals.get("fixturedef", None)
+            if fixture_def:
+                scope = fixture_def.scope
+        return "setup", scope
 
     if "pytest_runtest_teardown" in call_args:
-        return "teardown"
+        for f in frames:
+            fixture_fin = f.f_locals.get("fin", None)
+            if fixture_fin:
+                scope = fixture_fin.im_self.scope
+        return "teardown", scope
 
-    return ""
+    return "", scope
