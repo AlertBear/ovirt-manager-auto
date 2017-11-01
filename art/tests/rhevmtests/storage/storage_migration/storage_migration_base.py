@@ -208,7 +208,7 @@ class BaseConcurrentlyTests(AllPermutationsDisks):
             ll_disks.wait_for_disks_status([disk], status=config.DISK_LOCKED)
 
             ll_vms.wait_for_snapshot_creation(
-                self.vm_name, config.LIVE_SNAPSHOT_DESCRIPTION,
+                self.vm_name, config.LIVE_SNAPSHOT_NAME % disk,
                 include_disk_alias=disk
             )
 
