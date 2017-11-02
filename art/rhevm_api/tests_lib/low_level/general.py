@@ -380,11 +380,59 @@ def prepare_kwargs_for_log(**kwargs):
     Returns:
         dict: kwargs after prepare
     """
-    new_kwargs = dict()
+    new_kwargs = {}
+
+    def convert_list(items_list):
+        """
+        Convert objects in the list to names/ids
+
+        Args:
+            items_list (list): List to convert
+
+        Returns:
+            list: Converted list
+        """
+        new_list = []
+        for i in items_list:
+            if isinstance(i, dict):
+                new_list.append(convert_dict(items_dict=i))
+            else:
+                new_list.append(getattr(i, "name", getattr(i, "id", i)))
+        return new_list
+
+    def convert_dict(items_dict):
+        """
+        Convert objects in the dict to names/ids
+
+        Args:
+            items_dict (dict): dict to convert
+
+        Returns:
+            dict: Converted dict
+        """
+        new_dict = {}
+        for k, v in items_dict.iteritems():
+            if v is None:
+                continue
+
+            if isinstance(v, list):
+                new_dict[k] = convert_list(items_list=v)
+            else:
+                new_dict[k] = getattr(v, "name", getattr(v, "id", v))
+        return new_dict
+
     for k, v in kwargs.iteritems():
         if v is None:
             continue
-        new_kwargs[k] = v.name if hasattr(v, 'name') else v
+
+        elif isinstance(v, list):
+            new_kwargs[k] = convert_list(items_list=v)
+
+        elif isinstance(v, dict):
+            new_kwargs[k] = convert_dict(items_dict=v)
+
+        else:
+            new_kwargs[k] = getattr(v, "name", getattr(v, "id", v))
     return new_kwargs
 
 
