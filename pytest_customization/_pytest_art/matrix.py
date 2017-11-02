@@ -47,6 +47,7 @@ import logging
 from art.test_handler import settings
 
 from _pytest.mark import ParameterSet
+import pytest
 
 
 __all__ = ["pytest_artconf_ready"]
@@ -101,6 +102,7 @@ class ARTMatrix(object):
         This method will parametrize tests which are decorated with @storages
         """
 
+        storages_for_parametrize = None
         self.storage_parameter_set = dict()
         # Use markers from function if defined
         storages = self.get_storages_from_marks(
@@ -119,6 +121,8 @@ class ARTMatrix(object):
                 return
         if NOT_APPLICABLE in storages:
             return
+        if storages:
+            storages_for_parametrize = storages
         # We have to do intersection with storages defined in art config
         storages = [
             [storage] for storage in set(storages).intersection(
@@ -134,6 +138,15 @@ class ARTMatrix(object):
             metafunc.parametrize(
                 ['storage'], storages, indirect=True, scope="class"
             )
+        else:
+            if storages_for_parametrize:
+                pytest.skip(
+                    "This test's supposed to run on STORAGES: (%s), but this "
+                    "execution is just running on STORAGES: (%s)" % (
+                        ", ".join(storages_for_parametrize),
+                        ", ".join(self._storages_defined_in_conf)
+                    )
+                )
 
     def pytest_generate_tests(self, metafunc):
         if 'storage' in metafunc.fixturenames:
