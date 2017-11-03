@@ -184,7 +184,10 @@ def set_cpu_toplogy(request):
     host = ll_vms.get_vm_host(vm_name=config.CPU_HOTPLUG_VM)
     host_threads = ll_hosts.get_host_threads(host_name=host)
     cpu_number = (
-        min(helper.get_number_of_cores(config.VDS_HOSTS[0]), 16) * host_threads
+        min(
+            helper.get_number_of_cores(config.VDS_HOSTS[0].executor()),
+            16
+        ) * host_threads
     )
     config.CPU_TOPOLOGY = helper.calculate_the_cpu_topology(cpu_number)
     config.CPU_HOTPLUG_VM_PARAMS['cpu_cores'] = config.CPU_TOPOLOGY[1]
