@@ -9,7 +9,7 @@ from art.rhevm_api.tests_lib.low_level import hosts as ll_hosts
 from art.rhevm_api.tests_lib.high_level import hosts as hl_hosts
 from art.rhevm_api.utils import test_utils
 from art.test_handler.exceptions import HostException
-from art.test_handler.tools import polarion
+from art.test_handler.tools import polarion, bz
 from art.unittest_lib import (
     CoreSystemTest as TestCase,
     tier1,
@@ -21,6 +21,7 @@ import config
 logger = logging.getLogger(__name__)
 
 
+@bz({"1508023": {}})
 class PowerManagement(TestCase):
     """
     Base class for test cases including power management
@@ -142,6 +143,7 @@ class TestUpdateHostName(TestCase):
 
 
 @tier1
+@bz({"1508023": {}})
 class TestAddRemovePowerManagement(TestCase):
     """
     Positive - add power management to host then remove it
