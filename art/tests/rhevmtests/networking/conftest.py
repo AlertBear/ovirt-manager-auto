@@ -26,6 +26,7 @@ def prepare_env_networking(request):
         Run teardown inventory
         """
         for vds_host in config.VDS_HOSTS[:2]:
+            vds_host.cache.clear()
             logger.info("Deleting dummy interfaces from %s", vds_host.fqdn)
             helper.delete_dummies(host_resource=vds_host)
         pytest.config.hook.pytest_rhv_teardown(team="network")
@@ -33,6 +34,7 @@ def prepare_env_networking(request):
 
     pytest.config.hook.pytest_rhv_setup(team="network")
     for vds_host in config.VDS_HOSTS[:2]:
+        vds_host.cache.clear()
         num_dummy = 30 if vds_host.fqdn == config.VDS_HOSTS[0].fqdn else 8
         helper.prepare_dummies(host_resource=vds_host, num_dummy=num_dummy)
         logger.info("Host %s. NICs: %s", vds_host.fqdn, vds_host.nics)
