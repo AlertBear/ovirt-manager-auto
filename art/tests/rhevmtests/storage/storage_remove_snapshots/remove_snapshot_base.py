@@ -332,7 +332,7 @@ class TestCase6052(BasicEnvironment):
     test_case = '6052'
 
     @polarion("RHEVM3-6052")
-    @tier2
+    @tier1
     def test_basic_snapshot_deletion_with_io(self):
         self.basic_flow()
         self.delete_snapshot_with_verification(

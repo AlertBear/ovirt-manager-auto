@@ -15,7 +15,6 @@ class LiveMergeBaseClass(basePlan.BasicEnvironment):
     live_merge = True
 
 
-@bz({'1464002': {}})
 class TestCase6038(LiveMergeBaseClass, basePlan.TestCase6038):
     """
     Basic live delete and merge of snapshots
@@ -27,7 +26,6 @@ class TestCase6038(LiveMergeBaseClass, basePlan.TestCase6038):
     test_case = '6038'
 
 
-@bz({'1464002': {}})
 class TestCase6052(LiveMergeBaseClass, basePlan.TestCase6052):
     """
     Basic live delete and merge of snapshots with continuous I/O
@@ -50,7 +48,6 @@ class TestCase16287(LiveMergeBaseClass, basePlan.TestCase16287):
     test_case = '16287'
 
 
-@bz({'1464002': {}})
 class TestCase12215(LiveMergeBaseClass, basePlan.TestCase12215):
     """
     Deleting all snapshots
@@ -62,7 +59,6 @@ class TestCase12215(LiveMergeBaseClass, basePlan.TestCase12215):
     test_case = '12215'
 
 
-@bz({'1464002': {}})
 class TestCase6044(LiveMergeBaseClass, basePlan.TestCase6044):
     """
     Live delete and merge after deleting the base snapshot
@@ -86,7 +82,6 @@ class TestCase6045(LiveMergeBaseClass, basePlan.TestCase6045):
     test_case = '6045'
 
 
-@bz({'1464002': {}})
 class TestCase6043(LiveMergeBaseClass, basePlan.TestCase6043):
     """
     Live delete and merge after deleting the last created snapshot
@@ -110,7 +105,6 @@ class TestCase6046(LiveMergeBaseClass, basePlan.TestCase6046):
     test_case = '6046'
 
 
-@bz({'1464002': {}})
 class TestCase6048(LiveMergeBaseClass, basePlan.TestCase6048):
     """
     Consecutive delete and merge of snapshots
@@ -122,7 +116,6 @@ class TestCase6048(LiveMergeBaseClass, basePlan.TestCase6048):
     test_case = '6048'
 
 
-@bz({'1464002': {}})
 class TestCase6050(LiveMergeBaseClass, basePlan.TestCase6050):
     """
     Delete a 2nd live snapshot during a delete and merge of another
@@ -135,7 +128,6 @@ class TestCase6050(LiveMergeBaseClass, basePlan.TestCase6050):
     test_case = '6050'
 
 
-@bz({'1464002': {}})
 class TestCase6057(LiveMergeBaseClass, basePlan.TestCase6057):
     """
     Live delete and merge of snapshot after disk Migration
