@@ -317,7 +317,7 @@ class TestCase11618(ExportVms):
     """
     Polarion case 11618
     """
-    __test__ = True
+    __test__ = False  # Because of bug 1409238
     polarion_test_id = '11618'
 
     @polarion("RHEVM3-11618")
@@ -341,7 +341,7 @@ class TestCase11617(ExportVms):
     """
     Polarion case 11617
     """
-    __test__ = True
+    __test__ = False  # Because of bug 1409238
     polarion_test_id = '11617'
 
     @polarion("RHEVM3-11617")
