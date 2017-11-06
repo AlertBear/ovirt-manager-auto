@@ -2,7 +2,7 @@ import shlex
 
 import pytest
 
-import config
+import rhevmtests.compute.virt.config as config
 import rhevmtests.helpers as helpers
 from art.rhevm_api.tests_lib.low_level import clusters as ll_clusters
 from art.unittest_lib import testflow

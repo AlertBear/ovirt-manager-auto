@@ -328,3 +328,20 @@ def update_vm(request):
     assert ll_vms.updateVm(
         positive=True, vm=vm_name, **update_vm_params
     ), "Failed to update vm with params %s" % update_vm_params
+
+
+@pytest.fixture(scope="class")
+def update_vm_to_default_parameters(request):
+    vm_name = request.node.cls.vm_name
+
+    def fin():
+        """
+        Update VM's to default parameters
+        """
+        testflow.teardown(
+            "Update the VM %s to default parameters", vm_name
+        )
+        ll_vms.updateVm(
+            positive=True, vm=vm_name, **config.DEFAULT_VM_PARAMETERS
+        )
+    request.addfinalizer(fin)

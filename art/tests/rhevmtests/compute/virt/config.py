@@ -130,6 +130,11 @@ VM_CLUSTER = "cluster"
 VM_WATCHDOG_MODEL = "watchdog_model"
 VM_CPU_SHARES = "cpu_shares"
 MAX_MEMORY = 'max_memory'
+# RNG DEVICE
+RNG_DEVICE = 'rng_device'
+URANDOM_RNG = 'urandom'
+HW_RNG = 'hwrng'
+DEST_HWRNG = "/dev/hwrng"
 
 DEFAULT_VM_PARAMETERS = {
     VM_MEMORY: GB,
@@ -147,7 +152,8 @@ DEFAULT_VM_PARAMETERS = {
     VM_HIGHLY_AVAILABLE: False,
     VM_CPU_PINNING: [],
     VM_CPU_SHARES: 0,
-    VM_CPU_MODE: "custom"  # TODO W/A for 1337181
+    VM_CPU_MODE: "custom",  # TODO W/A for 1337181
+    RNG_DEVICE: URANDOM_RNG
 }
 
 # general

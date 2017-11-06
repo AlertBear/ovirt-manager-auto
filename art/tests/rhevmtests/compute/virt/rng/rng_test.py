@@ -4,8 +4,7 @@
 Virt test - RNG device
 """
 import pytest
-
-import config
+import rhevmtests.compute.virt.config as config
 import fixtures as hwrng_fixtures
 import helper
 from art.test_handler.tools import polarion
@@ -15,7 +14,7 @@ from art.unittest_lib import (
     common,
 )
 from rhevmtests.compute.virt.fixtures import (
-    start_vms, update_vm
+    start_vms, update_vm, update_vm_to_default_parameters
 )
 
 
@@ -23,14 +22,18 @@ class TestUrandom(common.VirtTest):
     """
     Urandom RNG Device Class
     """
-    vm_name = config.VM_NAME[0]
+    vm_name = config.VM_NAME[2]
     update_vm_params = {
         'rng_device': config.URANDOM_RNG
     }
     wait_for_vms_ip = False
 
     @tier2
-    @pytest.mark.usefixtures(update_vm.__name__, start_vms.__name__,)
+    @pytest.mark.usefixtures(
+        update_vm.__name__,
+        start_vms.__name__,
+        update_vm_to_default_parameters.__name__
+    )
     @polarion("RHEVM-19286")
     def test_urandom(self):
         """
@@ -50,7 +53,7 @@ class TestHwrng(common.VirtTest):
     """
     Hwrng RNG Device Class
     """
-    vm_name = config.VM_NAME[0]
+    vm_name = config.VM_NAME[2]
     wait_for_vms_ip = False
     update_vm_params = {
         'rng_device': config.HW_RNG
@@ -62,7 +65,8 @@ class TestHwrng(common.VirtTest):
         hwrng_fixtures.enable_hwrng_source_on_cluster.__name__,
         update_vm.__name__,
         start_vms.__name__,
-        hwrng_fixtures.add_symbolic_link_on_host.__name__
+        hwrng_fixtures.add_symbolic_link_on_host.__name__,
+        update_vm_to_default_parameters.__name__
     )
     def test_hwrng(self):
         """
