@@ -15,7 +15,7 @@ from rhevmtests.compute.virt.fixtures import create_dc
 
 
 @pytest.mark.skipif(
-    config.NO_HYPERCONVERGED_SUPPORT,
+    not config.NO_HYPERCONVERGED_SUPPORT,
     reason=config.NO_HYPERCONVERGED_SUPPORT_SKIP_MSG
 )
 @pytest.mark.usefixtures(
@@ -38,31 +38,23 @@ class TestVcpu(VirtTest):
     @pytest.mark.parametrize(
         (
             "comp_version", "cpu_cores", "cpu_sockets", "cpu_threads",
-            "positive", "change_limitation"
+            "positive", "change_limitation", "start_vm"
         ),
         [
             pytest.param(
-                current_version, 16, 9, 2, True, False,
-                marks=(polarion("RHEVM-17328"))
+                current_version, 16, 12, 2, True, False, True,
+                marks=(polarion("RHEVM-23514"))
             ),
             pytest.param(
-                current_version, 15, 10, 2, False, False,
-                marks=(polarion("RHEVM-17328"))
+                current_version, 11, 7, 5, False, False, False,
+                marks=(polarion("RHEVM-23515"))
             ),
             pytest.param(
-                current_version, 5, 2, 1, True, True,
-                marks=(polarion("RHEVM3-10623"))
-            ),
-            pytest.param(
-                current_version, 3, 4, 1, False, True,
-                marks=(polarion("RHEVM3-10623"))
-            ),
-            pytest.param(
-                version_4_0, 16, 15, 1, True, False,
+                version_4_0, 16, 15, 1, True, False, False,
                 marks=(polarion("RHEVM3-11267"))
             ),
             pytest.param(
-                version_4_0, 10, 5, 5, False, False,
+                version_4_0, 10, 5, 5, False, False, False,
                 marks=(polarion("RHEVM3-11267"))
             ),
 
@@ -73,18 +65,29 @@ class TestVcpu(VirtTest):
     )
     def test_update_vm_cpu_to_max(
         self, comp_version, cpu_cores, cpu_sockets, cpu_threads,
-        positive, change_limitation
+        positive, change_limitation, start_vm
     ):
         """
-        Positive: Update VM cpu to maximum (288 cpu's)
+        Update VM cpu to maximum (384 cpu's)
+
+        Args:
+            comp_version (str): Compatibility version
+            cpu_cores (int): Number of CPU cores
+            cpu_sockets (int): Number of CPU sockets
+            cpu_threads (int): Number of CPU threads
+            positive (bool): True if update should pass, else False
+            change_limitation (bool): Should we need to change the engine cpu
+                                     limitation
+            start_vm (bool): Should start VM (since we don't have this amount
+                            of CPUs start vm should failed)
         """
         vm_name = (
             config.VM_NAME[0] if comp_version == self.current_version
             else config.VCPU_4_0_VM
         )
         testflow.step(
-            "Update VM %s cpu total to %s", vm_name,
-            (cpu_cores*cpu_sockets*cpu_threads)
+            "Update VM %s cpu total to %s",
+            vm_name, (cpu_cores*cpu_sockets*cpu_threads)
         )
         assert ll_vms.updateVm(
             positive=positive,
@@ -93,3 +96,6 @@ class TestVcpu(VirtTest):
             cpu_socket=cpu_sockets,
             cpu_threads=cpu_threads
         )
+        if start_vm:
+            testflow.step("Try to run VM, should failed")
+            assert ll_vms.startVm(positive=False, vm=vm_name)
