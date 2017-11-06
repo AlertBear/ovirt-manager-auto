@@ -30,6 +30,7 @@ from art.unittest_lib import (
 @pytest.mark.usefixtures(
     import_vm_from_data_domain.__name__
 )
+@bz({"1509962": {}})
 class TestRegisterDomain01(NetworkTest):
     """
     Import VM from storage data domain with same MAC pool range and network
@@ -69,6 +70,7 @@ class TestRegisterDomain01(NetworkTest):
 @pytest.mark.usefixtures(
     import_vm_from_data_domain.__name__
 )
+@bz({"1509962": {}})
 class TestRegisterDomain02(NetworkTest):
     """
     Import VM from storage data domain when MAC is not from pool and network
@@ -118,6 +120,7 @@ class TestRegisterDomain02(NetworkTest):
 @pytest.mark.usefixtures(
     import_vm_from_data_domain.__name__
 )
+@bz({"1509962": {}})
 class TestRegisterDomain03(NetworkTest):
     """
     Import VM from storage data domain when MAC is not from pool and network
@@ -131,7 +134,6 @@ class TestRegisterDomain03(NetworkTest):
     reassessing_mac = False
 
     @tier2
-    @bz({"1414856": {}})
     @polarion("RHEVM-16997")
     def test_mac_pool_not_in_mac_range_without_reassign(self):
         """
@@ -164,6 +166,7 @@ class TestRegisterDomain03(NetworkTest):
 @pytest.mark.usefixtures(
     import_vm_from_data_domain.__name__
 )
+@bz({"1509962": {}})
 class TestRegisterDomain04(NetworkTest):
     """
     Import VM from storage data domain when MAC is already exists on another VM
@@ -189,6 +192,7 @@ class TestRegisterDomain04(NetworkTest):
         assert ll_vms.get_vm_nic_plugged(vm=self.vm, nic=nic)
 
 
+@bz({"1509962": {}})
 class TestRegisterDomain05(NetworkTest):
     """
     Import VM from storage data domain when MAC is already exists on another VM
@@ -218,7 +222,7 @@ class TestRegisterDomain05(NetworkTest):
         )
 
 
-@bz({"1390556": {}})
+@bz({"1509962": {}})
 @pytest.mark.usefixtures(
     set_allow_duplicate_mac_pool.__name__,
     import_vm_from_data_domain.__name__
@@ -234,7 +238,6 @@ class TestRegisterDomain06(NetworkTest):
     reassessing_mac = False
 
     @tier2
-    @bz({"1414856": {}})
     @polarion("RHEVM-17143")
     def test_mac_pool_not_in_mac_range_already_exists_without_reassign(self):
         """
@@ -254,6 +257,7 @@ class TestRegisterDomain06(NetworkTest):
     manage_mac_pool_range.__name__,
     make_sure_no_mac_in_pool.__name__
 )
+@bz({"1509962": {}})
 class TestRegisterDomain07(NetworkTest):
     """
     Import VM from storage data domain when not MACs left in the pool
@@ -286,6 +290,7 @@ class TestRegisterDomain07(NetworkTest):
 @pytest.mark.usefixtures(
     import_vm_from_data_domain.__name__
 )
+@bz({"1509962": {}})
 class TestRegisterDomain08(NetworkTest):
     """
     Import VM from storage data domain while the network exists on

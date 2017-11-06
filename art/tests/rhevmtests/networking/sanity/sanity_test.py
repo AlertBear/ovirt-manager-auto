@@ -1225,7 +1225,7 @@ class TestSanity15(NetworkTest):
         )
 
 
-@bz({"1508908": {}})
+@bz({"1509962": {}})
 @pytest.mark.usefixtures(
     create_and_attach_networks.__name__,
     prepare_setup_for_register_domain.__name__,
