@@ -38,6 +38,12 @@ class LeftoversInfo(object):
         """
         Get dict containing GE description at package setup
         """
+        if self.team:
+            logger.info(
+                "Calling pytest_rhv_teardown for previous team execution"
+            )
+            self.pytest_rhv_teardown(self.team)
+
         logger.info("Running pytest_rhv_setup for %s team", team)
         inventory = self._get_inventory_instance()
         self.ge_state = inventory.get_summary_report()
@@ -62,6 +68,10 @@ class LeftoversInfo(object):
         When whole test run finishes write the summary into file
         into json format.
         """
+        if self.team:
+            logger.info("Calling pytest_rhv_teardown for last team execution")
+            self.pytest_rhv_teardown(self.team)
+
         with open(config.option.leftovers_file, 'w') as fp:
             json.dump(self.summary, fp, indent=4)
 

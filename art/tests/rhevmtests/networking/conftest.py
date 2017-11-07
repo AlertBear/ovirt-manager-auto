@@ -29,7 +29,6 @@ def prepare_env_networking(request):
             vds_host.cache.clear()
             logger.info("Deleting dummy interfaces from %s", vds_host.fqdn)
             helper.delete_dummies(host_resource=vds_host)
-        pytest.config.hook.pytest_rhv_teardown(team="network")
     request.addfinalizer(fin)
 
     pytest.config.hook.pytest_rhv_setup(team="network")

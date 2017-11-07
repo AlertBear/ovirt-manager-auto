@@ -12,11 +12,4 @@ def prepare_env_virt(request):
     """
     Run setup inventory
     """
-    def fin():
-        """
-        Run teardown inventory
-        """
-        pytest.config.hook.pytest_rhv_teardown(team="virt")
-    request.addfinalizer(fin)
-
     pytest.config.hook.pytest_rhv_setup(team="virt")

@@ -15,13 +15,6 @@ def prepare_env_storage(request):
     from rhevmtests.storage import config
     from rhevmtests.storage.helpers import assign_storage_params
 
-    def fin():
-        """
-        Run teardown inventory
-        """
-        pytest.config.hook.pytest_rhv_teardown(team="storage")
-    request.addfinalizer(fin)
-
     pytest.config.hook.pytest_rhv_setup(team="storage")
 
     config.FIRST_HOST = config.HOSTS[0]
