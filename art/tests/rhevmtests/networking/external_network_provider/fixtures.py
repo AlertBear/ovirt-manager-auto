@@ -303,12 +303,22 @@ def configure_ovn(request):
 @pytest.fixture(scope="class")
 def get_default_ovn_provider(request):
     """
-    Get the default OVN network provider from engine and save its instance
+    1. Login with the default admin to get a token
+    2. Get the default OVN network provider
+    3. Test connection to the provider (optionally)
     """
     provider = request.node.cls.provider_name
+    test_conn = getattr(request.cls, "test_provider_connection", False)
 
     testflow.setup("Getting default provider: %s from engine", provider)
-    assert helper.get_provider_from_engine(provider_name=provider)
+    enp_conf.OVN_PROVIDER = helper.get_provider_from_engine(
+        provider_name=provider,
+        keystone_user=global_config.VDC_ADMIN_JDBC_LOGIN,
+        keystone_pass=global_config.VDC_PASSWORD
+    )
+    if test_conn:
+        testflow.setup("Testing connection to the provider: %s", provider)
+        assert enp_conf.OVN_PROVIDER.test_connection()
 
 
 @pytest.fixture(scope="class")

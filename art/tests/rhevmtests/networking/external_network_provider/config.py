@@ -39,8 +39,6 @@ OVN_EXTERNAL_PROVIDER_PARAMS = {
     # Default provider user for authentication is admin@local
     "username": global_conf.VDC_ADMIN_JDBC_LOGIN,
     "password": global_conf.VDC_PASSWORD,
-    "keystone_username": global_conf.VDC_ADMIN_JDBC_LOGIN,
-    "keystone_password": global_conf.VDC_PASSWORD,
     "verify_ssl": False
 }
 

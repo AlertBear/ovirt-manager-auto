@@ -294,9 +294,7 @@ class TestOVNComponent(NetworkTest):
         testflow.step(
             "Testing default OVN network provider: %s", self.provider_name
         )
-        assert helper.get_provider_from_engine(
-            provider_name=self.provider_name
-        )
+        assert ovn_conf.OVN_PROVIDER.test_connection()
 
     @tier2
     @polarion("RHEVM3-16925")
@@ -922,6 +920,9 @@ class TestOVNPerformance(NetworkTest):
 
     # save_vm_resources fixture parameters
     save_vm_resources_params = [net_conf.VM_0, net_conf.VM_1]
+
+    # get_default_ovn_provider fixture parameters
+    test_provider_connection = True
 
     @tier3
     @polarion("RHEVM-22061")

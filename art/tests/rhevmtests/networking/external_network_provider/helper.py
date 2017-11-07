@@ -433,22 +433,24 @@ def service_handler(host, service, action="stop"):
         return False
 
 
-def get_provider_from_engine(provider_name):
+def get_provider_from_engine(provider_name, keystone_user, keystone_pass):
     """
-    Get provider from engine and test the connection to it
+    Get OVN provider from engine
 
     Args:
         provider_name (str): Provider name
+        keystone_user (str): Keystone username
+        keystone_pass (str): Keystone password
 
     Returns:
         bool: True if get was successful, False otherwise
     """
     ovn_conf.OVN_EXTERNAL_PROVIDER_PARAMS["name"] = provider_name
-    ovn_conf.OVN_PROVIDER = external_providers.ExternalNetworkProvider(
+    ovn_conf.OVN_EXTERNAL_PROVIDER_PARAMS["keystone_username"] = keystone_user
+    ovn_conf.OVN_EXTERNAL_PROVIDER_PARAMS["keystone_password"] = keystone_pass
+    return external_providers.ExternalNetworkProvider(
         **ovn_conf.OVN_EXTERNAL_PROVIDER_PARAMS
     )
-    logger.info("Testing engine connection to the external network provider")
-    return ovn_conf.OVN_PROVIDER.test_connection()
 
 
 def get_float(str_float):
