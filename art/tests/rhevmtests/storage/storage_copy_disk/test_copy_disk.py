@@ -481,11 +481,11 @@ class TestCase11140(CopyDiskWithContent):
 
     @polarion("RHEVM3-11340")
     @tier3
-    def test_copy_vm_disks_after_cloned_as_clone(self):
+    def test_copy_vm_disks_after_cloned_as_clone(self, storage):
         """
         Copy existing disk when vm cloned from snapshot as clone
         """
-        self.copy_with_template()
+        self.copy_with_template(storage=storage)
 
 
 @pytest.mark.usefixtures(
@@ -502,8 +502,8 @@ class TestCase11141(CopyDiskWithContent):
 
     @polarion("RHEVM3-11341")
     @tier3
-    def test_copy_vm_disks_after_cloned_as_thin(self):
+    def test_copy_vm_disks_after_cloned_as_thin(self, storage):
         """
         Copy existing disk when vm cloned from snapshot as thin
         """
-        self.copy_with_template(clone=False)
+        self.copy_with_template(storage=storage, clone=False)

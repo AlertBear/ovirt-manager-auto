@@ -431,6 +431,7 @@ class TestCase5065(BasicResize):
     }
 
     @polarion("RHEVM3-5065")
+    @bz({'1506677': {'storage': ['glusterfs']}})
     @tier1
     def test_thin_file_resize(self):
         """

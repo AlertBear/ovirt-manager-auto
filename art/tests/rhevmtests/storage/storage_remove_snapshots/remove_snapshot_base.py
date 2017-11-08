@@ -24,7 +24,7 @@ from rhevmtests.storage.fixtures import remove_vm  # noqa
 from rhevmtests.storage.storage_remove_snapshots.fixtures import (
     initialize_params,
 )
-from art.test_handler.tools import polarion
+from art.test_handler.tools import bz, polarion
 from art.unittest_lib import (
     tier1,
     tier2,
@@ -298,6 +298,7 @@ class BasicEnvironment(BaseTestCase):
     __test__ = False
 
 
+@bz({'1509629': {}})
 class TestCase6038(BasicEnvironment):
     """
     Basic delete and merge of snapshots
