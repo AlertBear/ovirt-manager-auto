@@ -2,24 +2,23 @@
 Test multiple pinning of VM under different conditions
 """
 import pytest
-import rhevmtests.compute.sla.helpers as sla_helpers
 
 import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
 import art.rhevm_api.tests_lib.low_level.sla as ll_sla
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import config as conf
-import helpers as pinning_helpers
+import rhevmtests.compute.sla.helpers as sla_helpers
 import rhevmtests.helpers as rhevm_helpers
 from art.test_handler.tools import polarion, bz
 from art.unittest_lib import testflow, tier1, tier2, tier3, SlaTest
 from fixtures import (
     change_host_cluster,
-    numa_pinning,
     update_class_cpu_pinning
 )
 from rhevmtests.compute.sla.fixtures import (
     activate_hosts,
     attach_host_device,
+    create_equals_numa_nodes_on_vm,
     create_vm_without_disk,
     choose_specific_host_as_spm,
     export_vm,
@@ -27,6 +26,8 @@ from rhevmtests.compute.sla.fixtures import (
     make_template_from_vm,
     make_vm_from_template,
     migrate_he_vm,
+    remove_all_numa_nodes_from_vm,
+    skip_numa_tests,
     stop_vms,
     update_vms
 )
@@ -51,7 +52,6 @@ class BaseMultiplePinning(SlaTest):
         1) Start VM
         2) Get VM host
         """
-        testflow.step("Start the VM %s", conf.VM_NAME[0])
         assert ll_vms.startVm(
             positive=True,
             vm=conf.VM_NAME[0],
@@ -69,7 +69,6 @@ class BaseMultiplePinning(SlaTest):
         Args:
             vm_host (str): Host to deactivate
         """
-        testflow.step("Stop the VM %s", conf.VM_NAME[0])
         assert ll_vms.stopVm(positive=True, vm=conf.VM_NAME[0])
         assert ll_hosts.deactivate_host(
             positive=True, host=vm_host, host_resource=host_resource
@@ -117,7 +116,6 @@ class TestMultiplePinning01(BaseMultiplePinning):
                 vm_host=vm_host,
                 host_resource=conf.VDS_HOSTS[conf.HOSTS.index(vm_host)]
             )
-        testflow.step("Start the VM %s", conf.VM_NAME[0])
         assert not ll_vms.startVm(positive=True, vm=conf.VM_NAME[0])
 
 
@@ -144,9 +142,7 @@ class TestMultiplePinning02(BaseMultiplePinning):
         1) Start VM
         2) Migrate VM
         """
-        testflow.step("Start the VM %s", conf.VM_NAME[0])
         assert ll_vms.startVm(positive=True, vm=conf.VM_NAME[0])
-        testflow.step("Migrate the VM %s", conf.VM_NAME[0])
         assert not ll_vms.migrateVm(positive=True, vm=conf.VM_NAME[0])
 
 
@@ -191,9 +187,6 @@ class TestMultiplePinning03(BaseMultiplePinning):
         3) Kill VM on host
         4) Check that VM started again
         """
-        testflow.step(
-            "Update the VM %s to be highly available", conf.VM_NAME[0]
-        )
         assert ll_vms.updateVm(
             positive=True, vm=conf.VM_NAME[0], highly_available=True
         )
@@ -307,7 +300,9 @@ class TestMultiplePinning05(BaseMultiplePinning):
 
 
 @pytest.mark.usefixtures(
+    skip_numa_tests.__name__,
     update_vms.__name__,
+    remove_all_numa_nodes_from_vm.__name__,
     stop_vms.__name__
 )
 class TestMultiplePinning06(BaseMultiplePinning):
@@ -328,13 +323,24 @@ class TestMultiplePinning06(BaseMultiplePinning):
         """
         1) Add NUMA node to VM
         """
-        pinning_helpers.add_one_numa_node_to_vm(negative=True)
+        numa_nodes = sla_helpers.create_number_of_equals_numa_nodes(
+            resource=conf.VDS_HOSTS[0],
+            vm_name=conf.VM_NAME[0],
+            num_of_numa_nodes=1
+        )
+        assert not ll_vms.add_numa_node_to_vm(
+            vm_name=conf.VM_NAME[0],
+            host_name=conf.HOSTS[0],
+            **numa_nodes[0]
+        )
 
 
 @pytest.mark.usefixtures(
+    skip_numa_tests.__name__,
     update_vms.__name__,
+    remove_all_numa_nodes_from_vm.__name__,
     stop_vms.__name__,
-    numa_pinning.__name__
+    create_equals_numa_nodes_on_vm.__name__
 )
 class TestMultiplePinning07(BaseMultiplePinning):
     """
@@ -347,6 +353,7 @@ class TestMultiplePinning07(BaseMultiplePinning):
         }
     }
     vms_to_stop = [conf.VM_NAME[0]]
+    num_of_vm_numa_nodes = 1
 
     @tier2
     @polarion("RHEVM3-12450")
@@ -354,10 +361,6 @@ class TestMultiplePinning07(BaseMultiplePinning):
         """
         1) Pin VM to two hosts
         """
-        testflow.step(
-            "Update VM %s placement hosts to %s",
-            conf.VM_NAME[0], conf.HOSTS[:2]
-        )
         assert not ll_vms.updateVm(
             positive=True,
             vm=conf.VM_NAME[0],
@@ -377,10 +380,6 @@ class TestMultiplePinning08(BaseMultiplePinning):
         """
         1) Pin VM to host from another cluster
         """
-        testflow.step(
-            "Update the VM %s placement host to %s",
-            conf.VM_NAME[0], conf.HOSTS[0]
-        )
         assert not ll_vms.updateVm(
             positive=True,
             vm=conf.VM_NAME[0],
@@ -449,10 +448,6 @@ class TestMultiplePinning10(BaseMultiplePinning):
         1) Pin VM to two hosts
         2) Check that VM does not have host devices
         """
-        testflow.step(
-            "Update the VM %s placement hosts to %s",
-            conf.VM_NAME[0], conf.HOSTS[:2]
-        )
         assert ll_vms.updateVm(
             positive=True,
             vm=conf.VM_NAME[0],

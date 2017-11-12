@@ -2332,3 +2332,23 @@ def get_lldp_nic_info(host, nic):
         elm=host_nic, link_name=LLDPS, attr=LLDP
     )
     return {elm.name: elm.properties.property[0].value for elm in data}
+
+
+def get_host_free_nr_hugepages(host_name, hugepage_size):
+    """
+    Get host free hugepages number from statistics
+
+    Args:
+        host_name (str): Host name
+        hugepage_size (str): Size of the hugepage
+
+    Returns:
+        int: Number of host free hugepages
+    """
+    stat_name = "hugepages.{0}.free".format(hugepage_size)
+    return getStat(
+        name=host_name,
+        elm_name=ELEMENT,
+        collection_name=COLLECTION,
+        stat_types=[stat_name]
+    ).get(stat_name)

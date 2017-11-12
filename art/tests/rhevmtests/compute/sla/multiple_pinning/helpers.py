@@ -5,33 +5,8 @@ import pytest
 
 import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
 import art.rhevm_api.tests_lib.low_level.sla as ll_sla
-import art.rhevm_api.tests_lib.low_level.vms as ll_vms
-import config as conf
 import art.unittest_lib as u_libs
-
-
-def add_one_numa_node_to_vm(negative=False):
-    """
-    Create one NUMA node on VM
-    """
-    if ll_hosts.get_num_of_numa_nodes_on_host(host_name=conf.HOSTS[0]) < 2:
-        pytest.skip(
-            "Host %s does not have enough NUMA nodes" % conf.HOSTS[0]
-        )
-    vm_memory = ll_vms.get_vm_memory(vm_name=conf.VM_NAME[0])
-    vm_cores = range(ll_vms.get_vm_cores(vm_name=conf.VM_NAME[0]))
-    host_numa_node_index = ll_hosts.get_numa_nodes_indexes(
-        host_name=conf.HOSTS[0]
-    )[0]
-    u_libs.testflow.step("Add one NUMA node to VM %s", conf.VM_NAME[0])
-    assert ll_vms.add_numa_node_to_vm(
-        vm_name=conf.VM_NAME[0],
-        host_name=conf.HOSTS[0],
-        index=0,
-        memory=vm_memory / conf.MB,
-        cores=vm_cores,
-        pin_list=[host_numa_node_index]
-    ) == (not negative)
+import config as conf
 
 
 def get_the_same_cpus_from_resources():

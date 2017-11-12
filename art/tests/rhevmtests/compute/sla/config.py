@@ -350,3 +350,19 @@ HUGEPAGES_NR_FILE = "/sys/kernel/mm/hugepages/hugepages-{0}kB/nr_hugepages"
 
 CUSTOM_PROPERTY_HUGEPAGES = "hugepages={0}"
 DEFAULT_CP_HUGEPAGES = CUSTOM_PROPERTY_HUGEPAGES.format(DEFAULT_HUGEPAGE_SZ)
+CP_HUGEPAGES_SIZE_1048576KB = CUSTOM_PROPERTY_HUGEPAGES.format(
+    HUGEPAGE_SZ_1048576KB
+)
+
+# Memory constants
+GB_2 = GB * 2
+GB_3 = GB * 3
+GB_4 = GB * 4
+
+# NUMA constants
+NUMACTL_PACKAGE = "numactl"
+NUMACTL = "numactl"
+NUMA_NODE = "node"
+NUMA_NODE_DISTANCE = "distances"
+NUMA_NODE_MEMORY = "size"
+NUMA_NODE_CPUS = "cpus"

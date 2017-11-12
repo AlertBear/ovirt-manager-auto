@@ -9,22 +9,23 @@ import art.rhevm_api.tests_lib.low_level.sla as ll_sla
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import config as conf
 import helpers
+import rhevmtests.compute.sla.helpers as sla_helpers
 from art.test_handler.tools import polarion, bz
 from art.unittest_lib import testflow, tier1, tier2, SlaTest
 from fixtures import (
-    create_equals_numa_nodes_on_vm,
-    create_custom_numa_nodes_on_vm,
     get_pci_device_name,
     get_pci_device_numa_node,
     pin_one_vm_numa_node_to_two_host_numa_nodes,
     pin_two_vm_numa_nodes_to_tone_host_numa_node,
-    remove_all_numa_nodes_from_vm,
     update_vm_cpu_pinning,
     update_vm_memory_for_numa_test,
     update_vm_numa_mode
 )
 from rhevmtests.compute.sla.fixtures import (
     attach_host_device,
+    create_equals_numa_nodes_on_vm,
+    create_custom_numa_nodes_on_vm,
+    remove_all_numa_nodes_from_vm,
     start_vms,
     update_vms
 )
@@ -35,7 +36,7 @@ def setup_numa_test():
     """
     1) Install numactl package on hosts
     """
-    host_numa_nodes_l = helpers.get_filtered_numa_parameters_from_resource(
+    host_numa_nodes_l = sla_helpers.filter_nodes_without_memory(
         resource=conf.VDS_HOSTS[0]
     )
     if len(host_numa_nodes_l) < 2:
@@ -44,7 +45,7 @@ def setup_numa_test():
             "than zero on the host %s less than 2" %
             conf.HOSTS[0]
         )
-    helpers.install_numa_package(resource=conf.VDS_HOSTS[0])
+    sla_helpers.install_numa_package(resource=conf.VDS_HOSTS[0])
 
 
 class TestGetNumaStatisticFromHost(SlaTest):
@@ -58,7 +59,7 @@ class TestGetNumaStatisticFromHost(SlaTest):
         """
         Check that information about numa nodes in engine and on host the same
         """
-        numa_nodes_params = helpers.get_numa_parameters_from_resource(
+        numa_nodes_params = sla_helpers.get_numa_parameters_from_resource(
             resource=conf.VDS_HOSTS[0]
         )
         for node_index, numa_node_param in numa_nodes_params.iteritems():
@@ -104,10 +105,6 @@ class TestUpdateVmWithNumaAndAutomaticMigration(SlaTest):
         """
         Add NUMA node to VM
         """
-        testflow.step(
-            "Add NUMA node to VM %s with parameters: %s",
-            conf.VM_NAME[0], conf.DEFAULT_NUMA_NODE_PARAMS
-        )
         assert not ll_vms.add_numa_node_to_vm(
             vm_name=conf.VM_NAME[0],
             host_name=conf.HOSTS[0],
@@ -134,10 +131,6 @@ class TestUpdateVmWithNumaAndManualMigration(SlaTest):
         """
         Add NUMA node to VM
         """
-        testflow.step(
-            "Add NUMA node to VM %s with parameters: %s",
-            conf.VM_NAME[0], conf.DEFAULT_NUMA_NODE_PARAMS
-        )
         assert not ll_vms.add_numa_node_to_vm(
             vm_name=conf.VM_NAME[0],
             host_name=conf.HOSTS[0],
@@ -163,10 +156,6 @@ class TestUpdateVmWithNumaAndAnyHostPlacement(SlaTest):
         """
         Add NUMA node to VM
         """
-        testflow.step(
-            "Add NUMA node to VM %s with parameters: %s",
-            conf.VM_NAME[0], conf.DEFAULT_NUMA_NODE_PARAMS
-        )
         assert not ll_vms.add_numa_node_to_vm(
             vm_name=conf.VM_NAME[0],
             host_name=conf.HOSTS[0],
@@ -680,14 +669,10 @@ class TestPinVNUMAWithLessMemoryThanOnPNUMAStrict(SlaTest):
         """
         Add VM NUMA node with pinning
         """
-        vm_numa_nodes_params = helpers.create_number_of_equals_numa_nodes(
+        vm_numa_nodes_params = sla_helpers.create_number_of_equals_numa_nodes(
             resource=conf.VDS_HOSTS[0],
             vm_name=conf.VM_NAME[0],
             num_of_numa_nodes=self.num_of_vm_numa_nodes
-        )
-        testflow.step(
-            "Add NUMA node to VM %s with parameters: %s",
-            conf.VM_NAME[0], vm_numa_nodes_params[0]
         )
         assert ll_vms.add_numa_node_to_vm(
             vm_name=conf.VM_NAME[0],
@@ -724,14 +709,10 @@ class TestPinVNUMAWithMoreMemoryThanOnPNUMAStrict(SlaTest):
         """
         Add VM NUMA node with pinning
         """
-        vm_numa_nodes_params = helpers.create_number_of_equals_numa_nodes(
+        vm_numa_nodes_params = sla_helpers.create_number_of_equals_numa_nodes(
             resource=conf.VDS_HOSTS[0],
             vm_name=conf.VM_NAME[0],
             num_of_numa_nodes=self.num_of_vm_numa_nodes
-        )
-        testflow.step(
-            "Add NUMA node to VM %s with parameters: %s",
-            conf.VM_NAME[0], vm_numa_nodes_params[0]
         )
         assert not ll_vms.add_numa_node_to_vm(
             vm_name=conf.VM_NAME[0],
@@ -768,14 +749,10 @@ class TestPinVNUMAWithLessMemoryThanOnPNUMAInterleave(SlaTest):
         """
         Add VM NUMA node with pinning
         """
-        vm_numa_nodes_params = helpers.create_number_of_equals_numa_nodes(
+        vm_numa_nodes_params = sla_helpers.create_number_of_equals_numa_nodes(
             resource=conf.VDS_HOSTS[0],
             vm_name=conf.VM_NAME[0],
             num_of_numa_nodes=self.num_of_vm_numa_nodes
-        )
-        testflow.step(
-            "Add NUMA node to VM %s with parameters: %s",
-            conf.VM_NAME[0], vm_numa_nodes_params[0]
         )
         assert ll_vms.add_numa_node_to_vm(
             vm_name=conf.VM_NAME[0],

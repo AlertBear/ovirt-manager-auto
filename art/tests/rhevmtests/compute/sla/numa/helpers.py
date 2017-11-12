@@ -4,103 +4,11 @@ Helpers for NUMA test
 import logging
 import re
 
-import art.rhevm_api.tests_lib.low_level.vms as ll_vms
-import art.test_handler.exceptions as errors
 import config as conf
 import rhevmtests.helpers as global_helpers
+import rhevmtests.compute.sla.helpers as sla_helpers
 
 logger = logging.getLogger(__name__)
-
-
-def install_numa_package(resource):
-    """
-    Install numactl package on the resource
-
-    Args:
-        resource (VDS): VDS resource
-
-    Raises:
-        HostException
-    """
-    if not resource.package_manager.install(conf.NUMACTL_PACKAGE):
-        raise errors.HostException(
-            "%s: Failed to install package %s" %
-            (resource, conf.NUMACTL_PACKAGE)
-        )
-
-
-def reinstall_numa_package(resource):
-    """
-    Reinstall numactl package on the resource
-
-    Args:
-        resource (VDS): VDS resource
-
-    Raises:
-        HostException
-    """
-    # TODO: W/A for bug https://bugzilla.redhat.com/show_bug.cgi?id=1315184
-    out = resource.run_command(command=[conf.NUMACTL, "-H"])[1]
-    if not out:
-        packager_methods = {
-            conf.PACKAGE_MANAGER_INSTALL: resource.package_manager.install,
-            conf.PACKAGE_MANAGER_REMOVE: resource.package_manager.remove
-        }
-        for method_name, packager_method in packager_methods.iteritems():
-            if not packager_method(conf.NUMACTL_PACKAGE):
-                raise errors.HostException(
-                    "%s: Failed to %s package %s" %
-                    (resource, method_name, conf.NUMACTL_PACKAGE)
-                )
-
-
-def get_numa_parameters_from_resource(resource):
-    """
-    Get NUMA parameters from the resource
-
-    Args:
-        resource (VDS): VDS resource
-
-    Returns:
-        dict: NUMA nodes parameters({node_index: {cpus, memory}})
-    """
-    reinstall_numa_package(resource=resource)
-    param_dict = {}
-    logger.info("Get NUMA information from the resource %s", resource)
-    rc, out, _ = resource.run_command(command=[conf.NUMACTL, "-H"])
-    if rc:
-        logger.error("Failed to get numa information from resource")
-        return param_dict
-    pattern = re.compile(r"node\s(\d+)\s+(\w+):\s+([\d\s]+)\w*$", re.M)
-    results = re.findall(pattern, out)
-    for result in results:
-        node = int(result[0])
-        if node not in param_dict:
-            param_dict[node] = {}
-        if result[1] == conf.NUMA_NODE_CPUS:
-            value = [int(v) for v in result[2].split()]
-        else:
-            value = int(result[2])
-        param_dict[node][result[1]] = value
-    logger.debug("%s: NUMA parameters: %s", resource, param_dict)
-    return param_dict
-
-
-def get_filtered_numa_parameters_from_resource(resource):
-    """
-    Get NUMA parameters for the nodes with memory greater than zero
-
-    Args:
-        resource (VDS): VDS resource
-
-    Returns:
-        dict: Filtered NUMA nodes parameters({node_index: {cpus, memory}})
-    """
-    h_numa_nodes_params = get_numa_parameters_from_resource(resource=resource)
-    return dict(
-        (k, v) for k, v in h_numa_nodes_params.iteritems()
-        if v[conf.NUMA_NODE_MEMORY] != 0
-    )
 
 
 def get_numa_parameters_from_vm(vm_name):
@@ -117,8 +25,8 @@ def get_numa_parameters_from_vm(vm_name):
     vm_resource = global_helpers.get_vm_resource(vm=vm_name)
     if not vm_resource:
         return params_dict
-    install_numa_package(resource=vm_resource)
-    return get_numa_parameters_from_resource(resource=vm_resource)
+    sla_helpers.install_numa_package(resource=vm_resource)
+    return sla_helpers.get_numa_parameters_from_resource(resource=vm_resource)
 
 
 def parse_pinning_values(values):
@@ -206,44 +114,6 @@ def get_numa_mode_from_vm_process(resource, vm_name, numa_mode):
     return bool(not rc and out)
 
 
-def create_number_of_equals_numa_nodes(resource, vm_name, num_of_numa_nodes):
-    """
-    Create the number of equals NUMA nodes for the future use
-
-    Args:
-        resource (VDS): VDS resource
-        vm_name (str): VM name
-        num_of_numa_nodes (int): Number of NUMA nodes to create
-
-    Returns:
-        list: NUMA nodes definitions
-    """
-    numa_nodes = []
-    h_numa_nodes_indexes = get_filtered_numa_parameters_from_resource(
-        resource=resource
-    ).keys()
-    v_numa_node_memory = ll_vms.get_vm_memory(
-        vm_name
-    ) / num_of_numa_nodes / conf.MB
-    v_numa_node_cores = (
-        ll_vms.get_vm_cores(vm_name=vm_name) *
-        ll_vms.get_vm_sockets(vm_name=vm_name) /
-        num_of_numa_nodes
-    )
-    for index in range(num_of_numa_nodes):
-        cores = range(
-            index * v_numa_node_cores, (index + 1) * v_numa_node_cores
-        )
-        numa_node = {
-            "index": index,
-            "memory": v_numa_node_memory,
-            "cores": cores,
-            "pin_list": [h_numa_nodes_indexes[index]]
-        }
-        numa_nodes.append(numa_node)
-    return numa_nodes
-
-
 def is_numa_cpu_pinning_correct(
     h_numa_nodes_params, vm_pinning, num_of_vm_numa_nodes
 ):
@@ -320,7 +190,7 @@ def is_numa_pinning_correct(pinning_type, numa_mode, num_of_vm_numa_nodes):
     Returns:
         bool: True, if VM NUMA pinning is correct, otherwise False
     """
-    h_numa_nodes_params = get_filtered_numa_parameters_from_resource(
+    h_numa_nodes_params = sla_helpers.filter_nodes_without_memory(
         resource=conf.VDS_HOSTS[0]
     )
     vm_pinning = get_vm_numa_pinning(

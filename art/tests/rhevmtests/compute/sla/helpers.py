@@ -636,3 +636,177 @@ def get_pci_device(host_name):
                 if device_product.get_name() == correct_product:
                     return host_device
     return None
+
+
+def wait_for_host_hugepages(
+    host_name,
+    hugepage_size,
+    expected_hugepages_nr,
+    timeout=conf.SAMPLER_TIMEOUT,
+    sleep=conf.SAMPLER_SLEEP
+):
+    """
+    Wait until the host will have expected number of hugepages
+
+    Args:
+        host_name (str): Host name
+        hugepage_size (str): Hugepage size
+        expected_hugepages_nr (int): Expected number of hugepages
+        timeout (int): Sampler timeout
+        sleep (int): Sampler sleep interval
+
+    Returns:
+        bool: True, if the host has expected number of hugepages
+            before it reaches timeout, otherwise False
+    """
+    sampler = TimeoutingSampler(
+        timeout,
+        sleep,
+        ll_hosts.get_host_free_nr_hugepages,
+        host_name,
+        hugepage_size
+    )
+    logger.info(
+        "Wait until host %s will have expected number of hugepages", host_name
+    )
+    try:
+        for sample in sampler:
+            logger.info(
+                "Host %s current number of hugepages is: %s", host_name, sample
+            )
+            if sample == expected_hugepages_nr:
+                return True
+    except APITimeout:
+        logger.error(
+            "Host %s does not have expected number of hugepages", host_name
+        )
+        return False
+
+
+def install_numa_package(resource):
+    """
+    Install numactl package on the resource
+
+    Args:
+        resource (VDS): VDS resource
+
+    Raises:
+        HostException
+    """
+    if not resource.package_manager.install(conf.NUMACTL_PACKAGE):
+        raise errors.HostException(
+            "%s: Failed to install package %s" %
+            (resource, conf.NUMACTL_PACKAGE)
+        )
+
+
+def reinstall_numa_package(resource):
+    """
+    Reinstall numactl package on the resource
+
+    Args:
+        resource (VDS): VDS resource
+
+    Raises:
+        HostException
+    """
+    # TODO: W/A for bug https://bugzilla.redhat.com/show_bug.cgi?id=1315184
+    out = resource.run_command(command=[conf.NUMACTL, "-H"])[1]
+    if not out:
+        packager_methods = {
+            conf.PACKAGE_MANAGER_INSTALL: resource.package_manager.install,
+            conf.PACKAGE_MANAGER_REMOVE: resource.package_manager.remove
+        }
+        for method_name, packager_method in packager_methods.iteritems():
+            if not packager_method(conf.NUMACTL_PACKAGE):
+                raise errors.HostException(
+                    "%s: Failed to %s package %s" %
+                    (resource, method_name, conf.NUMACTL_PACKAGE)
+                )
+
+
+def get_numa_parameters_from_resource(resource):
+    """
+    Get NUMA parameters from the resource
+
+    Args:
+        resource (VDS): VDS resource
+
+    Returns:
+        dict: NUMA nodes parameters({node_index: {cpus, memory}})
+    """
+    reinstall_numa_package(resource=resource)
+    param_dict = {}
+    logger.info("Get NUMA information from the resource %s", resource)
+    rc, out, _ = resource.run_command(command=[conf.NUMACTL, "-H"])
+    if rc:
+        logger.error("Failed to get numa information from resource")
+        return param_dict
+    pattern = re.compile(r"node\s(\d+)\s+(\w+):\s+([\d\s]+)\w*$", re.M)
+    results = re.findall(pattern, out)
+    for result in results:
+        node = int(result[0])
+        if node not in param_dict:
+            param_dict[node] = {}
+        if result[1] == conf.NUMA_NODE_CPUS:
+            value = [int(v) for v in result[2].split()]
+        else:
+            value = int(result[2])
+        param_dict[node][result[1]] = value
+    logger.debug("%s: NUMA parameters: %s", resource, param_dict)
+    return param_dict
+
+
+def filter_nodes_without_memory(resource):
+    """
+    Get NUMA parameters for the nodes with memory greater than zero
+
+    Args:
+        resource (VDS): VDS resource
+
+    Returns:
+        dict: Filtered NUMA nodes parameters({node_index: {cpus, memory}})
+    """
+    h_numa_nodes_params = get_numa_parameters_from_resource(resource=resource)
+    return dict(
+        (k, v) for k, v in h_numa_nodes_params.iteritems()
+        if v[conf.NUMA_NODE_MEMORY] != 0
+    )
+
+
+def create_number_of_equals_numa_nodes(resource, vm_name, num_of_numa_nodes):
+    """
+    Create the number of equals NUMA nodes for the future use
+
+    Args:
+        resource (VDS): VDS resource
+        vm_name (str): VM name
+        num_of_numa_nodes (int): Number of NUMA nodes to create
+
+    Returns:
+        list: NUMA nodes definitions
+    """
+    numa_nodes = []
+    h_numa_nodes_indexes = filter_nodes_without_memory(
+        resource=resource
+    ).keys()
+    v_numa_node_memory = ll_vms.get_vm_memory(
+        vm_name
+    ) / num_of_numa_nodes / conf.MB
+    v_numa_node_cores = (
+        ll_vms.get_vm_cores(vm_name=vm_name) *
+        ll_vms.get_vm_sockets(vm_name=vm_name) /
+        num_of_numa_nodes
+    )
+    for index in range(num_of_numa_nodes):
+        cores = range(
+            index * v_numa_node_cores, (index + 1) * v_numa_node_cores
+        )
+        numa_node = {
+            "index": index,
+            "memory": v_numa_node_memory,
+            "cores": cores,
+            "pin_list": [h_numa_nodes_indexes[index]]
+        }
+        numa_nodes.append(numa_node)
+    return numa_nodes

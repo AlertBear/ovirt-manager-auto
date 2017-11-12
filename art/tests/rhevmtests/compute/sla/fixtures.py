@@ -41,7 +41,6 @@ def start_vms(request):
         """
         1) Stop VM's
         """
-        u_libs.testflow.teardown("Stop VM's %s", vms_to_start)
         ll_vms.stop_vms_safely(vms_list=vms_to_start)
         time.sleep(sla_config.ENGINE_STAT_UPDATE_INTERVAL)
     request.addfinalizer(fin)
@@ -120,9 +119,6 @@ def update_vms(request):
                     cpu_profile_name=sla_config.CLUSTER_NAME[0]
                 )
                 temp_default_params[sla_config.VM_CPU_PROFILE] = cpu_profile_id
-            u_libs.testflow.teardown(
-                "Update the VM %s to default parameters", vm_name
-            )
             ll_vms.updateVm(positive=True, vm=vm_name, **temp_default_params)
     request.addfinalizer(fin)
 
@@ -143,9 +139,6 @@ def update_vms(request):
                 cpu_profile_name=vm_params[sla_config.VM_CPU_PROFILE]
             )
             vm_params[sla_config.VM_CPU_PROFILE] = cpu_profile_id
-        u_libs.testflow.setup(
-            "Update the VM %s with params %s", vm_name, vm_params
-        )
         assert ll_vms.updateVm(
             positive=True, vm=vm_name, **vm_params
         )
@@ -818,51 +811,128 @@ def define_hugepages_on_hosts(request):
     """
     hosts_to_hugepages = request.node.cls.hosts_to_hugepages
 
-    def set_hugepages_on_host(vds_host, hugepage_size, hugepages_nr):
-        """
-        Set hugepages on the host
-
-        Args:
-            vds_host (VDS): VDS resource
-            hugepage_size (str): Hugepage size
-            hugepages_nr (int): Number of hugepages
-        """
-        cmd = [
-            "echo", str(hugepages_nr), ">",
-            sla_config.HUGEPAGES_NR_FILE.format(hugepage_size)
-        ]
-        assert not vds_host.run_command(cmd)[0]
-        # TODO: add timeout sampler when bug 1497708 will have a fix
-        time.sleep(2 * sla_config.ENGINE_STAT_UPDATE_INTERVAL)
-
     def fin():
+        result = []
         for host_index, hugepages in hosts_to_hugepages.iteritems():
             for hugepage_size in hugepages.iterkeys():
+                vds_host = sla_config.VDS_HOSTS[host_index]
+                hugepage_file = sla_config.HUGEPAGES_NR_FILE.format(
+                    hugepage_size
+                )
+                if not vds_host.fs.exists(hugepage_file):
+                    continue
                 u_libs.testflow.teardown(
-                    "%s :set %s of hugepages of size %skB",
+                    "%s :set %s hugepages of size %skB",
                     sla_config.VDS_HOSTS[host_index],
                     0,
                     hugepage_size
                 )
-                set_hugepages_on_host(
-                    vds_host=sla_config.VDS_HOSTS[host_index],
-                    hugepage_size=hugepage_size,
-                    hugepages_nr=0
+                cmd = [
+                    "echo", "0", ">", hugepage_file
+                ]
+                result.append(not vds_host.run_command(cmd)[0])
+                result.append(
+                    sla_helpers.wait_for_host_hugepages(
+                        host_name=sla_config.HOSTS[host_index],
+                        hugepage_size=hugepage_size,
+                        expected_hugepages_nr=0
+                    )
                 )
-
+        assert all(result)
     request.addfinalizer(fin)
 
     for host_index, hugepages in hosts_to_hugepages.iteritems():
         for hugepage_size, total_size in hugepages.iteritems():
+            vds_host = sla_config.VDS_HOSTS[host_index]
+            hugepage_file = sla_config.HUGEPAGES_NR_FILE.format(
+                hugepage_size
+            )
+            if not vds_host.fs.exists(hugepage_file):
+                pytest.skip(
+                    "%s: does not support hugepages of size %s",
+                    vds_host, hugepage_size
+                )
             hugepages_nr = total_size / (int(hugepage_size) * 1024)
             u_libs.testflow.setup(
                 "%s :set %s of hugepages of size %skB",
-                sla_config.VDS_HOSTS[host_index],
+                vds_host,
                 hugepages_nr,
                 hugepage_size
             )
-            set_hugepages_on_host(
-                vds_host=sla_config.VDS_HOSTS[host_index],
+            cmd = ["echo", str(hugepages_nr), ">", hugepage_file]
+            assert not vds_host.run_command(cmd)[0]
+            assert sla_helpers.wait_for_host_hugepages(
+                host_name=sla_config.HOSTS[host_index],
                 hugepage_size=hugepage_size,
-                hugepages_nr=hugepages_nr
+                expected_hugepages_nr=hugepages_nr
             )
+
+
+@pytest.fixture(scope="class")
+def create_equals_numa_nodes_on_vm(request):
+    """
+    1) Add equals NUMA nodes to the VM
+    """
+    num_of_vm_numa_nodes = request.node.cls.num_of_vm_numa_nodes
+
+    numa_nodes = sla_helpers.create_number_of_equals_numa_nodes(
+        resource=sla_config.VDS_HOSTS[0],
+        vm_name=sla_config.VM_NAME[0],
+        num_of_numa_nodes=num_of_vm_numa_nodes
+    )
+    for numa_node in numa_nodes:
+        assert ll_vms.add_numa_node_to_vm(
+            vm_name=sla_config.VM_NAME[0],
+            host_name=sla_config.HOSTS[0],
+            **numa_node
+        )
+
+
+@pytest.fixture(scope="class")
+def create_custom_numa_nodes_on_vm(request):
+    """
+    1) Create custom NUMA nodes on the VM
+    """
+    vm_numa_nodes_params = request.node.cls.vm_numa_nodes_params
+
+    for numa_node in vm_numa_nodes_params:
+        assert ll_vms.add_numa_node_to_vm(
+            vm_name=sla_config.VM_NAME[0],
+            host_name=sla_config.HOSTS[0],
+            **numa_node
+        )
+
+
+@pytest.fixture(scope="class")
+def remove_all_numa_nodes_from_vm(request):
+    def fin():
+        """
+        1) Remove all NUMA nodes from the VM
+        """
+        vm_numa_nodes_indexes = [
+            vm_numa_node.index for vm_numa_node in ll_vms.get_vm_numa_nodes(
+                sla_config.VM_NAME[0]
+            )
+        ]
+        vm_numa_nodes_indexes.sort(reverse=True)
+        for numa_node_index in vm_numa_nodes_indexes:
+            ll_vms.remove_numa_node_from_vm(
+                vm_name=sla_config.VM_NAME[0], numa_node_index=numa_node_index
+            )
+    request.addfinalizer(fin)
+
+
+@pytest.fixture(scope="class")
+def skip_numa_tests():
+    """
+    Skip NUMA tests on the environment that does not have hosts with NUMA nodes
+    """
+    host_numa_nodes_l = sla_helpers.filter_nodes_without_memory(
+        resource=sla_config.VDS_HOSTS[0]
+    )
+    if len(host_numa_nodes_l) < 2:
+        pytest.skip(
+            "Number of NUMA nodes with the memory greater "
+            "than zero on the host %s less than 2" %
+            sla_config.HOSTS[0]
+        )

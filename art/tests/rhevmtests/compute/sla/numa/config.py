@@ -3,9 +3,6 @@ Configuration File for NUMA test
 """
 from rhevmtests.compute.sla.config import *  # flake8: noqa
 
-NUMACTL_PACKAGE = "numactl"
-
-NUMACTL = "numactl"
 CPU_PINNING_TYPE = "Cpus_allowed_list"
 MEMORY_PINNING_TYPE = "Mems_allowed_list"
 
@@ -18,11 +15,6 @@ ENGINE_NUMA_MODES = {
     PREFER_MODE: "preferred",
     INTERLEAVE_MODE: "interleave"
 }
-
-NUMA_NODE = "node"
-NUMA_NODE_DISTANCE = "distances"
-NUMA_NODE_MEMORY = "size"
-NUMA_NODE_CPUS = "cpus"
 
 NUMA_NODE_PARAMS_INDEX = "index"
 NUMA_NODE_PARAMS_CORES = "cores"

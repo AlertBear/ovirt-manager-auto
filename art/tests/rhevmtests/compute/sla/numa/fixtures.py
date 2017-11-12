@@ -37,60 +37,6 @@ def update_vm_numa_mode(request):
 
 
 @pytest.fixture(scope="class")
-def create_equals_numa_nodes_on_vm(request):
-    """
-    1) Add equals NUMA nodes to the VM
-    """
-    num_of_vm_numa_nodes = request.node.cls.num_of_vm_numa_nodes
-
-    numa_nodes = helpers.create_number_of_equals_numa_nodes(
-        resource=conf.VDS_HOSTS[0],
-        vm_name=conf.VM_NAME[0],
-        num_of_numa_nodes=num_of_vm_numa_nodes
-    )
-    for numa_node in numa_nodes:
-        assert ll_vms.add_numa_node_to_vm(
-            vm_name=conf.VM_NAME[0],
-            host_name=conf.HOSTS[0],
-            **numa_node
-        )
-
-
-@pytest.fixture(scope="class")
-def create_custom_numa_nodes_on_vm(request):
-    """
-    1) Create custom NUMA nodes on the VM
-    """
-    vm_numa_nodes_params = request.node.cls.vm_numa_nodes_params
-
-    for numa_node in vm_numa_nodes_params:
-        assert ll_vms.add_numa_node_to_vm(
-            vm_name=conf.VM_NAME[0],
-            host_name=conf.HOSTS[0],
-            **numa_node
-        )
-
-
-@pytest.fixture(scope="class")
-def remove_all_numa_nodes_from_vm(request):
-    def fin():
-        """
-        1) Remove all NUMA nodes from the VM
-        """
-        vm_numa_nodes_indexes = [
-            vm_numa_node.index for vm_numa_node in ll_vms.get_vm_numa_nodes(
-                conf.VM_NAME[0]
-            )
-        ]
-        vm_numa_nodes_indexes.sort(reverse=True)
-        for numa_node_index in vm_numa_nodes_indexes:
-            ll_vms.remove_numa_node_from_vm(
-                vm_name=conf.VM_NAME[0], numa_node_index=numa_node_index
-            )
-    request.addfinalizer(fin)
-
-
-@pytest.fixture(scope="class")
 def update_vm_cpu_pinning():
     """
     1) Update VM CPU pinning
