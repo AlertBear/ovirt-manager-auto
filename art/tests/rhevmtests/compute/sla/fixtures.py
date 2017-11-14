@@ -251,9 +251,6 @@ def create_additional_cluster(request):
         """
         1) Remove additional cluster
         """
-        u_libs.testflow.teardown(
-            "Remove the additional cluster %s", additional_cluster_name
-        )
         ll_clusters.removeCluster(
             positive=True, cluster=additional_cluster_name
         )

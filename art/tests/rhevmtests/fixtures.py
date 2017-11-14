@@ -105,7 +105,6 @@ def create_clusters(request):
         Remove clusters
         """
         for cluster in clusters_to_remove:
-            testflow.teardown("Remove cluster %s", cluster)
             result_list.append(
                 ll_clusters.removeCluster(positive=True, cluster=cluster)
             )

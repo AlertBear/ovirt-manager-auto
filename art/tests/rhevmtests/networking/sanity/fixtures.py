@@ -119,7 +119,6 @@ def create_cluster(request):
         """
         Remove cluster
         """
-        testflow.teardown("Remove cluster %s", ext_cl)
         assert ll_clusters.removeCluster(positive=True, cluster=ext_cl)
     request.addfinalizer(fin)
 

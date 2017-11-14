@@ -82,7 +82,6 @@ def mac_pool_per_cl_prepare_setup(request):
         """
         Remove cluster
         """
-        testflow.teardown("Removing cluster: %s", cluster)
         results.append(
             (
                 ll_clusters.removeCluster(positive=True, cluster=cluster),
@@ -200,7 +199,6 @@ def create_cluster_with_mac_pools(request):
         results = []
         for cl, params in mac_pools.items():
             if params[1]:
-                testflow.teardown("Removing cluster: %s", cl)
                 results.append(
                     (
                         ll_clusters.removeCluster(positive=True, cluster=cl),

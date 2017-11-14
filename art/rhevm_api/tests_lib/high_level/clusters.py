@@ -2,6 +2,7 @@ import logging
 
 import art.rhevm_api.tests_lib.low_level.templates as ll_templates
 import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
+import art.rhevm_api.tests_lib.low_level.clusters as ll_clusters
 
 logger = logging.getLogger("art.hl_lib.cls")
 
@@ -34,3 +35,20 @@ def get_hosts_connected_to_cluster(cluster_id):
         lambda x: x.get_cluster().get_id() == cluster_id,
         all_hosts
     )
+
+
+def get_external_network_provider_names(cluster_name):
+    """
+    Get external network providers names
+
+    Args:
+        cluster_name (str): By cluster name
+
+    Returns:
+        list: List of external network provider names
+    """
+    cluster_obj = ll_clusters.get_cluster_object(cluster_name=cluster_name)
+    enp_objs = ll_clusters.get_external_network_providers_objects(
+        cluster_object=cluster_obj
+    )
+    return [enp.get_name() for enp in enp_objs]

@@ -56,6 +56,11 @@ Migration_Options = getDS('MigrationOptions')
 Migration_Policy = getDS('MigrationPolicy')
 MigrationBandwidth = getDS('MigrationBandwidth')
 
+# OpenStack External Network Providers
+OPENSTACK_NETWORK_PROVIDER_API = get_api(
+    "openstack_network_provider", "openstacknetworkproviders"
+)
+
 CLUSTER_NAME = "cluster"
 AFFINITY_GROUP_NAME = "affinity group"
 CPU_PROFILE_NAME = "cpu profile"
@@ -114,6 +119,18 @@ def _prepareClusterObject(**kwargs):
     if 'data_center' in kwargs:
         clDC = dcUtil.find(kwargs.pop('data_center'))
         cl.set_data_center(clDC)
+
+    if "external_network_provider" in kwargs:
+        external_providers = data_st.ExternalProviders()
+        enp_name = kwargs.pop("external_network_provider")
+        if enp_name:
+            openstack_ep_obj = OPENSTACK_NETWORK_PROVIDER_API.find(enp_name)
+            openstack_ep_id = openstack_ep_obj.get_id()
+            # Map between Openstack_Network_Provider and External_Provider
+            external_provider_obj = data_st.ExternalProvider()
+            external_provider_obj.set_id(openstack_ep_id)
+            external_providers.add_external_provider(external_provider_obj)
+        cl.set_external_network_providers(external_providers)
 
     if 'gluster_support' in kwargs:
         cl.set_gluster_service(kwargs.pop('gluster_support'))
@@ -225,11 +242,10 @@ def _prepareClusterObject(**kwargs):
     return cl
 
 
+@ll_general.generate_logs(step=True)
 def addCluster(positive, **kwargs):
     """
     Add cluster
-
-    __Author__: edolinin
 
     Args:
         positive (bool): Expected status
@@ -262,6 +278,8 @@ def addCluster(positive, **kwargs):
         migration_bandwidth (str): Bandwidth assignment method
         migration_custom_bandwidth (int): Custom bandwidth
         mac_pool (str): New MAC pool for the cluster
+        external_network_provider (str): Name of the external network provider,
+            or empty string in case of empty external network provider
 
     Returns:
         bool: True if cluster was created properly, False otherwise
@@ -310,6 +328,8 @@ def updateCluster(positive, cluster, **kwargs):
         mac_pool (str): New MAC pool for the DC
         compare (bool): True by default and run compareElements,
             otherwise compareElements doesn't run
+        external_network_provider (str): Name of the external network provider,
+            or empty string in case of empty external network provider
 
     Returns:
         bool: True, if update succeed, otherwise False
@@ -322,6 +342,7 @@ def updateCluster(positive, cluster, **kwargs):
     )[1]
 
 
+@ll_general.generate_logs(step=True)
 def removeCluster(positive, cluster):
     """
     Remove cluster
@@ -333,16 +354,8 @@ def removeCluster(positive, cluster):
     Returns:
         bool: True if cluster was removed properly, False otherwise
     """
-    log_info, log_error = ll_general.get_log_msg(
-        log_action="Remove", obj_type="cluster", obj_name=cluster,
-        positive=positive
-    )
-    logger.info(log_info)
     cluster_obj = util.find(cluster)
-    res = util.delete(cluster_obj, positive)
-    if not res:
-        logger.error(log_error)
-    return res
+    return util.delete(cluster_obj, positive)
 
 
 def searchForCluster(positive, query_key, query_val, key_name, **kwargs):
@@ -526,6 +539,23 @@ def get_affinity_groups_obj(cluster_name):
     cluster_obj = get_cluster_object(cluster_name)
     return CLUSTER_API.getElemFromLink(
         cluster_obj, link_name=link_name, get_href=True
+    )
+
+
+@ll_general.generate_logs(step=True)
+def get_external_network_providers_objects(cluster_object):
+    """
+    Get external network providers objects of cluster object
+
+    Args:
+        cluster_object (Cluster): Cluster object
+
+    Returns:
+        list: List of external network providers objects
+    """
+    return CLUSTER_API.getElemFromLink(
+        elm=cluster_object, link_name="externalnetworkproviders",
+        attr="external_provider"
     )
 
 

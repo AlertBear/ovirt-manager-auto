@@ -551,7 +551,6 @@ class TestMGMTNetRole06(NetworkTest):
         2.  Add a new cluster without providing explicitly management network
         3.  Check that net1 is management network for a new cluster
         """
-        testflow.step('Update all clusters to have net1 as management network')
         assert ll_clusters.removeCluster(positive=True, cluster=self.ext_cls_2)
         assert ll_networks.remove_network(
             positive=True, network=self.net_2, data_center=self.ext_dc
@@ -638,7 +637,6 @@ class TestMGMTNetRole07(NetworkTest):
             cluster_name=self.ext_cls_0, network=self.net_1
         )
 
-        testflow.step('Remove cluster')
         assert ll_clusters.removeCluster(positive=True, cluster=self.ext_cls_0)
 
         testflow.step('Remove non-default management network')

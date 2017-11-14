@@ -17,7 +17,10 @@ import rhevmtests.helpers as global_helper
 import rhevmtests.networking.config as net_config
 import rhevmtests.networking.helper as network_helper
 from art.rhevm_api.tests_lib.low_level import (
-    networks as ll_networks, external_providers
+    networks as ll_networks,
+    clusters as ll_clusters,
+    hosts as ll_hosts,
+    external_providers
 )
 from art.unittest_lib import testflow
 from rhevmtests.networking import config_handler
@@ -221,72 +224,43 @@ def remove_ifcfg_from_vms(request):
     request.addfinalizer(fin)
 
 
-@pytest.fixture(scope="module")
-def configure_ovn(request):
+@pytest.fixture(scope="class")
+def set_cluster_external_network_provider(request):
     """
-    1. Configure ovirt-provider-ovn-driver component on OVN hosts 1 and 2
-    2. Verify that firewalld is running on OVN central and hosts
+    Set cluster CL_0 external network provider
     """
-    ovn_central = net_config.ENGINE_HOST
-    ovn_hosts = net_config.VDS_HOSTS_LIST[:2]
+    cl = request.node.cls.cl
 
     def fin():
         """
-        Restore firewalld service state on OVN hosts
+        Set default external network provider
         """
-        results = []
-
-        for host in enp_conf.OVN_FIREWALLD_STARTED_SERVERS:
-            testflow.setup(
-                "Starting firewall firewalld service on host: %s", host.fqdn
-            )
-            results.append(
-                (
-                    helper.service_handler(
-                        host=host, service="firewalld", action="start"
-                    ),
-                    "Failed to start firewalld service on host: %s"
-                    % host.fqdn
-                )
-            )
-            results.append(
-                (
-                    helper.service_handler(
-                        host=host, service="libvirtd", action="restart"
-                    ),
-                    "Failed to restart libvirtd service on host: %s"
-                    % host.fqdn
-                )
-            )
-
-        global_helper.raise_if_false_in_list(results)
+        assert ll_clusters.updateCluster(
+            positive=True, cluster=cl, external_network_provider=""
+        )
     request.addfinalizer(fin)
 
-    # OVN central configuration
-    testflow.setup(
-        "Verifying that firewalld is started on OVN central: %s",
-        ovn_central.fqdn
-    )
-    assert helper.service_handler(
-        host=ovn_central, service="firewalld", action="active"
+    assert ll_clusters.updateCluster(
+        positive=True, cluster=cl,
+        external_network_provider=enp_conf.OVN_PROVIDER_NAME
     )
 
-    # OVN driver configuration
-    for host in ovn_hosts:
-        testflow.setup(
-            "Verifying that firewalld is started on OVN host: %s", host.fqdn
+
+@pytest.fixture(scope="class")
+def reinstall_hosts(request):
+    """
+    Reinstall host(s) to trigger OVN host-deploy (ansible)
+    """
+    hosts_to_reinstall = getattr(request.cls, "hosts_to_reinstall", [])
+
+    for host_idx in hosts_to_reinstall:
+        host_name = net_config.HOSTS_LIST[host_idx]
+        assert ll_hosts.deactivate_host(positive=True, host=host_name)
+        assert ll_hosts.install_host(
+            host=host_name, root_password=global_config.VDC_ROOT_PASSWORD,
+            external_network_provider=enp_conf.OVN_PROVIDER_NAME
         )
-        assert helper.service_handler(
-            host=host, service="firewalld", action="active"
-        )
-        testflow.setup("Configuring vdsm-tool on host: %s", host.fqdn)
-        assert not host.run_command(
-            shlex.split(
-                enp_conf.OVN_CMD_VDSM_TOOL.format(
-                    provider_ip=ovn_central.ip, host_ip=host.ip
-                )
-            )
-        )[0]
+        assert ll_hosts.activate_host(positive=True, host=host_name)
 
 
 @pytest.fixture(scope="class")

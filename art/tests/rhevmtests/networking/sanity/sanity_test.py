@@ -76,7 +76,8 @@ from rhevmtests.networking.sr_iov.fixtures import (  # noqa: F401
     sr_iov_init
 )
 from rhevmtests.networking.external_network_provider.fixtures import (
-    configure_ovn
+    set_cluster_external_network_provider,
+    reinstall_hosts
 )
 from rhevmtests.networking.acquire_nm_connections.fixtures import (
     nmcli_create_networks
@@ -1431,10 +1432,10 @@ class TestSanity18(NetworkTest):
         )
 
 
-@bz({"1532018": {}})
 @pytest.mark.incremental
 @pytest.mark.usefixtures(
-    configure_ovn.__name__,
+    set_cluster_external_network_provider.__name__,
+    reinstall_hosts.__name__,
     remove_ovn_networks.__name__,
     remove_vnics_from_vms.__name__,
     start_vm.__name__
@@ -1464,6 +1465,9 @@ class TestSanity19(NetworkTest):
 
     # remove_ovn_networks fixture parameters
     remove_ovn_networks_params = sanity_conf.OVN_NETS
+
+    # reinstall_hosts fixture parameters
+    hosts_to_reinstall = [0]
 
     @tier1
     @polarion("RHEVM3-21661")

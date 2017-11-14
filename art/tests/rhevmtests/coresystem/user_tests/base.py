@@ -74,7 +74,6 @@ def setup_module(request):
         testflow.teardown("Removing disk %s", config.DELETE_DISK)
         iexs(disks.deleteDisk, True, config.DELETE_DISK, async=False)
 
-        testflow.teardown("Removing cluster %s", config.DELETE_CLUSTER)
         iexs(clusters.removeCluster, True, config.DELETE_CLUSTER)
 
         testflow.teardown("Removing vm %s", config.DELETE_VM)
@@ -920,7 +919,6 @@ class CaseRoleActions(CoreSystemTest):
     )
     def test_delete_cluster(self):
         """ delete_cluster """
-        testflow.step("Removing cluster %s.", config.DELETE_CLUSTER)
         assert clusters.removeCluster(self.positive, config.DELETE_CLUSTER)
 
     @user_case(

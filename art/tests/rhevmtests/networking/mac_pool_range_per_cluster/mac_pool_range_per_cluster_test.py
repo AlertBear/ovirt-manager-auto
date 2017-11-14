@@ -102,13 +102,11 @@ class TestMacPoolRange02(NetworkTest):
         3.  Remove cluster
         4.  Make sure default MAC pool still exists
         """
-        testflow.step("Removing existing cluster from setup")
         assert ll_clusters.removeCluster(positive=True, cluster=self.ext_cl)
         testflow.step("Recreate cluster without explicitly providing MAC pool")
         assert helper.create_cluster_with_mac_pool(mac_pool_name="")
         pool_id = ll_mac_pool.get_mac_pool_from_cluster(cluster=self.ext_cl).id
         assert ll_mac_pool.get_default_mac_pool().id == pool_id
-        testflow.step("Remove cluster")
         assert ll_clusters.removeCluster(positive=True, cluster=self.ext_cl)
         testflow.step("Make sure default MAC pool still exists")
         assert ll_mac_pool.get_mac_pool(pool_name=self.def_mac_pool)
@@ -346,7 +344,6 @@ class TestMacPoolRange03(NetworkTest):
             name=self.pool_0, ranges=[self.range_list[0]]
         )
         assert helper.create_cluster_with_mac_pool()
-        testflow.step("Remove cluster")
         assert ll_clusters.removeCluster(positive=True, cluster=self.ext_cl_1)
         testflow.step("Make sure that the MAC pool is not removed")
         assert ll_mac_pool.get_mac_pool(self.pool_0)
@@ -636,7 +633,6 @@ class TestMacPoolRange07(NetworkTest):
         1.  Remove clusters
         2.  Make sure that the MAC pool is not removed
         """
-        testflow.step("Remove clusters")
         for cl in [self.ext_cl_1, self.ext_cl_2]:
             assert ll_clusters.removeCluster(positive=True, cluster=cl)
             testflow.step(

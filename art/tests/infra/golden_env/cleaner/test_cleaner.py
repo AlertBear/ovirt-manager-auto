@@ -172,7 +172,6 @@ class CleanGoldenEnv(BaseTestCase):
                     positive=True, host=host.get_name(), deactivate=True
                 )
             if cl_name != config.HE_CL_NAME:
-                testflow.step("Remove cluster: %s", cl_name)
                 ll_clusters.removeCluster(True, cl_name)
         for glance_ep in ll_ep.get_glance_ep_objs():
             testflow.step(

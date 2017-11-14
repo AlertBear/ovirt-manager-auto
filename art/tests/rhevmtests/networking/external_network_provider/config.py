@@ -270,3 +270,6 @@ OVN_CMD_GET_MEM_USAGE = "free | grep Mem | awk '{print $3/$2 * 100.0}'"
 OVN_CMD_ADD_FW_PORT = "firewall-cmd --zone=public --add-port={port}/{proto}"
 OVN_CMD_DEL_FW_PORT = "firewall-cmd --zone=public --remove-port={port}/{proto}"
 OVN_CMD_TEST_HTTP_RESPONSE = "curl -k {url}"
+
+# Index list of hosts to be reinstalled
+OVN_HOSTS_TO_REINSTALL = [0, 1]

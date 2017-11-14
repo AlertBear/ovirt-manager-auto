@@ -450,7 +450,6 @@ def remove_basic_setup(datacenter, cluster=None, hosts=list()):
                 logger.error("Failed to remove host %s ", host)
                 return False
 
-        logger.info("Remove cluster %s", cluster)
         if not ll_clusters.removeCluster(positive=True, cluster=cluster):
             logger.error("Failed to remove Cluster %s", cluster)
             return False
