@@ -9,6 +9,7 @@ import shlex
 
 import pytest
 
+import art.core_api.apis_exceptions as api_exceptions
 import config as enp_conf
 import helper
 import rhevmtests.config as global_config
@@ -197,11 +198,14 @@ def import_ovn_networks(request):
         results_list = []
         networks = remove_networks or import_networks
 
-        for net in [net for net in networks if ll_networks.find_network(net)]:
-            testflow.teardown("Removing network: %s from engine", net)
-            results_list.append(
-                ll_networks.remove_network(positive=True, network=net)
-            )
+        for net in networks:
+            try:
+                res = ll_networks.remove_network(positive=True, network=net)
+                testflow.teardown("Removing network: %s from engine", net)
+                results_list.append(res)
+            except api_exceptions.EntityNotFound:
+                pass
+
         assert all(results_list)
     request.addfinalizer(fin)
 
