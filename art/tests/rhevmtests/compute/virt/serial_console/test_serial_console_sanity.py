@@ -4,7 +4,7 @@ from art.test_handler.tools import polarion
 from art.unittest_lib import (
     VirtTest,
     testflow,
-    tier2,
+    tier1,
     tier3,
 )
 import config as sc_conf
@@ -24,7 +24,7 @@ class SerialConsoleClass(VirtTest):
     }
 
     @polarion('RHEVM-19068')
-    @tier2
+    @tier1
     def test_1_verify_services_on_nodes(self):
         """
         Verify necessary services running on engine and hosts.
@@ -114,7 +114,7 @@ class SerialConsoleClass(VirtTest):
             '\n{proxy_key}\nOut:{out}'.format(proxy_key=proxy_key, out=out)
         )
 
-    @tier2
+    @tier1
     @polarion('RHEVM-19070')
     @pytest.mark.skipif(not sc_conf.ENV_READY, reason=sc_conf.SKIP_MESSAGE)
     @pytest.mark.usefixtures(fixtures.setup_env.__name__)
@@ -146,7 +146,7 @@ class SerialConsoleClass(VirtTest):
             )
         )
 
-    @tier2
+    @tier1
     @polarion('RHEVM-19073')
     @pytest.mark.skipif(not sc_conf.ENV_READY, reason=sc_conf.SKIP_MESSAGE)
     @pytest.mark.usefixtures(
