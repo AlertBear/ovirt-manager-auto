@@ -194,7 +194,7 @@ class ARTLogging(object):
                     logger.info(
                         "Test class description: %s", line,
                     )
-        logger.info("SETUP %s", item)
+        logger.info("--TEST START-- %s", item)
         self.log_filter.toggle(True)
         yield
         logger.info(DELIMITER)
@@ -207,6 +207,16 @@ class ARTLogging(object):
         self.log_filter.toggle(False)
         self._log_header(item)
         self.log_filter.toggle(True)
+
+    @pytest.hookimpl(hookwrapper=True)
+    def pytest_runtest_teardown(self, item, nextitem):
+        """
+        :param item: test item to perform teardown for
+        :type item: instance of pytest.Item
+        """
+        logger.info(DELIMITER)
+        logger.info("--TEST END-- %s", item)
+        yield
 
     def _log_header(self, item):
         if item is None:
