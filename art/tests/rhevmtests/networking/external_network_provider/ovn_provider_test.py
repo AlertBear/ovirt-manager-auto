@@ -803,27 +803,29 @@ class TestOVNComponent(NetworkTest):
             assert ovn_conf.OVN_PROVIDER.import_network(
                 network=net_name, datacenter=self.dc, cluster=self.cl
             )
-            ip = ""
-            for vm in (net_conf.VM_0, net_conf.VM_1):
-                testflow.step(
-                    "Hot-unplug vNIC: %s on VM: %s, "
-                    "change vNIC network to: %s, and hot-plug it back",
-                    ovn_conf.OVN_VNIC, vm, net_name
-                )
-                assert helper.check_hot_unplug_and_plug(
-                    vm=vm, vnic=ovn_conf.OVN_VNIC, network=net_name
-                )
 
-                testflow.step("Requesting IP from DHCP on VM: %s", vm)
-                ip = helper.set_ip_non_mgmt_nic(vm=vm, address_type="dynamic")
-                assert ip, "Failed to get IP from DHCP on VM: %s" % vm
-
-            # At this point, VM_0 and VM_1 should have OVN IPs
-            # Last ip is assigned on VM_1
+        ip = ""
+        for vm in (net_conf.VM_0, net_conf.VM_1):
             testflow.step(
-                "Testing ping from VM: %s to IP: %s", net_conf.VM_0, ip
+                "Hot-unplug vNIC: %s on VM: %s, "
+                "change vNIC network to: %s, and hot-plug it back",
+                ovn_conf.OVN_VNIC, vm, ovn_conf.OVN_LONG_NET_256_CHARS_SPECIAL
             )
-            assert helper.check_ping(vm=net_conf.VM_0, dst_ip=ip, count=3)
+            assert helper.check_hot_unplug_and_plug(
+                vm=vm, vnic=ovn_conf.OVN_VNIC,
+                network=ovn_conf.OVN_LONG_NET_256_CHARS_SPECIAL
+            )
+
+            testflow.step("Requesting IP from DHCP on VM: %s", vm)
+            ip = helper.set_ip_non_mgmt_nic(vm=vm, address_type="dynamic")
+            assert ip, "Failed to get IP from DHCP on VM: %s" % vm
+
+        # At this point, VM_0 and VM_1 should have OVN IPs
+        # Last ip is assigned on VM_1
+        testflow.step(
+            "Testing ping from VM: %s to IP: %s", net_conf.VM_0, ip
+        )
+        assert helper.check_ping(vm=net_conf.VM_0, dst_ip=ip, count=3)
 
     @tier2
     @bz({"1503566": {}})
