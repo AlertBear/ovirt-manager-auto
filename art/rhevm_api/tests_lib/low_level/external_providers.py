@@ -534,12 +534,11 @@ class ExternalNetworkProvider(OpenStackProvider):
         self._keystone_username = keystone_username
         self._keystone_password = keystone_password
         self._api_keystone_token = None
-        self._api_keystone_token_request_retries = 1
-        self._keystone_token_invalid_ret_codes = (
-            requests.codes.unauthorized, requests.codes.forbidden
-        )
-        self._create_valid_return_codes = (
+        self._valid_return_codes = (
             requests.codes.ok, requests.codes.created
+        )
+        self._token_expired_msg = (
+            "The provided authorization grant for the auth code has expired"
         )
         if api_url:
             self.api_url_networks = "%s/networks" % api_url
@@ -689,6 +688,7 @@ class ExternalNetworkProvider(OpenStackProvider):
         req = getattr(self.api_requests, request)
         if not req:
             return None, None
+
         if self._api_keystone_token:
             headers = {"X-Auth-Token": self._api_keystone_token}
         try:
@@ -697,18 +697,18 @@ class ExternalNetworkProvider(OpenStackProvider):
             logger.error("Server connection error has occurred: %s", conn_err)
             return None, None
 
-        # Check token expiration and request a new token if expired
-        if (
-            self._api_keystone_token and
-            ret.status_code in self._keystone_token_invalid_ret_codes and
-            self._api_keystone_token_request_retries
-        ):
-            logger.warn("Token seems expired. Requesting a new token.")
+        # Check the validity of token grant and renew it if expired
+        # NOTE: code may stuck be in infinite loop in case of a failure to
+        # renew the token using the provider (and ovirt-engine)
+        if self._token_expired_msg in ret.text:
+            logger.warn(
+                "API token is expired. Requesting a new token from keystone."
+            )
             self.__request_keystone_token()
-            self._api_keystone_token_request_retries -= 1
             return self.__api_request(
                 request=request, url=url, json=json, timeout=timeout
             )
+
         try:
             json_response = ret.json() if request != "delete" and ret else ""
         except ValueError as val_err:
@@ -717,6 +717,7 @@ class ExternalNetworkProvider(OpenStackProvider):
                 ret.text, val_err
             )
             return None, None
+
         return ret.status_code, json_response
 
     def __request_keystone_token(self):
@@ -740,10 +741,14 @@ class ExternalNetworkProvider(OpenStackProvider):
             request="post", url=self._keystone_tokens_url, json=payload
         )
 
-        logger.debug("Keystone service returned response: %s", response)
-
-        if ret_code not in self._create_valid_return_codes:
-            logger.error("Keystone returned unexpected error: %s", ret_code)
+        logger.debug(
+            "Keystone service returned JSON response: %s and HTTP code: %s",
+            response, ret_code
+        )
+        if ret_code not in self._valid_return_codes:
+            logger.error(
+                "Keystone returned unexpected HTTP code: %s", ret_code
+            )
             raise apis_exceptions.APITokenError
 
         # Expected JSON response structure:
@@ -753,8 +758,8 @@ class ExternalNetworkProvider(OpenStackProvider):
         if not self._api_keystone_token:
             logger.error("Keystone service did not return a valid token")
             raise apis_exceptions.APITokenError
-        else:
-            logger.info("Received a token from Keystone service")
+
+        logger.info("Received a valid token from Keystone service")
 
     def get_networks_list_from_provider_server(self):
         """
@@ -841,7 +846,7 @@ class ExternalNetworkProvider(OpenStackProvider):
             request="post", url=self.api_url_networks, json=payload
         )
 
-        if ret_code not in self._create_valid_return_codes:
+        if ret_code not in self._valid_return_codes:
             logger.error("Provider returned unexpected error: %s", ret_code)
             return ""
         if "network" not in response or "id" not in response.get("network"):
@@ -960,7 +965,7 @@ class ExternalNetworkProvider(OpenStackProvider):
             json={"subnet": subnet}
         )
 
-        if ret_code not in self._create_valid_return_codes:
+        if ret_code not in self._valid_return_codes:
             logger.error("Provider returned unexpected error: %s", ret_code)
             return ""
         return response.get("subnet", {}).get("id", "")
