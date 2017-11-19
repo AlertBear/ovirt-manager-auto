@@ -19,7 +19,7 @@ from art.rhevm_api.tests_lib.low_level import (
     mac_pool as ll_mac_pool,
     vms as ll_vms
 )
-from art.test_handler.tools import bz, polarion
+from art.test_handler.tools import polarion
 from art.unittest_lib import NetworkTest, testflow, tier2
 from fixtures import (
     mac_pool_per_cl_prepare_setup,
@@ -804,7 +804,9 @@ class TestMacPoolRange09(NetworkTest):
 
     1. Verify that the snapshot allocates new MAC when it is already allocated
     2. Verify that the snapshot restores the original MAC address on VM
-    3. Verify that snapshot preview action fails when there no MAC are
+    3. Verify that while VM is in snapshot preview state, other VM can't be
+       assigned with its MAC address
+    4. Verify that snapshot preview action fails when there no MAC are
        available on the pool
     """
     # General parameters
@@ -920,7 +922,6 @@ class TestMacPoolRange09(NetworkTest):
            (to allow next step to restore MP_VM_1 vNIC MAC address)
         3. Preview a snapshot on MP_VM_1
         4. Verify that the MAC address on MP_VM_1 is restored correctly
-        5. Start MP_VM_1
         """
         assert ll_vms.updateNic(
             positive=True, vm=mac_pool_conf.MP_VM_0,
@@ -938,14 +939,30 @@ class TestMacPoolRange09(NetworkTest):
             "VM: %s vNIC is assigned with unexpected MAC address: %s"
             % (mac_pool_conf.MP_VM_1, vm_1_mac_address)
         )
+
+    @tier2
+    @polarion("RHEVM-24249")
+    def test_03_test_mac_asssignment_during_snapshot_preview(self):
+        """
+        1. Try to assign MP_VM_1 MAC address while it's in preview snapshot
+           state
+        2. Start VM
+        """
+        assert ll_vms.updateNic(
+            positive=False, vm=mac_pool_conf.MP_VM_0,
+            nic=mac_pool_conf.CASE_9_NIC_1,
+            mac_address=self.vm_1_mac_address_1, plugged=False
+        ), (
+            "VM: %s is assigned with snapshot preview MAC: %s"
+            % (mac_pool_conf.MP_VM_0, self.vm_1_mac_address_1)
+        )
         assert ll_vms.startVm(
-            positive=True, vm=mac_pool_conf.MP_VM_1, wait_for_status="up"
+            positive=True, vm=mac_pool_conf.MP_VM_1, wait_for_status=conf.VM_UP
         )
 
-    @bz({"1498580": {}})
     @tier2
     @polarion("RHEVM-23178")
-    def test_03_test_mac_pool_full_with_snapshot(self):
+    def test_04_test_mac_pool_full_with_snapshot(self):
         """
         1. Unplug MP_VM_0 vNIC and assign MAC: out_of_scope_mac_address_2
            (already done in previous test steps)
