@@ -65,8 +65,8 @@ PARAMETERS:
     polarion_project: RHEVM3
     polarion_response_myproduct: rhvm
     polarion_user: ci-user
-#    product_name: Red Hat Virtualization Manager # name when move downstraem
-    product_name: oVirt Engine
+    product_name: Red Hat Virtualization Manager
+    # product_name: oVirt Engine # name for US
     shared_iso_domain_address: vserver-production.qa.lab.tlv.redhat.com
     shared_iso_domain_path: /iso_domain
     storage_type:
