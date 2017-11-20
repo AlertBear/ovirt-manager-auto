@@ -53,7 +53,8 @@ def get_host_network_attachments(host):
     return ll_hosts.HOST_API.getElemFromLink(
         elm=host,
         link_name=NETWORKATTACHMENTS,
-        attr=NETWORK_ATTACHMENT
+        attr=NETWORK_ATTACHMENT,
+        all_content=True
     )
 
 
@@ -229,7 +230,7 @@ def prepare_network_attachment_obj(host, **kwargs):
             network_attachment_obj, ip
         )
 
-    if dns:
+    if dns is not None:
         dns_obj = ll_networks.prepare_network_dns_object(dns_servers=dns)
         network_attachment_obj.set_dns_resolver_configuration(dns_obj)
 

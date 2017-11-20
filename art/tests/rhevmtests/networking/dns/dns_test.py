@@ -18,10 +18,11 @@ from rhevmtests.networking import (
     config as conf,
     helper as network_helper
 )
-from art.test_handler.tools import polarion, bz
+from art.test_handler.tools import polarion
+from art.core_api import apis_utils
 from art.unittest_lib import NetworkTest, testflow, tier2
 from fixtures import (  # noqa: F401
-    get_host_dns_servers,
+    get_hosts_params,
     restore_host_dns_servers
 )
 
@@ -51,7 +52,6 @@ class TestDns01(NetworkTest):
     remove_dns_attachment = [dns_conf.DNS_2, "attachment"]
 
     @tier2
-    @bz({"1458566": {}})
     @pytest.mark.parametrize(
         ("dns", "via"),
         [
@@ -98,11 +98,16 @@ class TestDns01(NetworkTest):
             params=[dns, via]
         )
         testflow.step(_id)
+        host = dns_conf.WORKING_HOST
+
         if via == "network":
+            content = "{network} on host {host}".format(
+                network=self.network, host=host
+            )
             network_helper.call_function_and_wait_for_sn(
-                func=ll_networks.update_network, content=self.network,
+                func=ll_networks.update_network, content=content,
                 positive=True, network=self.network, data_center=self.dc,
-                dns=dns, matches=len(conf.HOSTS)
+                dns=dns, matches=1
             )
 
         if via == "attachment":
@@ -115,7 +120,11 @@ class TestDns01(NetworkTest):
                     }
                 }
             }
-            assert hl_host_network.setup_networks(
-                host_name=conf.HOST_2_NAME, **sn_dict
-            )
-        assert helper.get_host_dns_servers() == dns
+            assert hl_host_network.setup_networks(host_name=host, **sn_dict)
+
+        sample = apis_utils.TimeoutingSampler(
+            timeout=30, sleep=1,
+            func=lambda: helper.get_host_dns_servers(host=host) == dns
+
+        )
+        assert sample.waitForFuncStatus(result=True)
