@@ -127,7 +127,7 @@ def _remove_power_management(host=None, testflow_func=testflow.teardown):
 
 
 @tier2
-@bz({"1508023": {}})
+@pytest.mark.skipif(config.HE_ENV, reason=config.HE_SKIP_REASON)
 class WithHighAvailableVm(TestCase):
     """
     Base test class for tests with high available vm
@@ -162,7 +162,8 @@ class WithHighAvailableVm(TestCase):
             volumeFormat=config.FORMAT
         )
         disks.updateDisk(
-            True, vmName=cls.vm_ha_name, alias=config.GOLDEN_GLANCE_IMAGE,
+            True, vmName=cls.vm_ha_name,
+            alias=vms.getVmDisks(cls.vm_ha_name)[0].get_alias(),
             bootable=True
         )
         assert vms.runVmOnce(True, cls.vm_ha_name, host=HOST_WITH_PM)
@@ -179,14 +180,14 @@ class WithHighAvailableVm(TestCase):
             volumeFormat=config.FORMAT
         )
         disks.updateDisk(
-            True, vmName=cls.vm2_name, alias=config.GOLDEN_GLANCE_IMAGE,
+            True, vmName=cls.vm2_name,
+            alias=vms.getVmDisks(cls.vm2_name)[0].get_alias(),
             bootable=True
         )
         assert vms.runVmOnce(True, cls.vm2_name, host=HOST_WITH_PM)
 
 
 @tier2
-@bz({"1508023": {}})
 class PMWithBadParameters(TestCase):
     """
     Base class for tests with wrong parameters
@@ -216,7 +217,7 @@ class PMWithBadParameters(TestCase):
 
 
 @tier2
-@bz({"1508023": {}})
+@pytest.mark.skipif(config.HE_ENV, reason=config.HE_SKIP_REASON)
 class FenceOnHost(TestCase):
     """
     Base class for fence tests
@@ -241,7 +242,7 @@ class FenceOnHost(TestCase):
 
 
 @tier2
-@bz({"1508023": {}})
+@pytest.mark.skipif(config.HE_ENV, reason=config.HE_SKIP_REASON)
 class FenceHostWithTwoPMAgents(TestCase):
     """
     Base class for fence tests with two power management agents
@@ -316,7 +317,7 @@ class FenceHostWithTwoPMAgents(TestCase):
 
 
 @tier2
-@bz({"1508023": {}})
+@pytest.mark.skipif(config.HE_ENV, reason=config.HE_SKIP_REASON)
 class FenceProxySelection(TestCase):
     """
     Base class for fencing proxy selection tests
@@ -631,7 +632,7 @@ class Test16ProxyChosenFromSecondClusterAsFallback(FenceProxySelection):
             },
             HOST_2: {
                 "host_num": 2,
-                "state": config.HOST_MAINTENANCE
+                "state": config.HOST_UP
             }
         }
         cls.event = fence_proxy_event.format(HOST_WITH_PM, HOST_2)

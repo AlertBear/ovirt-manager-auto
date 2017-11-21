@@ -109,6 +109,7 @@ FCP_STORAGE_MANAGER = (
 
 HE_DETAILS = GE.get('hosted_engine_details', {})
 HE_ENV = bool(HE_DETAILS)
+HE_SKIP_REASON = "Can't execute on hosted engine"
 
 # Hosted engine constants
 HE_VM = "HostedEngine"

@@ -163,7 +163,7 @@ class TestSoftFencingFailedWithPM(SoftFencing):
         """
         _check_host_state(
             config.host_with_pm_num, config.service_network,
-            config.job_failed
+            config.job_finished
         )
 
 
