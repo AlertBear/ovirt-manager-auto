@@ -296,6 +296,7 @@ class JunitExtension(object):
             for k, v in all_properties.iteritems():
                 self.junit.add_global_property(k, v)
 
+    @pytest.mark.tryfirst
     def pytest_runtest_setup(self, item):
         self._add_marks(item)
         self._add_polarion_attributes(item)
