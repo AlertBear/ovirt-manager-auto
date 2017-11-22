@@ -108,6 +108,7 @@ FCP_STORAGE_MANAGER = (
 )
 
 HE_DETAILS = GE.get('hosted_engine_details', {})
+HE_ENV = bool(HE_DETAILS)
 
 # Hosted engine constants
 HE_VM = "HostedEngine"

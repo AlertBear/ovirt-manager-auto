@@ -263,9 +263,7 @@ class TestCase6212(BasicEnvironment):
         ), "Set SPM priority to illegal value succeded"
 
 
-@pytest.mark.skipif(
-    bool(config.HE_DETAILS), reason="Can't execute on hosted engine"
-)
+@pytest.mark.skipif(config.HE_ENV, reason="Can't execute on hosted engine")
 @pytest.mark.usefixtures(
     check_hosts_status.__name__
 )
@@ -289,9 +287,7 @@ class TestCase6217(SPMHostsMinusOnePriorityFlow):
         self.basic_flow(priorities=min_priorities)
 
 
-@pytest.mark.skipif(
-    bool(config.HE_DETAILS), reason="Can't execute on hosted engine"
-)
+@pytest.mark.skipif(config.HE_ENV, reason="Can't execute on hosted engine")
 @pytest.mark.usefixtures(
     deactivate_hsm_hosts.__name__
 )
@@ -332,9 +328,7 @@ class TestCase6205(SPMHostsMinusOnePriorityFlow):
             )
 
 
-@pytest.mark.skipif(
-    bool(config.HE_DETAILS), reason="Can't execute on hosted engine"
-)
+@pytest.mark.skipif(config.HE_ENV, reason="Can't execute on hosted engine")
 @pytest.mark.usefixtures(
     initialize_hosts_params.__name__
 )
