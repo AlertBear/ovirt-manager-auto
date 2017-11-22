@@ -2,7 +2,7 @@
 formatters:
   coloredFormatter:
     format: "%(asctime)s - %(threadName)s - %(name)s - %(levelname)s - %(message)s"
-    class: utilities.logger_utils.ColoredFormatter
+    class: art.test_handler.logger_utils.ColoredFormatter
   fileFormatter:
     format: "%(asctime)s - %(threadName)s - %(name)s - %(levelname)s - %(message)s"
   flow:
@@ -22,7 +22,7 @@ handlers:
     3maxBytes: 31457280
     4backupCount: 20
   duplicateFileHandler:
-    class: utilities.logger_utils.DuplicateFileHandler
+    class: art.test_handler.logger_utils.DuplicateFileHandler
     level: DEBUG
     formatter: fileFormatter
 # NOTE: once we move to py2.7, we can get rid of number prefix
@@ -32,12 +32,12 @@ handlers:
     3maxBytes: 31457280
     4backupCount: 10
   duplicateConsoleHandler:
-    class: utilities.logger_utils.DuplicateConsoleHandler
+    class: art.test_handler.logger_utils.DuplicateConsoleHandler
     level: INFO
     formatter: coloredFormatter
     stream: ext://sys.stdout
   devnull:
-    class: utilities.logger_utils.NullHandler
+    class: art.test_handler.logger_utils.NullHandler
     level: DEBUG
   flow:
     class: FileHandler
