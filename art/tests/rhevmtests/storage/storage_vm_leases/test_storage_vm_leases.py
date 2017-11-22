@@ -566,10 +566,13 @@ class TestCase17630(BaseStorageVmLeaseTestWithFixtures):
         self.block_connection_host_to_storage()
         testflow.step("Restart sanlock")
         rc, output, error = self.host_executor.run_cmd(
-            shlex.split("systemctl restart sanlock")
+            shlex.split("killall -9 sanlock")
         )
         assert not rc, (
             "Failed to restart sanlock service %s" % error
+        )
+        ll_hosts.wait_for_hosts_states(
+            True, [config.PLACEMENT_HOST], states=config.HOST_NONRESPONSIVE
         )
         self.verify_vm_is_running_on_different_host()
 
