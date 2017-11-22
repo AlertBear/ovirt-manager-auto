@@ -1813,6 +1813,7 @@ def get_logical_name_by_vdsm_client(
         disk_id = disk
     else:
         disk_id = ll_disks.get_disk_obj(disk).get_id()
+
     vm_info = vds_resource.vds_client(
         cmd="VM.getStats", args={"vmID": vm_id}
     )
@@ -1822,7 +1823,9 @@ def get_logical_name_by_vdsm_client(
     vm_info = vm_info[0]
     vm_disks = vm_info.get('disks')
     for dev in vm_disks:
-        if vm_disks.get(dev).get("imageID") == disk_id:
+        if (vm_disks.get(dev).get("imageID") == disk_id) or (
+            vm_disks.get(dev).get("lunGUID") == disk_id
+        ):
             logical_name = dev
             break
     if not logical_name:
