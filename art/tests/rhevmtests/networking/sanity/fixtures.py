@@ -22,6 +22,7 @@ from art.rhevm_api.tests_lib.low_level import (
 )
 import config as sanity_conf
 import rhevmtests.networking.config as conf
+import rhevmtests.helpers as global_helper
 from rhevmtests.networking.acquire_network_manager_connections import helper
 from rhevmtests.networking.mac_pool_range_per_cluster import (
     helper as mac_pool_helper
@@ -321,3 +322,67 @@ def nmcli_create_networks(request):
         nic_type=nic_type, nics=host_nics, vlan_id=vlan_id,
         connection=network
     )
+
+
+@pytest.fixture(scope="class")
+def remove_ovn_networks(request):
+    """
+    Remove OVN networks from provider and engine
+    """
+    networks_and_subnets = getattr(
+        request.cls, "remove_ovn_networks_params", {}
+    )
+    results_list = []
+
+    def fin3():
+        """
+        Check finalizers results
+        """
+        global_helper.raise_if_false_in_list(results=results_list)
+    request.addfinalizer(fin3)
+
+    def fin2():
+        """
+        Remove OVN networks from engine
+        """
+        for net in [
+            net for net in networks_and_subnets.keys()
+            if ll_networks.find_network(net)
+        ]:
+            testflow.teardown("Removing network: %s from engine", net)
+            results_list.append(
+                (
+                    ll_networks.remove_network(positive=True, network=net),
+                    "Failed to remove network: %s from engine" % net
+                )
+            )
+    request.addfinalizer(fin2)
+
+    def fin1():
+        """
+        Remove OVN networks and associated subnets from provider
+        """
+        for net, subnet in networks_and_subnets.items():
+            if subnet:
+                subnet_name = subnet.get("name")
+                testflow.teardown(
+                    "Removing OVN subnet: %s from provider", subnet_name
+                )
+                results_list.append(
+                    (
+                        sanity_conf.OVN_PROVIDER.remove_subnet(
+                            subnet_name=subnet_name
+                        ),
+                        "Failed to remove OVN subnet: %s from provider"
+                        % subnet_name
+                    )
+                )
+
+            testflow.teardown("Removing OVN network: %s from provider", net)
+            results_list.append(
+                (
+                    sanity_conf.OVN_PROVIDER.remove_network(network_name=net),
+                    "Failed to remove OVN network: %s from provider" % net
+                )
+            )
+    request.addfinalizer(fin1)

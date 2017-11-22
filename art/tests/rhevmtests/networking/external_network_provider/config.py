@@ -116,23 +116,13 @@ OVN_NETS = {
         "enable_dhcp": True,
         "ip_version": 4
     },
-    OVN_NET_SUB_TO_BE_ATTACHED: None
-}
-
-TEST_SUBNET_ATTACHMENT_1 = {
-    "name": "ovn_network_attachment_subnet_1",
-    "cidr": "10.0.0.0/24",
-    "enable_dhcp": True,
-    "ip_version": 4,
-    "network_id": None
-}
-
-TEST_SUBNET_ATTACHMENT_2 = {
-    "name": "ovn_network_attachment_subnet_2",
-    "cidr": "10.1.0.0/24",
-    "enable_dhcp": True,
-    "ip_version": 4,
-    "network_id": None
+    OVN_NET_SUB_TO_BE_ATTACHED: {
+        "name": "ovn_network_attachment_subnet_1",
+        "cidr": "10.0.0.0/24",
+        "enable_dhcp": True,
+        "ip_version": 4,
+        "network_id": None
+    }
 }
 
 # OVN networks for TestOVNPerformance

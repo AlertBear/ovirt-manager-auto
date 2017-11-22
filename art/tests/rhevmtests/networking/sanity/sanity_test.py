@@ -17,16 +17,22 @@ from fixtures import (
     nmcli_create_networks,
     prepare_setup_for_register_domain,
     remove_qos,
-    update_vnic_profile
+    update_vnic_profile,
+    remove_ovn_networks
 )
 from rhevmtests.networking.mac_pool_range_per_cluster import (
     config as mac_pool_conf,
     helper as mac_pool_helper
 )
+from rhevmtests.networking.external_network_provider import (
+    config as ovn_config,
+    helper as ovn_helper
+)
 from art.rhevm_api.tests_lib.high_level import (
     host_network as hl_host_network,
     mac_pool as hl_mac_pool,
-    networks as hl_networks
+    networks as hl_networks,
+    vms as hl_vms
 )
 from art.rhevm_api.tests_lib.low_level import (
     clusters as ll_clusters,
@@ -36,6 +42,7 @@ from art.rhevm_api.tests_lib.low_level import (
     networks as ll_networks,
     vms as ll_vms
 )
+import rhevmtests.config as global_config
 import rhevmtests.helpers as global_helper
 import rhevmtests.networking.active_bond_slave.helper as active_bond_helper
 from rhevmtests.networking import config as conf, helper as network_helper
@@ -57,7 +64,8 @@ from rhevmtests.networking.fixtures import (  # noqa: F401
     setup_networks_fixture,
     create_and_attach_networks,
     remove_all_networks,
-    update_vnic_profiles
+    update_vnic_profiles,
+    remove_vnics_from_vms
 )
 from rhevmtests.networking.register_domain.fixtures import (
     import_vm_from_data_domain
@@ -67,6 +75,9 @@ from rhevmtests.networking.sr_iov.fixtures import (  # noqa: F401
     reset_host_sriov_params,
     set_num_of_vfs,
     sr_iov_init
+)
+from rhevmtests.networking.external_network_provider.fixtures import (
+    configure_ovn
 )
 
 
@@ -1418,3 +1429,124 @@ class TestSanity18(NetworkTest):
         assert hl_host_network.setup_networks(
             host_name=conf.HOST_0_NAME, **sn_dict
         )
+
+
+@pytest.mark.incremental
+@pytest.mark.usefixtures(
+    configure_ovn.__name__,
+    remove_ovn_networks.__name__,
+    remove_vnics_from_vms.__name__,
+    start_vm.__name__
+)
+class TestSanity19(NetworkTest):
+    """
+    OVN provider tests:
+
+    1. Test connection to the default OVN provider
+    2. Create networks on OVN provider
+    3. Add subnet to OVN network
+    4. Import networks from OVN provider
+    5. Start VM with OVN network and wait for IP address
+    """
+    # Common settings
+    provider_name = ovn_config.OVN_PROVIDER_NAME
+    dc = conf.DC_0
+    cl = conf.CL_0
+
+    # start_vm fixture parameters
+    vms_to_stop = [conf.VM_0]
+
+    # remove_vnics_from_vms fixture parameters
+    remove_vnics_vms_params = {
+        conf.VM_0: {}
+    }
+
+    # remove_ovn_networks fixture parameters
+    remove_ovn_networks_params = sanity_conf.OVN_NETS
+
+    @tier1
+    @polarion("RHEVM3-21661")
+    def test_01_ovn_provider(self):
+        """
+        Test the default OVN provider
+        """
+        testflow.step(
+            "Testing default OVN network provider: %s", self.provider_name
+        )
+        sanity_conf.OVN_PROVIDER = ovn_helper.get_provider_from_engine(
+            provider_name=self.provider_name,
+            keystone_user=global_config.VDC_ADMIN_JDBC_LOGIN,
+            keystone_pass=global_config.VDC_PASSWORD
+        )
+        assert sanity_conf.OVN_PROVIDER.test_connection()
+
+    @tier1
+    @polarion("RHEVM3-16925")
+    def test_02_create_networks_on_ovn_provider(self):
+        """
+        Create networks on OVN provider
+        """
+        for net_name, subnet in sanity_conf.OVN_NETS.items():
+            txt = " with subnet: %s" % subnet.get("name") if subnet else ""
+            testflow.step(
+                "Creating network: %s%s on OVN provider", net_name, txt
+            )
+            assert sanity_conf.OVN_PROVIDER.add_network(
+                network_name=net_name, subnet_dict=subnet
+            )
+
+    @tier1
+    @polarion("RHEVM-24246")
+    def test_03_add_subnet_to_ovn_network(self):
+        """
+        1. Create OVN subnet
+        2. Attach subnet to OVN network
+        """
+        net_id = sanity_conf.OVN_PROVIDER.get_network_id(
+            network_name=sanity_conf.OVN_NET_1
+        )
+        assert net_id, (
+            "Unable to get network ID of network: %s" % sanity_conf.OVN_NET_1
+        )
+        sanity_conf.OVN_SUBNET_1["network_id"] = net_id
+        assert sanity_conf.OVN_PROVIDER.create_subnet(
+            subnet=sanity_conf.OVN_SUBNET_1
+        )
+
+    @tier1
+    @polarion("RHEVM3-17046")
+    def test_04_import_networks_from_ovn_provider(self):
+        """
+        Import networks from OVN provider
+        """
+        for net_name in sanity_conf.OVN_NETS.keys():
+            testflow.step(
+                "Importing network: %s from OVN network provider to DC: %s "
+                "Cluster: %s", net_name, self.dc, self.cl
+            )
+            assert sanity_conf.OVN_PROVIDER.import_network(
+                network=net_name, datacenter=self.dc, cluster=self.cl
+            )
+
+    @tier1
+    @polarion("RHEVM3-17439")
+    def test_05_start_vm_with_ovn_network(self):
+        """
+        1. Add vNIC attached to network: OVN_NET_1 to VM-0
+        2. Start VM-0 to verify OVN hook functionality
+        3. Verify that VM received IP from OVN
+        """
+        assert ll_vms.addNic(
+            positive=True, vm=conf.VM_0, name=sanity_conf.OVN_VNIC,
+            network=sanity_conf.OVN_NET_1, plugged=True
+        )
+        # Remove extra vNIC during teardown
+        self.remove_vnics_vms_params[conf.VM_0]["1"] = {
+            "name": sanity_conf.OVN_VNIC
+        }
+
+        assert hl_vms.run_vm_once_specific_host(
+            vm=conf.VM_0, host=conf.HOST_0_NAME, wait_for_up_status=True
+        )
+        res = ll_vms.wait_for_vm_ip(vm=conf.VM_0)
+        assert res and res[0]

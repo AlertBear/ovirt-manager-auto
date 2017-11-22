@@ -225,3 +225,24 @@ CASE_18_NETS = {
         "required": "false"
     }
 }
+
+# OVN tests
+OVN_PROVIDER = None
+OVN_NET_1 = NETS[19][0]
+
+OVN_NETS = {
+    OVN_NET_1: None
+}
+
+OVN_SUBNETS = ["sanity_ovn_subnet_%s" % i for i in range(1, 3)]
+
+OVN_SUBNET_1 = {
+    "name": OVN_SUBNETS[0],
+    "cidr": "10.0.0.0/24",
+    "enable_dhcp": True,
+    "ip_version": 4,
+    "network_id": None
+}
+
+# OVN extra vNIC name
+OVN_VNIC = "sanity_ovn_vnic"
