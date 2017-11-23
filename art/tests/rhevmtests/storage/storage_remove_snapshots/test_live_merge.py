@@ -15,6 +15,7 @@ class LiveMergeBaseClass(basePlan.BasicEnvironment):
     live_merge = True
 
 
+@bz({'1509635': {}})
 class TestCase6038(LiveMergeBaseClass, basePlan.TestCase6038):
     """
     Basic live delete and merge of snapshots
@@ -26,6 +27,7 @@ class TestCase6038(LiveMergeBaseClass, basePlan.TestCase6038):
     test_case = '6038'
 
 
+@bz({'1509675': {}})
 class TestCase6052(LiveMergeBaseClass, basePlan.TestCase6052):
     """
     Basic live delete and merge of snapshots with continuous I/O
@@ -70,7 +72,6 @@ class TestCase6044(LiveMergeBaseClass, basePlan.TestCase6044):
     test_case = '6044'
 
 
-@bz({'1430358': {}})
 class TestCase6045(LiveMergeBaseClass, basePlan.TestCase6045):
     """
     Live snapshot delete and merge with restart of vdsm
@@ -93,7 +94,6 @@ class TestCase6043(LiveMergeBaseClass, basePlan.TestCase6043):
     test_case = '6043'
 
 
-@bz({'1430358': {}})
 class TestCase6046(LiveMergeBaseClass, basePlan.TestCase6046):
     """
     Live delete and merge of snapshot while stopping the engine

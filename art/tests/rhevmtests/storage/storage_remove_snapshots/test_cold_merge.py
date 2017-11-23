@@ -147,6 +147,7 @@ class ColdMergeBaseClass(basePlan.BasicEnvironment):
         return
 
 
+@bz({'1509629': {}})
 class TestCase18894(ColdMergeBaseClass, basePlan.TestCase6038):
     """
     Basic offline delete and merge of snapshots
@@ -191,7 +192,6 @@ class TestCase18900(ColdMergeBaseClass, basePlan.TestCase6044):
     test_case = '18900'
 
 
-@bz({'1430358': {}})
 class TestCase18901(ColdMergeBaseClass, basePlan.TestCase6045):
     """
     Offline snapshot delete and merge with restart of vdsm
@@ -214,7 +214,6 @@ class TestCase18899(ColdMergeBaseClass, basePlan.TestCase6043):
     test_case = '18899'
 
 
-@bz({'1430358': {}})
 class TestCase18902(ColdMergeBaseClass, basePlan.TestCase6046):
     """
     Offline delete and merge of snapshot while stopping the engine
@@ -437,7 +436,6 @@ class TestCase18972(ColdMergeBaseClass):
         )
 
 
-@bz({'1430358': {}})
 class TestCase18974(ColdMergeBaseClass):
     """
     Verify failure when HSM goes down after SDMMerge starts on HSM
