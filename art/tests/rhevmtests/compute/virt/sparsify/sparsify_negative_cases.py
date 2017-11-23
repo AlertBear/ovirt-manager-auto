@@ -12,7 +12,7 @@ from art.rhevm_api.tests_lib.low_level import (
     disks as ll_disks,
     vms as ll_vms
 )
-from art.test_handler.tools import polarion
+from art.test_handler.tools import polarion, bz
 from art.unittest_lib import (
     tier3
 )
@@ -24,6 +24,7 @@ from fixtures import (
 from sparsify_sanity_test import SparsifySanityBase
 
 
+@bz({"1516689": {}})
 class TestSparsifyNegativeCasesWithFileStorageDomain(SparsifySanityBase):
     """
     Sparsify negative tests with storage type file (NFS)

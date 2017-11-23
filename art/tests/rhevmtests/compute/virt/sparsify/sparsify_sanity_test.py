@@ -15,7 +15,7 @@ import rhevmtests.compute.virt.helper as helper
 from art.rhevm_api.tests_lib.low_level import (
     disks as ll_disks,
 )
-from art.test_handler.tools import polarion
+from art.test_handler.tools import polarion, bz
 from art.unittest_lib import VirtTest
 from art.unittest_lib import (
     tier1,
@@ -46,6 +46,7 @@ class SparsifySanityBase(VirtTest):
     storage_domain_name = config.NEW_SD_NAME % storage
 
 
+@bz({"1516689": {}})
 @storages((config.STORAGE_TYPE_ISCSI,))
 class TestSparsifySanityBlockDevice(SparsifySanityBase):
     """
@@ -94,6 +95,7 @@ class TestSparsifySanityBlockDevice(SparsifySanityBase):
         ),
     )
 )
+@bz({"1516689": {}})
 class TestSparsifySanityFileDevice(SparsifySanityBase):
     """
     Sparsify sanity file device: NFS, Gluster
