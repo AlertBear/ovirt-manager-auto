@@ -27,6 +27,9 @@ import atexit
 import time
 import warnings
 import signal
+
+import pytest
+
 from art import rhevm_api
 from art.core_api.external_api import TestRunnerWrapper
 import art.test_handler.settings as settings
@@ -74,6 +77,9 @@ def pytest_addoption(parser):
     )
 
 
+# To make sure that we call all hooks after all plugins are loaded we run this
+# as the last one.
+@pytest.mark.trylast
 def pytest_configure(config):
     """
     Load ART config files, and initialize ART library.

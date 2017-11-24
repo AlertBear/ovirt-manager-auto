@@ -130,7 +130,6 @@ def connectionTest():
     return True
 
 
-@tier1
 class TestJDBCCLIUser(TestCase):
     """Test managing of users via aaa-jdbc CLI"""
     user_password = '123456'
@@ -189,6 +188,7 @@ class TestJDBCCLIUser(TestCase):
             domain=config.INTERNAL_AUTHZ,
         )
 
+    @tier1
     @polarion('RHEVM3-11328')
     def test_000_add_user(self):
         """add user via via aaa-jdbc cli"""
@@ -203,6 +203,7 @@ class TestJDBCCLIUser(TestCase):
         testflow.step(ADD_USR_MSG, TEST_USER1)
         assert not USER_CLI.run('add', TEST_USER1)[0]
 
+    @tier1
     @polarion('RHEVM3-11306')
     def test_030_login_as_user(self):
         """ login as user from aaa-jdbc """
@@ -218,6 +219,7 @@ class TestJDBCCLIUser(TestCase):
         testflow.step(TST_CON_MSG, TEST_USER1)
         assert connectionTest(), "User '%s' can't login" % TEST_USER1
 
+    @tier1
     @polarion('RHEVM3-11304')
     def test_031_login_as_exp_pwd_user(self):
         """ login as user with expired password from aaa-jdbc """
@@ -233,6 +235,7 @@ class TestJDBCCLIUser(TestCase):
         testflow.step(TST_CON_MSG, TEST_USER2)
         assert not connectionTest(), "User '%s' can login" % TEST_USER2
 
+    @tier1
     @polarion('RHEVM3-11305')
     def test_032_login_as_disabled_user(self):
         """ login as disabled user from aaa-jdbc """
@@ -307,6 +310,7 @@ class TestJDBCCLIUser(TestCase):
         testflow.step(TST_CON_MSG, TEST_USER1)
         assert connectionTest(), "User %s can't login" % TEST_USER1
 
+    @tier1
     @polarion('RHEVM3-11338')
     def test_080_user_delete(self):
         """ user delete from aaa-jdbc """
@@ -481,7 +485,6 @@ class TestJDBCCLIGroupUser(TestCase):
         )[0], "Failed to delete group '%s'" % TEST_GROUP_DELETE
 
 
-@tier1
 class TestJDBCCLIQuery(TestCase):
     """Test quering of users/groups via aaa-jdbc CLI"""
     @classmethod
@@ -495,6 +498,7 @@ class TestJDBCCLIQuery(TestCase):
             module='query',
         )
 
+    @tier1
     @polarion('RHEVM3-11323')
     def test_010_query_users(self):
         """ query users via aaa-jdbc cli """
@@ -502,6 +506,7 @@ class TestJDBCCLIQuery(TestCase):
         testflow.step("Querying for users")
         assert self.query_cli.run(what='user')[0], "Failed to search for users"
 
+    @tier1
     @polarion('RHEVM3-11322')
     def test_020_query_groups(self):
         """ query groups via aaa-jdbc cli """
@@ -558,7 +563,6 @@ class TestJDBCCLIQuery(TestCase):
             assert out_group == out, "Correct group wasn't found by %s" % k
 
 
-@tier1
 class TestJDBCCLISettings(TestCase):
     """Test customize of settings via aaa-jdbc CLI"""
     @classmethod
@@ -572,6 +576,7 @@ class TestJDBCCLISettings(TestCase):
             module='settings',
         )
 
+    @tier1
     @polarion('RHEVM3-11337')
     def test_010_view_settings(self):
         """ view settings via CLI """

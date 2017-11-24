@@ -3,25 +3,22 @@ This module contains markers which are widely used in our tests, and include
 them to xunit-results which is important for us, since polarion exporter read
 polarion ids from this file.
 
-And also implements -A which behaves same as nosetest does.
-
-Now changed to pytest custom marks. Each class or test case should be decorated
-with proper tier marker (tier1, tier2, tier3 and so on)
+Each class or test case should be decorated with proper tier marker (tier1,
+tier2, tier3 and so on)
 
 See https://pytest.org/latest/mark.html
 """
-import ast
-import re
 
 from pkg_resources import parse_version
 
 import pytest
 
+from art.test_handler import settings
+
 __all__ = [
     "bz",
     "jira",
     "polarion",
-    "pytest_addoption",
     "pytest_configure",
     "timeout",
     "storages",
@@ -129,47 +126,15 @@ def get_item_team(item):
     return UNDEFINED_TEAM
 
 
-def pytest_addoption(parser):
-
-    parser.addoption(
-        '-A',
-        dest='attr_expr',
-        default=None,
-        help="You can pass pythonic expression to match tests to run.",
-    )
-
-
-class AttribDecorator(object):
+class TestCustomizer(object):
     """
     It adds option to filter tests according to pythonic expression.
     """
 
-    def __init__(self, expression):
-        super(AttribDecorator, self).__init__()
+    def __init__(self):
+        super(TestCustomizer, self).__init__()
         self.version = None
         self.upgrade_version = None
-        self.expr = expression
-        self._names = set()
-        for node in ast.walk(ast.parse(expression)):
-            if isinstance(node, ast.Name):
-                self._names.add(node.id)
-
-    def _matches(self, item, tier, team):
-        if not tier or team == UNDEFINED_TEAM:
-            return False
-
-        values = dict(tier=tier, team=team)
-
-        # Add all missing names as arg=None
-        values.update(
-            dict((a, None) for a in self._names - set(values.keys()))
-        )
-
-        # Evaluate expression
-        try:
-            return bool(eval(self.expr, values))
-        except Exception:
-            return False
 
     def _match_upgrade_non_relevant_test(self, item, tier):
         after_upgrade = self.version == self.upgrade_version
@@ -210,11 +175,7 @@ class AttribDecorator(object):
         for item in items[:]:
 
             item_tier = get_item_tier(item)
-            item_team = get_item_team(item)
 
-            if not self._matches(item, item_tier, item_team):
-                items.remove(item)
-                continue
             if self._match_upgrade_non_relevant_test(item, item_tier):
                 items.remove(item)
                 continue
@@ -238,7 +199,6 @@ class JunitExtension(object):
     )
 
     attributes_name_prefix = 'polarion-parameter-'
-
     polarion_importer_properties = {
         'polarion-project-id': None,
         'polarion-user-id': None,
@@ -319,22 +279,20 @@ class JunitExtension(object):
             config.ART_CONFIG['PARAMETERS']['polarion_response_myproduct']
         )
 
-        # manipulate the tag expression to get the tier value
-        # it will get multiple values in case they exists,
-        # but it is not expected in production jobs
-        tag_exp = config.getoption('-A')
-        if tag_exp:
-            pattern = re.compile("tier==\S*")
-            tag_exp = "_".join(
-                re.findall(pattern, tag_exp)
-            ).replace("=", "").replace("'", "")
-        else:
-            tag_exp = ''
+        # get tier from mark expression. It will get multiple values in case
+        # they exists, but it is not expected in production jobs
+        mark_expr = config.getoption('-m')
+        tiers = ""
+        if mark_expr:
+            tier_list = [
+                tier.name for tier in tier_markers if tier.name in mark_expr
+            ]
+            tiers = "_".join(tier_list)
 
         self.polarion_importer_properties['polarion-testrun-id'] = (
             "RHV_{0}_{1}_{2}".format(
                 config.ART_CONFIG['DEFAULT']['VERSION'],
-                tag_exp,
+                tiers,
                 config.ART_CONFIG['PARAMETERS']['arch']
             ).replace(".", "_")
         )
@@ -344,14 +302,8 @@ class JunitExtension(object):
 
 
 def pytest_configure(config):
-    if config.getoption('-A'):
-        config.pluginmanager.register(
-            AttribDecorator(config.getoption('-A'))
-        )
-
     if parse_version(pytest.__version__) <= parse_version("2.8.3"):
         return
-
     if config.pluginmanager.hasplugin('junitxml'):
         config.pluginmanager.register(JunitExtension(config))
 
@@ -368,3 +320,10 @@ def pytest_runtest_setup(item):
         previousfailed = getattr(item.parent, "_previousfailed", None)
         if previousfailed is not None:
             pytest.xfail("previous test failed (%s)" % previousfailed.name)
+
+
+def pytest_artconf_ready(config):
+    if settings.ART_CONFIG['RUN'].get('test_customizer', True):
+        config.pluginmanager.register(
+            TestCustomizer()
+        )

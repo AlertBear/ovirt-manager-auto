@@ -36,6 +36,7 @@ RUN:
     standalone: False
     max_collection:
     log: /var/tmp/art.log
+    test_customizer: true
 
 PARAMETERS:
     arch: x86_64
