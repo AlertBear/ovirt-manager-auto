@@ -109,27 +109,20 @@ class VDS(Host):
 
         Examples:
             stop VM
-            out = config.VDS_HOSTS[0].vds_client("getVMList")
+            out = config.VDS_HOSTS[0].vds_client("Host.getVMList")
             vm_id = out.get('vmList')[0].get('vmId')
             config.VDS_HOSTS[0].vds_client("VM.destroy", {name:vm_id})
 
             getVdsCaps
-            out = config.VDS_HOSTS[0].vds_client("getCapabilities")
+            out = config.VDS_HOSTS[0].vds_client("Host.getCapabilities")
         """
         supported_actions = yaml.load(self.vdsm_client_content)
-        action = filter(lambda x: cmd in x, supported_actions.keys())
+        action = filter(lambda x: cmd == x, supported_actions.keys())
         if not action:
             self.logger.error("Command %s is not supported", cmd)
             return None
-
-        if len(action) > 1:
-            self.logger.error(
-                "Found more then one value for command %s. action %s",
-                cmd, action
-            )
-            return None
-
         action = action[0]
+
         args = args if args else dict()
         command = (
             'python -c "from vdsm import client;'
@@ -164,7 +157,9 @@ class VDS(Host):
             bool: True, if the host configured as the hosted-engine host,
                 otherwise False
         """
-        return self.vds_client(cmd="getCapabilities")["hostedEngineDeployed"]
+        return self.vds_client(
+            cmd="Host.getCapabilities"
+        )["hostedEngineDeployed"]
 
     def get_he_stats(self):
         """

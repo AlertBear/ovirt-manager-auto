@@ -102,7 +102,7 @@ class TestLongNetworkName01(NetworkTest):
                 _id=network_object.id.replace('-', '')[:13]
             )
         )
-        vds_caps = conf.VDS_0_HOST.vds_client("getCapabilities")
+        vds_caps = conf.VDS_0_HOST.vds_client("Host.getCapabilities")
         assert vds_caps
         assert vds_caps.get('networks').get(vdsm_network_name)
 

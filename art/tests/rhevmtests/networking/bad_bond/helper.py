@@ -75,7 +75,7 @@ def check_bond_ad_partner_mac_in_vds_client(host_name, bond_name):
         " %s", bond_name
     )
     host_rsc = global_helper.get_host_resource_by_name(host_name=host_name)
-    cmd_out = host_rsc.vds_client(cmd="getCapabilities")
+    cmd_out = host_rsc.vds_client(cmd="Host.getCapabilities")
     if not cmd_out:
         logger.error(
             "vdsClient getVdsCapabilities returned empty response on host: %s",

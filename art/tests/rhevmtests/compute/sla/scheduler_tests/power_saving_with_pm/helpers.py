@@ -37,7 +37,9 @@ def get_host_pm_state(pm_command_executor, host_pm_details, expected_state):
     if sla_conf.PM_OPTIONS in host_pm_details:
         pm_command_args["options"] = host_pm_details[sla_conf.PM_OPTIONS]
 
-    out = pm_command_executor.vds_client(cmd="fenceNode", args=pm_command_args)
+    out = pm_command_executor.vds_client(
+        cmd="Host.fenceNode", args=pm_command_args
+    )
     if not out:
         logger.error(
             "%s: failed to run power management command",

@@ -37,7 +37,7 @@ def cmp_qos_with_vdscaps(host_resource, net, qos_dict):
     if not sample.waitForFuncStatus(result=True):
         return False
 
-    vds_caps_out = host_resource.vds_client(cmd="getCapabilities")
+    vds_caps_out = host_resource.vds_client(cmd="Host.getCapabilities")
     out_networks = vds_caps_out.get("networks", {})
     qos = out_networks.get(net, {}).get("hostQos", {}).get("out", {})
     for key in ("rt", "ul", "ls"):

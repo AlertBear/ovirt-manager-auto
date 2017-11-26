@@ -384,6 +384,7 @@ def choose_specific_host_as_spm(request):
         except apis_exceptions.APITimeout:
             logger.error("Engine has async tasks that still running")
             return False
+        assert sla_helpers.clear_spm_tasks_from_host()
         assert sla_helpers.wait_for_dc_and_storagedomains()
         u_libs.testflow.setup("Choose the host %s as SPM", host_as_spm)
         assert ll_hosts.select_host_as_spm(

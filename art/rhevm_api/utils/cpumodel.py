@@ -142,7 +142,7 @@ class CpuModelDenominator(object):
                 raise CpuModelError("Can not resolve host's cpuinfo: %s" % err)
 
             # List cpu models
-            vds_caps = host.vds_client(cmd="getCapabilities")
+            vds_caps = host.vds_client(cmd="Host.getCapabilities")
             vds_caps = dict() if not vds_caps else vds_caps
             cpu_flags = vds_caps.get("cpuFlags", "").split(",")
             models = [i for i in cpu_flags if "model_"in i]

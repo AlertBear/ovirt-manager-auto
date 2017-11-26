@@ -461,7 +461,7 @@ def run_power_management_command(
         "password": host_to_fence_pm.get(conf.PM_PASSWORD),
         "action": fence_command
     }
-    out = command_executor.vds_client(cmd="fenceNode", args=pm_args)
+    out = command_executor.vds_client(cmd="Host.fenceNode", args=pm_args)
     if not out:
         logger.error(
             "%s: failed to %s host %s",
@@ -555,7 +555,7 @@ def check_he_vm_state_via_vdsm(host_resource, expected_state=None):
     Returns:
         bool: True, if HE VM exists on the resource and has state UP
     """
-    vms = host_resource.vds_client(cmd="getVMList")
+    vms = host_resource.vds_client(cmd="Host.getVMList")
     if vms:
         logger.debug("%s: VM's that run %s", host_resource, vms)
         if expected_state:

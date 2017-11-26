@@ -2942,7 +2942,7 @@ def wait_for_vm_ip(
         Returns:
             str or list: IP or list of IPs depend on get_all_ips param
         """
-        vms_info = vds_resource.vds_client(cmd="getVMFullList")
+        vms_info = vds_resource.vds_client(cmd="Host.getVMFullList")
         vm_id = [i.get("vmId") for i in vms_info if i.get("vmName") == vm]
         if not vm_id:
             logger.error("No VMs found in host %s", vds_resource)

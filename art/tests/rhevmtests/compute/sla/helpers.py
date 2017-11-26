@@ -810,3 +810,31 @@ def create_number_of_equals_numa_nodes(resource, vm_name, num_of_numa_nodes):
         }
         numa_nodes.append(numa_node)
     return numa_nodes
+
+
+def clear_spm_tasks_from_host():
+    """
+    Clear all SPM tasks from VDSM
+    """
+    spm_host = ll_hosts.get_spm_host(conf.HOSTS)
+    spm_resource = conf.VDS_HOSTS[conf.HOSTS.index(spm_host)]
+
+    vds_tasks = spm_resource.vds_client("Host.getAllTasks")
+    logger.debug("%s: unfinished tasks %s", spm_resource, vds_tasks)
+    for task_id, task_info in vds_tasks.iteritems():
+        if task_info["tag"] != "spm":
+            continue
+        if task_info["state"] != "finished":
+            if not spm_resource.vds_client("Task.stop", {"taskID": task_id}):
+                logger.error(
+                    "%s: failed to stop task %s", spm_resource, task_id
+                )
+        logger.info("%s: remove task %s", spm_resource, task_id)
+        if not spm_resource.vds_client(
+            "Task.clear", {"taskID": task_id}
+        ):
+            logger.error(
+                "%s: failed to clear task %s", spm_resource, task_id
+            )
+            return False
+    return True
