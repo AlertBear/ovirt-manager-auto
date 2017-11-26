@@ -65,16 +65,24 @@ def test_delete_downloaded_files(request, storage):
     self.files_to_remove = list()
 
     def finalizer():
-        testflow.teardown(
-            "deleting downloaded files %s", self.files_to_remove[0]
-        )
-        (out, err) = Popen(
-            shlex.split("rm " + " ".join(self.files_to_remove[0])),
-            stdout=PIPE, stderr=PIPE
-        ).communicate()
-        assert not err, (
-            "error %s occured when trying to execute the command %s" % (
-                err, "rm " + " ".join(self.files_to_remove[0])
+        if self.files_to_remove:
+            testflow.teardown(
+                "Deleting downloaded files %s", self.files_to_remove[0]
             )
-        )
+            cmd = "rm %s" % " ".join(self.files_to_remove[0])
+            out, err = Popen(
+                shlex.split(cmd),
+                stdout=PIPE, stderr=PIPE
+            ).communicate()
+            assert not err, (
+                "Error (%s) occurred when trying to execute the command %s" % (
+                    err, cmd
+                )
+            )
+        else:
+            testflow.teardown(
+                "Downloaded files were not removed as they were not found,"
+                "probably due to a failed step in the test"
+            )
+
     request.addfinalizer(finalizer)

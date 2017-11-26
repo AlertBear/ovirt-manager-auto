@@ -99,9 +99,7 @@ class StreamingApi(object):
         sd_id = (
             disk_object.get_storage_domains().get_storage_domain()[0].get_id()
         )
-        if storage_type == (
-                STORAGE_TYPE_ISCSI or STORAGE_TYPE_FCP
-        ):
+        if storage_type in [STORAGE_TYPE_ISCSI, STORAGE_TYPE_FCP]:
             download_size = ll_disks.get_disk_obj(
                 disk_id, attribute='id'
             ).get_provisioned_size()
@@ -139,9 +137,7 @@ class StreamingApi(object):
             disk_object.get_storage_domains().get_storage_domain()[0].get_id()
         )
 
-        if storage_type == (
-                STORAGE_TYPE_ISCSI or STORAGE_TYPE_FCP
-        ):
+        if storage_type in [STORAGE_TYPE_ISCSI, STORAGE_TYPE_FCP]:
             logger.info(
                 "Activating the disk image before md5sum"
             )
