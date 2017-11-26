@@ -317,7 +317,7 @@ class TestCheckClusterPoliciesParameters(SlaTest):
             https://bugzilla.redhat.com/show_bug.cgi?id=1070704
         """
         high_utilization = random.randint(50, 99)
-        low_utilization = random.randint(0, 49)
+        low_utilization = random.randint(1, 49)
         duration = random.randint(1, 99) * 60
         policies_params = {
             sla_conf.POLICY_EVEN_DISTRIBUTION: {
