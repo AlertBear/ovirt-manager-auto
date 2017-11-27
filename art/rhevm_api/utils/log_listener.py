@@ -1,4 +1,5 @@
 import re
+import shlex
 import subprocess
 import logging
 import os
@@ -67,9 +68,9 @@ class LogListener:
                 ip_for_execute_command
             )
             rc, out, err = self.executor.run_cmd(
-                cmd=command_to_exec, io_timeout=90
+                cmd=shlex.split(command_to_exec), io_timeout=90
             )
-            assert not rc, (
+            assert rc, (
                 "Failed to execute command %s with err %s and output %s" % (
                     command_to_exec, err, out
                 )
