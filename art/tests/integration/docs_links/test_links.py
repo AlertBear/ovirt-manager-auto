@@ -1,6 +1,6 @@
 import pytest
 
-from art.test_handler.tools import polarion
+from art.test_handler.tools import polarion, bz
 from art.unittest_lib import CoreSystemTest, tier1
 
 from docs_links import check_links
@@ -13,6 +13,7 @@ class TestDocsLinks(CoreSystemTest):
     """
     @staticmethod
     @polarion("RHEVM3-8689")
+    @bz({"1458444": {}})
     @pytest.mark.skipif(
         config.upstream_flag, reason="Tests supported only on downstream"
     )
