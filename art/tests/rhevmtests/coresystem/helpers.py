@@ -265,6 +265,6 @@ class EngineCLI(object):
 
     def _map_kwargs(self, **kwargs):
         return map(
-            lambda (k, v): '--%s=%s' % (k.replace('_', '-'), v),
+            lambda k, v: '--%s=%s' % (k.replace('_', '-'), v),
             kwargs.iteritems()
         )

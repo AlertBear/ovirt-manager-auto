@@ -11,7 +11,7 @@ from art.rhevm_api.tests_lib.low_level import (
 from art.unittest_lib import CoreSystemTest as TestCase
 from art.unittest_lib import testflow
 
-from rhevmtests.coresystem.guest_tools.linux_guest_agent import config
+import config
 
 logger = logging.getLogger(__name__)
 
@@ -65,13 +65,22 @@ def prepare_vms(vm_disks):
         if config.TEST_IMAGES[image]['image']._is_import_success(3600):
             testflow.setup("Attach disk %s to VM %s", image, image)
             disks.attachDisk(True, image, image)
-            testflow.setup("Add snapshot %s to VM %s", image, image)
-            assert vms.addSnapshot(True, image, image)
-            os_codename = image[2:5]
-            repo_url = config.GA_REPO_URL % os_codename
-            initialization = vms.init_initialization_obj(
-                {'custom_script': config.CLOUD_INIT_SCRIPT % repo_url}
-            )
+            if image.startswith(config.RHEL_BASE_IMAGE_NAME):
+                testflow.setup("Add snapshot %s to VM %s", image, image)
+                assert vms.addSnapshot(True, image, image)
+                os_codename = image[2:5]
+                repo_url = config.GA_REPO_URL % os_codename
+                initialization = vms.init_initialization_obj(
+                    {'custom_script': config.CLOUD_INIT_SCRIPT % repo_url}
+                )
+            elif image.startswith(config.ATOMIC_BASE_IMAGE_NAME):
+                initialization = vms.init_initialization_obj(
+                    {
+                        'user_name': config.GUEST_ROOT_USER,
+                        'root_password': config.GUEST_ROOT_PASSWORD,
+                        'custom_script': config.ATOMIC_CLOUD_INIT_SCRIPT
+                    }
+                )
             testflow.setup("Run once VM %s", image)
             assert vms.runVmOnce(
                 True, image, wait_for_state=config.VM_UP,
@@ -86,8 +95,6 @@ def prepare_vms(vm_disks):
             )
             config.TEST_IMAGES[image]['machine'] = machine
             wait_for_connective(machine)
-            testflow.setup("Stop VM %s", image)
-            vms.stop_vms_safely([image])
 
 
 class GABaseTestCase(TestCase):
@@ -143,23 +150,24 @@ class GABaseTestCase(TestCase):
         self.machine.service(config.AGENT_SERVICE_NAME).start()
         vms.wait_for_vm_ip(self.vm_name, timeout=config.GAINSTALLED_TIMEOUT)
 
-    def post_install(self, commands=None):
+    def post_install(self, commands=None, root_path=""):
         """
         Check for existence of guest agent config and user/group
         Then run additional commands to be checked
 
-        :param command: command to be checked
-        :type command: list
+        Args:
+            commands (list): command to be checked
+            root_path (str): path to root directory for atomic tests
         """
         executor = self.machine.executor()
         testflow.step("Check that there is ovirt-guest-agent.conf directory")
         rc, _, err = executor.run_cmd(
-            ['ls', '-l', '/etc/ovirt-guest-agent.conf']
+            ['ls', '-l', root_path + '/etc/ovirt-guest-agent.conf']
         )
         assert not rc, "Failed to check guest agent config: %s" % err
         testflow.step("Check that ovirtagent user and group exists")
         rc, _, err = executor.run_cmd(
-            ['grep', 'ovirtagent', '/etc/{passwd,group}']
+            ['grep', 'ovirtagent', root_path + '/etc/{passwd,group}']
         )
         assert not rc, 'User/Group ovirtagent was no found: %s' % err
         if commands:
@@ -189,6 +197,12 @@ class GABaseTestCase(TestCase):
         assert ga_service.restart()
 
     def _check_fqdn(self):
+        for sample in TimeoutingSampler(
+            config.SAMPLER_TIMEOUT, config.SAMPLER_SLEEP,
+            vms.get_vm, self.vm_name
+        ):
+            if sample.get_fqdn() and len(sample.get_fqdn()) > 0:
+                break
         fqdn_agent = self._get_vm_stats(
             self.vm_name
         ).get("guestFQDN")
@@ -250,8 +264,9 @@ class GABaseTestCase(TestCase):
             except AttributeError:
                 logger.error("App %s is not reporting version", app)
 
-        for app in application_list:
-            self._check_app(list_app_cmd, app, app_list)
+        if application_list:
+            for app in application_list:
+                self._check_app(list_app_cmd, app, app_list)
 
     def _check_app(self, list_app_cmd, app, app_list):
         rc, app_real, err = self.machine.executor().run_cmd(
@@ -281,18 +296,19 @@ class GABaseTestCase(TestCase):
                 assert ip_real in ip_list
         assert ip_check_ran, "Check for IP was unsuccessful"
 
-    def agent_data(self, application_list, list_app_cmd):
+    def agent_data(self, application_list=None, list_app_cmd=None):
         """ rhevm-guest-agent data """
         self._check_fqdn()
         self._check_net_ifaces()
-        self._check_diskusage()
+        if not self.vm_name.startswith(config.ATOMIC_BASE_IMAGE_NAME):
+            self._check_diskusage()
         self._check_applist(application_list, list_app_cmd)
         self._check_guestIP()
 
     def is_agent_running(self):
         return self.machine.service(config.AGENT_SERVICE_NAME).status()
 
-    def function_continuity(self, application_list, list_app_cmd):
+    def function_continuity(self, application_list=None, list_app_cmd=None):
         """ rhevm-guest-agent function continuity """
         testflow.step("Check that agent is running")
         assert self.is_agent_running()

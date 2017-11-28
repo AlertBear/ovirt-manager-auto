@@ -3,15 +3,13 @@ Sanity test of guest agent of rhel 7 64b
 """
 import pytest
 
-from art.test_handler.tools import polarion, bz
-from art.unittest_lib import (
-    tier2,
-)
+from art.test_handler.tools import polarion
+from art.unittest_lib import tier2
 from art.unittest_lib import testflow
 from art.rhevm_api.tests_lib.low_level import vms
 
-from rhevmtests.coresystem.guest_tools.linux_guest_agent import config
-from rhevmtests.coresystem.guest_tools.linux_guest_agent import common
+import config
+import common
 
 DISK_NAME = 'rhel7_x64_Disk1'
 
@@ -50,7 +48,9 @@ class RHEL7GATest(common.GABaseTestCase):
         testflow.setup(
             "Preview snapshot %s of VM %s", cls.vm_name, cls.vm_name
         )
-        assert vms.preview_snapshot(True, cls.vm_name, cls.vm_name)
+        assert vms.preview_snapshot(
+            True, cls.vm_name, cls.vm_name, ensure_vm_down=True
+        )
         vms.wait_for_vm_snapshots(
             cls.vm_name,
             config.SNAPSHOT_IN_PREVIEW,
@@ -97,7 +97,6 @@ class TestRHEL764bGATest(RHEL7GATest):
         self.install_guest_agent(config.GA_NAME)
 
     @polarion('RHEVM3-7380')
-    @bz({"1508399": {}})
     def test_post_install(self):
         """ RHEL7_1_64b rhevm-guest-agent post-install """
         self.post_install([self.cmd_chkconf])
@@ -135,7 +134,6 @@ class TestRHEL764bGATest(RHEL7GATest):
 
     @polarion("RHEVM-15589")
     @pytest.mark.usefixtures('clean_after_hooks')
-    @bz({"1507884": {}})
     def test_basic_hibernation_hook(self):
         """ Test for basic GA migration hook """
         self.ga_hooks.hooks_test(True, "hibernation")
@@ -152,7 +150,6 @@ class TestRHEL764bGATest(RHEL7GATest):
 
     @polarion("RHEVM-16316")
     @pytest.mark.usefixtures('clean_after_hooks')
-    @bz({"1507884": {}})
     def test_hibernation_hook_legacy_policy(self):
         """
         Check if GA hooks are executed when legacy migration policy is set

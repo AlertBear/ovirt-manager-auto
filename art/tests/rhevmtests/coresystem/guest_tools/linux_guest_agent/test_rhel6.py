@@ -2,15 +2,13 @@
 Sanity test of guest agent of rhel 6 32/64b
 """
 import pytest
-from art.test_handler.tools import polarion, bz
-from art.unittest_lib import (
-    tier2,
-)
+from art.test_handler.tools import polarion
+from art.unittest_lib import tier2
 from art.unittest_lib import testflow
 from art.rhevm_api.tests_lib.low_level import vms
 
-from rhevmtests.coresystem.guest_tools.linux_guest_agent import config
-from rhevmtests.coresystem.guest_tools.linux_guest_agent import common
+import config
+import common
 
 DISKx64_NAME = 'rhel6_x64_Disk1'
 DISKx86_NAME = 'rhel6_x86_Disk1'
@@ -47,7 +45,9 @@ class RHEL6GATest(common.GABaseTestCase):
         testflow.setup(
             "Preview snapshot %s of VM %s", cls.vm_name, cls.vm_name
         )
-        assert vms.preview_snapshot(True, cls.vm_name, cls.vm_name)
+        assert vms.preview_snapshot(
+            True, cls.vm_name, cls.vm_name, ensure_vm_down=True
+        )
         vms.wait_for_vm_snapshots(
             cls.vm_name,
             config.SNAPSHOT_IN_PREVIEW,
@@ -128,7 +128,6 @@ class TestRHEL664bGATest(RHEL6GATest):
 
     @polarion("RHEVM-15589")
     @pytest.mark.usefixtures('clean_after_hooks')
-    @bz({"1507884": {}})
     def test_basic_hibernation_hook(self):
         """ Test for basic GA migration hook """
         self.ga_hooks.hooks_test(True, "hibernation")
@@ -145,7 +144,6 @@ class TestRHEL664bGATest(RHEL6GATest):
 
     @polarion("RHEVM-16316")
     @pytest.mark.usefixtures('clean_after_hooks')
-    @bz({"1507884": {}})
     def test_hibernation_hook_legacy_policy(self):
         """
         Check if GA hooks are executed when legacy migration policy is set
@@ -221,7 +219,6 @@ class TestRHEL632bGATest(RHEL6GATest):
 
     @polarion("RHEVM-15589")
     @pytest.mark.usefixtures('clean_after_hooks')
-    @bz({"1507884": {}})
     def test_basic_hibernation_hook(self):
         """ Test for basic GA migration hook """
         self.ga_hooks.hooks_test(True, "hibernation")
@@ -238,7 +235,6 @@ class TestRHEL632bGATest(RHEL6GATest):
 
     @polarion("RHEVM-16316")
     @pytest.mark.usefixtures('clean_after_hooks')
-    @bz({"1507884": {}})
     def test_hibernation_hook_legacy_policy(self):
         """
         Check if GA hooks are executed when legacy migration policy is set
