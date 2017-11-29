@@ -181,6 +181,35 @@ def get_prompt(child, authorize):
     return sample
 
 
+def credentials_provider(child):
+    """
+    Provide credentials for user to login.
+
+    Args:
+        child (obj): pexpect child object.
+
+    Raises:
+        AssertionError: if console prompt is not returned after authorization.
+    """
+
+    child.send(
+        '{user_name}'.format(
+            user_name=sc_conf.SERIAL_CONSOLE_VM_USER
+        )
+    )
+    child.sendcontrol('m')
+    rc = child.expect('.*assword:')
+    assert rc == 0, "Didn't receive password prompt."
+    child.send(
+        '{password}'.format(
+            password=sc_conf.SERIAL_CONSOLE_VM_PASSWORD
+        )
+    )
+    child.sendcontrol('m')
+    rc = child.expect('.*\#')
+    assert rc == 0, "Didn't receive console prompt after login."
+
+
 def sc_ssh_connector(cmd, authorize):
     """
     Method designed to create connection object to VM via SC using pexpect
@@ -200,22 +229,7 @@ def sc_ssh_connector(cmd, authorize):
     assert prompt_dialogue_active, 'Did not receive expected prompt.'
 
     if authorize:
-        child.send(
-            '{user_name}'.format(
-                user_name=sc_conf.SERIAL_CONSOLE_VM_USER
-            )
-        )
-        child.sendcontrol('m')
-        rc = child.expect('.*assword:')
-        assert rc == 0, "Didn't receive password prompt."
-        child.send(
-            '{password}'.format(
-                password=sc_conf.SERIAL_CONSOLE_VM_PASSWORD
-            )
-        )
-        child.sendcontrol('m')
-        rc = child.expect('.*\#')
-        assert rc == 0, "Didn't receive console prompt after login."
+        credentials_provider(child)
     return child
 
 

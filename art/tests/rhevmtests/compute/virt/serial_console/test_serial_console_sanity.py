@@ -206,7 +206,7 @@ class SerialConsoleClass(VirtTest):
             wait_for_ip=True,
         ), 'Was not able to start VM after suspension.'
         testflow.step('Connect to VM via SC using proper command.')
-        child = helper.sc_ssh_connector(cmd, authorize=False)
+        child = helper.sc_ssh_connector(cmd, authorize=True)
         testflow.step('Verify SC is working properly.')
         helper.verify_sc(child)
 
@@ -240,6 +240,7 @@ class SerialConsoleClass(VirtTest):
             'Verify SC is working after reboot of VM and SC session did not '
             'drop.'
         )
+        helper.credentials_provider(child)
         helper.verify_sc(child)
 
     @tier3
