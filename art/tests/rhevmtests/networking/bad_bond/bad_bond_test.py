@@ -5,7 +5,7 @@
 Bad bond feature tests
 
 The following elements will be used for the testing:
-2 Hosts, 3 bonds
+2 Hosts, 2 bonds
 """
 
 import pytest
@@ -40,8 +40,6 @@ class TestLACPBond(NetworkTest):
        switch 'ad_partner_mac' value
     2. Check if bond of slaves connected to non-LACP switch ports, report a
        zero 'ad_partner_mac' value
-    2. Check if bond of slaves connected to mixed - LACP and non-LACP
-       switch ports, report a zero 'ad_partner_mac' value
     """
 
     # [Host index, bond_name, True for valid bond check or False for invalid]
@@ -52,10 +50,6 @@ class TestLACPBond(NetworkTest):
     # Invalid bond case parameters
     invalid_bond = "bond1"
     invalid = [0, invalid_bond, False]
-
-    # Invalid mixed bond case parameters
-    invalid_mixed_bond ="bond2"
-    invalid_mixed = [1, invalid_mixed_bond, False]
 
     # setup_networks_fixture parameters
     hosts_nets_nic_dict = {
@@ -70,13 +64,6 @@ class TestLACPBond(NetworkTest):
                 "slaves": [4, 5],
                 "mode": 4
             }
-        },
-        1: {
-            invalid_mixed_bond: {
-                "nic": invalid_mixed_bond,
-                "slaves": [3, 4],
-                "mode": 4
-            }
         }
     }
 
@@ -89,15 +76,10 @@ class TestLACPBond(NetworkTest):
         [
             pytest.param(*valid, marks=(polarion("RHEVM3-19180"))),
             pytest.param(*invalid, marks=(polarion("RHEVM3-19181"))),
-            pytest.param(
-                *invalid_mixed, marks=(
-                    (polarion("RHEVM3-19182"), bz({"1418209": {}})))
-            ),
         ],
         ids=[
             "valid_LACP_bond",
-            "invalid_LACP_bond",
-            "invalid_mixed_LACP_bond"
+            "invalid_LACP_bond"
         ]
     )
     def test_bond_mode_4(self, host_index, bond_name, check_valid):
