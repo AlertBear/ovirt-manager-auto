@@ -41,6 +41,7 @@ loggers:
     level: INFO
     handlers:
       - consoleHandler
+      - duplicateFileHandler
     qualname: art.flow
     propagate: 0
   root:
