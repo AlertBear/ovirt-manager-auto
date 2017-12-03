@@ -28,6 +28,7 @@ from rhevmtests.storage.storage_hotplug_full_test_plan.fixtures import (
     create_results_files,
 )
 from art.unittest_lib import (
+    tier1,
     tier2,
     tier3,
     tier4,
@@ -543,7 +544,7 @@ class TestCase6231(TestCase):
     interfaces = [config.VIRTIO, config.VIRTIO_SCSI]
 
     @polarion("RHEVM3-6231")
-    @tier2
+    @tier1
     def test_activate_deactivate_disk(self):
         """
         Activate an already attached disk on a running VM
