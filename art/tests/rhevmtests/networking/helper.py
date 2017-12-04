@@ -619,7 +619,7 @@ def remove_unneeded_vms():
         vm for vm in ll_vms.get_all_vms_names() if vm not in conf_vms
     ]
     if vms_to_remove:
-        logger.warning("VMs to remove: %s", vms_to_remove)
+        logger.info("VMs to remove: %s", vms_to_remove)
         ll_vms.safely_remove_vms(vms=vms_to_remove)
 
 

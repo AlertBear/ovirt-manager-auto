@@ -271,6 +271,7 @@ def _prepareTemplateObject(**kwargs):
     return templ
 
 
+@ll_general.generate_logs(step=True)
 def createTemplate(
     positive, wait=True, timeout=CREATE_TEMPLATE_TIMEOUT, **kwargs
 ):
@@ -284,7 +285,7 @@ def createTemplate(
         wait (bool): wait till creation of template is done or timeout exceeds
         timeout (int): Timeout for wait
 
-    Keyword arguments:
+    Keyword Args:
         vm (str): Name of vm for template generation
         name (str): Template name
         description (str):Template description
@@ -312,10 +313,6 @@ def createTemplate(
     storage_domain = kwargs.get("storagedomain")
     vm_name = kwargs.get("vm")
     copy_permissions = kwargs.get("copy_permissions")
-    log_info, log_error = ll_general.get_log_msg(
-        log_action="Create", obj_type="template", obj_name=name,
-        positive=positive, **kwargs
-    )
     new_version = kwargs.get("new_version", False)
     version_name = kwargs.get("version_name", None)
     if new_version and validateTemplate(True, name):
@@ -359,7 +356,6 @@ def createTemplate(
                 )
             )
         template.vm.set_disk_attachments(disk_attachments)
-    logger.info(log_info)
     operations = []
     if copy_permissions:
         operations.append("clone_permissions")
@@ -369,8 +365,6 @@ def createTemplate(
     if wait and status and positive:
         status = TEMPLATE_API.waitForElemStatus(template, 'OK', timeout)
 
-    if not status:
-        logger.error(log_error)
     return status
 
 

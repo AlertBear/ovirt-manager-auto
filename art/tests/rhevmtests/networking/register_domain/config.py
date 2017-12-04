@@ -5,6 +5,7 @@
 Config file for register domain test
 """
 
+from collections import OrderedDict
 import rhevmtests.helpers as global_helper
 
 EXTRA_SD_NAME = "Register_domain_network_SD"
@@ -31,13 +32,21 @@ MAC_LIST = [
     DUPLICATE_MAC_2, DUPLICATE_MAC_3, None, None, None, None
 ]
 
-VMS_DICT = dict()
-
+VMS_DICT = OrderedDict()
 for vm, net, mac, nic, in zip(VMS_LIST, NETS_LIST, MAC_LIST, VMS_NICS_LIST):
     VMS_DICT[vm] = dict()
     VMS_DICT[vm]["network"] = net
     VMS_DICT[vm]["mac"] = mac
     VMS_DICT[vm]["nic"] = nic
+    VMS_DICT[vm]["template"] = "{vm}_template".format(vm=vm)
+
+TEMPLATES_DICT = OrderedDict()
+for vm in VMS_DICT.keys()[:4]:
+    params = VMS_DICT.get(vm)
+    TEMPLATES_DICT[vm] = dict()
+    TEMPLATES_DICT[vm]["network"] = params.get("network")
+    TEMPLATES_DICT[vm]["vm"] = vm
+    TEMPLATES_DICT[vm]["nic"] = params.get("nic")
 
 NETS_DICT = {
     NETS[1][0]: {

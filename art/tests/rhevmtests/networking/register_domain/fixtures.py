@@ -15,7 +15,8 @@ from art.rhevm_api.tests_lib.high_level import (
 from art.rhevm_api.tests_lib.low_level import (
     mac_pool as ll_mac_pool,
     storagedomains as ll_storage,
-    vms as ll_vms
+    vms as ll_vms,
+    templates as ll_templates
 )
 import config as register_domain_conf
 import helper
@@ -77,6 +78,7 @@ def prepare_setup(request):
         address=storage_address, path=storage_path
     )
     helper.create_vms()
+    helper.create_templates()
     testflow.setup(
         "Remove storage domain %s from DC %s", storage_name, dc
     )
@@ -85,10 +87,15 @@ def prepare_setup(request):
     )
 
     vms_to_remove = register_domain_conf.VMS_DICT.keys()
+    templates_to_remove = register_domain_conf.TEMPLATES_DICT.keys()
     testflow.setup("Remove VMs: %s", vms_to_remove)
     assert ll_vms.safely_remove_vms(vms=vms_to_remove)
+    testflow.setup("Remove templates: %s", templates_to_remove)
+    assert ll_templates.remove_templates(
+        positive=True, templates=templates_to_remove
+    )
 
-    vms_to_recreate = list()
+    vms_to_recreate = []
     for i in range(4, 7):
         vm_to_recreate_index = register_domain_conf.VMS_DICT.keys().index(
             register_domain_conf.VM_NAMES[i][0]
@@ -146,6 +153,41 @@ def import_vm_from_data_domain(request):
     assert ll_storage.register_object(
         obj=vm_to_import, cluster=conf.CL_0,
         network_mappings=network_mappings, reassign_bad_macs=reassessing_mac
+    )
+
+
+@pytest.fixture()
+def import_templates_from_data_domain(request):
+    """
+    Import template from data domain
+    """
+    data_domain_name = request.node.cls.data_domain_name
+    network_mappings = request.getfixturevalue("mappings")
+    template = request.getfixturevalue("template")
+    unregistered_templates = ll_storage.get_unregistered_templates(
+        storage_domain=data_domain_name
+    )
+    template_object = [
+        temp for temp in unregistered_templates if temp.name == template
+    ]
+    assert template_object
+    template_object = template_object[0]
+
+    def fin():
+        """
+        Remove imported templates
+        """
+        testflow.teardown("Remove template %s", template)
+        assert ll_templates.remove_template(positive=True, template=template)
+    request.addfinalizer(fin)
+
+    testflow.setup(
+        "Import template %s from data domain %s with: network_mapping=%s",
+        template, data_domain_name, network_mappings or "N/A"
+    )
+    assert ll_storage.register_object(
+        obj=template_object, cluster=conf.CL_0,
+        network_mappings=network_mappings
     )
 
 

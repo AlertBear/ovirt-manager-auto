@@ -9,7 +9,8 @@ from utilities import utils
 
 from art.rhevm_api.tests_lib.low_level import (
     mac_pool as ll_mac_pool,
-    vms as ll_vms
+    vms as ll_vms,
+    templates as ll_templates
 )
 import config as register_domain_conf
 import rhevmtests.networking.config as conf
@@ -30,6 +31,26 @@ def get_vm_params(vm):
     network = register_domain_conf.VMS_DICT[vm]["network"]
     nic = register_domain_conf.VMS_DICT[vm]["nic"]
     return mac, network, nic
+
+
+def get_template_params(template):
+    """
+    Get template params from dict
+
+    Args:
+        template (str): template name
+
+    Returns:
+        tuple: Network and NIC
+    """
+    network = register_domain_conf.TEMPLATES_DICT.get(
+        template
+    ).get("network")
+
+    nic = register_domain_conf.TEMPLATES_DICT.get(
+        template
+    ).get("nic")
+    return network, nic
 
 
 def check_mac_in_mac_range(vm, nic):
@@ -54,7 +75,7 @@ def check_mac_in_mac_range(vm, nic):
     return vnic_mac in mac_range
 
 
-def create_vms(vms_to_recreate=list()):
+def create_vms(vms_to_recreate=None):
     """
     Create VMs
 
@@ -85,3 +106,14 @@ def create_vms(vms_to_recreate=list()):
             if not mac:
                 mac = ll_vms.get_vm_nic_mac_address(vm=vm, nic=nic)
                 register_domain_conf.VMS_DICT[vm]["mac"] = mac
+
+
+def create_templates():
+    """
+    Create template
+    """
+    for template, params in register_domain_conf.TEMPLATES_DICT.items():
+        vm = params.get("vm")
+        assert ll_templates.createTemplate(
+            positive=True, vm=vm, name=template, cluster=conf.CL_0
+        )

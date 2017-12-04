@@ -7,15 +7,20 @@ Register domain network test
 
 import pytest
 
-import art.rhevm_api.tests_lib.low_level.storagedomains as ll_storage
-import art.rhevm_api.tests_lib.low_level.vms as ll_vms
+from art.rhevm_api.tests_lib.low_level import (
+    storagedomains as ll_storage,
+    vms as ll_vms
+)
+from art.rhevm_api.tests_lib.high_level import templates as hl_templates
 import config as register_domain_conf
 import helper
+from rhevmtests import helpers
 import rhevmtests.networking.config as conf
 from art.test_handler.tools import polarion, bz
 from fixtures import (  # noqa: F401
     prepare_setup,
     import_vm_from_data_domain,
+    import_templates_from_data_domain,
     set_allow_duplicate_mac_pool,
     manage_mac_pool_range,
     make_sure_no_mac_in_pool,
@@ -30,7 +35,6 @@ from art.unittest_lib import (
 @pytest.mark.usefixtures(
     import_vm_from_data_domain.__name__
 )
-@bz({"1509962": {}})
 class TestRegisterDomain01(NetworkTest):
     """
     Import VM from storage data domain with same MAC pool range and network
@@ -70,7 +74,6 @@ class TestRegisterDomain01(NetworkTest):
 @pytest.mark.usefixtures(
     import_vm_from_data_domain.__name__
 )
-@bz({"1509962": {}})
 class TestRegisterDomain02(NetworkTest):
     """
     Import VM from storage data domain when MAC is not from pool and network
@@ -120,7 +123,6 @@ class TestRegisterDomain02(NetworkTest):
 @pytest.mark.usefixtures(
     import_vm_from_data_domain.__name__
 )
-@bz({"1509962": {}})
 class TestRegisterDomain03(NetworkTest):
     """
     Import VM from storage data domain when MAC is not from pool and network
@@ -166,7 +168,6 @@ class TestRegisterDomain03(NetworkTest):
 @pytest.mark.usefixtures(
     import_vm_from_data_domain.__name__
 )
-@bz({"1509962": {}})
 class TestRegisterDomain04(NetworkTest):
     """
     Import VM from storage data domain when MAC is already exists on another VM
@@ -192,7 +193,6 @@ class TestRegisterDomain04(NetworkTest):
         assert ll_vms.get_vm_nic_plugged(vm=self.vm, nic=nic)
 
 
-@bz({"1509962": {}})
 class TestRegisterDomain05(NetworkTest):
     """
     Import VM from storage data domain when MAC is already exists on another VM
@@ -222,7 +222,6 @@ class TestRegisterDomain05(NetworkTest):
         )
 
 
-@bz({"1509962": {}})
 @pytest.mark.usefixtures(
     set_allow_duplicate_mac_pool.__name__,
     import_vm_from_data_domain.__name__
@@ -257,7 +256,6 @@ class TestRegisterDomain06(NetworkTest):
     manage_mac_pool_range.__name__,
     make_sure_no_mac_in_pool.__name__
 )
-@bz({"1509962": {}})
 class TestRegisterDomain07(NetworkTest):
     """
     Import VM from storage data domain when not MACs left in the pool
@@ -290,7 +288,6 @@ class TestRegisterDomain07(NetworkTest):
 @pytest.mark.usefixtures(
     import_vm_from_data_domain.__name__
 )
-@bz({"1509962": {}})
 class TestRegisterDomain08(NetworkTest):
     """
     Import VM from storage data domain while the network exists on
@@ -303,10 +300,13 @@ class TestRegisterDomain08(NetworkTest):
     net = register_domain_conf.NETS[8][0]
     network_mappings = [{
         "source_network_profile_name": net,
-        "source_network_name": net
+        "source_network_name": net,
+        "target_network": None,
+        "target_vnic_profile": None
     }]
 
     @tier2
+    @bz({"1522799": {}})
     @polarion("RHEVM-17164")
     def test_network_in_dc_force_empty_vnic(self):
         """
@@ -315,3 +315,89 @@ class TestRegisterDomain08(NetworkTest):
         mac, network, nic = helper.get_vm_params(vm=self.vm)
         testflow.step("Check that VM %s imported with empty vNIC", self.vm)
         assert ll_vms.check_vnic_on_vm_nic(vm=self.vm, nic=nic, vnic=None)
+
+
+@pytest.mark.usefixtures(
+    import_templates_from_data_domain.__name__
+)
+class TestRegisterDomain09(NetworkTest):
+    """
+    Import template from storage data domain network exists on data-center
+    """
+    # import_template_from_data_domain params
+    data_domain_name = register_domain_conf.EXTRA_SD_NAME
+
+    # General params
+    templates = register_domain_conf.TEMPLATES_DICT.keys()
+
+    # Params: [Template name, vNIC name, Network mapping]
+    # For vNIC name:
+    #   when vNIC is '' then use the original vNIC from template
+
+    # Import-template-without-network-mapping params
+    test_1_params = [templates[0], "", []]
+
+    # "Import-template-when-network-is-missing-on-dc params
+    test_2_params = [templates[1], None, []]
+
+    # Import-template-with-network-mapping params
+    with_map_src_net = register_domain_conf.NETS[3][0]
+    with_map_dst_net = register_domain_conf.NETS[2][1]
+    test_3_mapping = [{
+        "source_network_profile_name": with_map_src_net,
+        "source_network_name": with_map_src_net,
+        "target_network": with_map_dst_net,
+        "target_vnic_profile": with_map_dst_net
+    }]
+    test_3_params = [templates[2], with_map_dst_net, test_3_mapping]
+
+    # Import-template-with-mapping-to-empty-vNIC-profile
+    empty_map_src_net = register_domain_conf.NETS[2][0]
+    test_4_mapping = [{
+        "source_network_profile_name": empty_map_src_net,
+        "source_network_name": empty_map_src_net,
+        "target_network": None,
+        "target_vnic_profile": None
+    }]
+    test_4_params = [templates[3], None, test_4_mapping]
+
+    @tier2
+    @pytest.mark.parametrize(
+        ("template", "vnic", "mappings"),
+        [
+            pytest.param(*test_1_params, marks=(polarion("RHEVM-24355"))),
+            pytest.param(*test_2_params, marks=(polarion("RHEVM-24352"))),
+            pytest.param(*test_3_params, marks=(polarion("RHEVM-24353"))),
+            pytest.param(
+                *test_4_params, marks=(
+                        polarion("RHEVM-24354"), bz({"1522799": {}}))
+            ),
+        ],
+        ids=[
+            "Import-template-without-network-mapping",
+            "Import-template-when-network-is-missing-on-dc",
+            "Import-template-with-network-mapping",
+            "Import-template-with-network-mapping-to-empty-vNIC-profile"
+        ]
+    )
+    def test_import_template_from_domain(self, template, vnic, mappings):
+        """
+        1. Check that network of created VM imported from template stay the
+            same
+        2. Check that network of created VM imported from template have empty
+            vNIC profile
+        3. Check that network of created VM imported from template was mapped
+            to new network
+        4. Check that network of created VM imported from template was mapped
+            to empty network
+        """
+        _id = helpers.get_test_parametrize_ids(
+            item=self.test_import_template_from_domain.parametrize,
+            params=[template, vnic, mappings]
+        )
+        testflow.step(_id)
+        network, nic = helper.get_template_params(template=template)
+        vnic = network if vnic == "" else None or vnic
+        assert hl_templates.check_vnic_on_template_nic(
+            template=template, vnic=vnic, nic=nic
+        )

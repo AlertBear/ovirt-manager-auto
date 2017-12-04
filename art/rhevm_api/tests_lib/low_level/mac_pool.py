@@ -231,6 +231,7 @@ def create_mac_pool(name, ranges, positive=True, **kwargs):
     return res
 
 
+@ll_general.generate_logs(step=True)
 def update_mac_pool(mac_pool_name, **kwargs):
     """
     Update MAC Pool
@@ -239,7 +240,7 @@ def update_mac_pool(mac_pool_name, **kwargs):
         mac_pool_name (str): Current mac pool name
         kwargs (dict): MAC pool parameters
 
-    Keyword arguments:
+    Keyword Args:
         param mac_pool_name (str): current mac pool name
         name (str: new mac pool name for update
         ranges (list): list of mac ranges [(from_mac1, to_mac1), (..)]
@@ -249,14 +250,6 @@ def update_mac_pool(mac_pool_name, **kwargs):
     Returns:
         bool: True if MAC pool was updated, False otherwise
     """
-    log_info, log_error = ll_general.get_log_msg(
-        log_action="update", obj_type="MAC pool", obj_name=mac_pool_name,
-        **kwargs
-    )
     mac_pool_obj = get_mac_pool(mac_pool_name)
     mac_pool_obj_for_update = prepare_macpool_obj(**kwargs)
-    logger.info(log_info)
-    if not MACPOOL_API.update(mac_pool_obj, mac_pool_obj_for_update, True)[1]:
-        logger.error(log_error)
-        return False
-    return True
+    return MACPOOL_API.update(mac_pool_obj, mac_pool_obj_for_update, True)[1]

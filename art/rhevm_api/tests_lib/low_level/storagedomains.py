@@ -1206,7 +1206,7 @@ def register_object(obj, cluster, **kwargs):
     vnic_profile_mappings = None
     if network_mappings:
         vnic_profile_mappings = prepare_vnic_profile_mappings_object(
-            network_mappings
+            network_mappings=network_mappings
         )
     return bool(
         util.syncAction(

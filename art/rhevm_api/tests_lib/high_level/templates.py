@@ -29,7 +29,7 @@ from art.rhevm_api.utils.test_utils import get_api
 VM_API = get_api('vm', 'vms')
 
 
-@ll_general.generate_logs()
+@ll_general.generate_logs(step=True)
 def check_vnic_on_template_nic(template, nic, vnic):
     """
     Check if vnic is resides on template nic.
