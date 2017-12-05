@@ -8,7 +8,7 @@ from art.unittest_lib import (
     tier2, tier3
 )
 from art.unittest_lib import testflow
-from art.test_handler.tools import polarion, bz
+from art.test_handler.tools import polarion
 
 from vacuum_base import VacuumTest
 import config
@@ -138,7 +138,6 @@ class TestSanityOptions(VacuumTest):
         analyze_check = analyze_count == analyze_count_old + 1
         assert vacuum_check and analyze_check
 
-    @bz({"1422562": {}})
     @pytest.mark.parametrize(
         "dwh",
         [
