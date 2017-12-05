@@ -28,3 +28,4 @@ pytest-jira
 idna == 2.5
 # tabulate is needed for leftovers plugin
 tabulate
+jinja2
