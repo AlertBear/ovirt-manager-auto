@@ -568,14 +568,20 @@ def get_called_from_test(stack):
         for f in frames:
             fixture_def = f.f_locals.get("fixturedef", None)
             if fixture_def:
-                scope = fixture_def.scope
+                try:
+                    scope = fixture_def.scope
+                except AttributeError:
+                    scope = ""
         return "setup", scope
 
     if "pytest_runtest_teardown" in call_args:
         for f in frames:
             fixture_fin = f.f_locals.get("fin", None)
             if fixture_fin:
-                scope = fixture_fin.im_self.scope
+                try:
+                    scope = fixture_fin.func.im_self.scope
+                except AttributeError:
+                    scope = ""
         return "teardown", scope
 
     return "", scope
