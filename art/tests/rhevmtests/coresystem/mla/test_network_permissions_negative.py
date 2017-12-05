@@ -57,7 +57,6 @@ def ignore_all_exceptions(method, **kwargs):
 @tier2
 class NetworkingNegative(common.BaseTestCase):
     # Network is not supported in CLI
-    apis = set(['rest', 'sdk', 'java'])
 
     @classmethod
     @pytest.fixture(autouse=True, scope="class")

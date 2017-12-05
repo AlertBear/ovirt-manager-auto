@@ -152,8 +152,6 @@ class TestPositiveNetworkPermissions231822(NetworkingPositive):
     MTU = 800
     STP = True
 
-    apis = NetworkingPositive.apis - set(['java'])
-
     @classmethod
     @pytest.fixture(autouse=True, scope="class")
     def setup_class(cls, request):
@@ -637,7 +635,6 @@ class TestPositiveNetworkPermissions231827(NetworkingPositive):
 
 
 class TestPositiveNetworkPermissions231830(NetworkingPositive):
-    apis = set(['rest'])
 
     @classmethod
     @pytest.fixture(autouse=True, scope="class")

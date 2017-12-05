@@ -210,9 +210,6 @@ class TestCase5247(TestCase):
     Storage/3_3_Storage_Manage_Storage_Connections
     """
     __test__ = config.STORAGE_TYPE_ISCSI in ART_CONFIG['RUN']['storages']
-    # Other apis try convert the value type so this cases will not work, only
-    # execute on rest
-    apis = set(['rest'])
     conn = None
     sd_name = None
 

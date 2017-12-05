@@ -13,7 +13,6 @@ RUN:
     auto_devices: False
     data_struct_mod: art.rhevm_api.data_struct.data_structures
     engines:
-      - sdk
       - rest
     debug: True
     media_type: application/xml

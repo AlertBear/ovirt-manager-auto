@@ -60,7 +60,7 @@ def pytest_addoption(parser):
         action="append",
         dest="art_define",
         default=[],
-        help="Overwite varibale inside of config file. RUN.engines=rest",
+        help="Overwite varibale inside of config file. RUN.storages=nfs",
     )
     parser.addoption(
         '--art-log',

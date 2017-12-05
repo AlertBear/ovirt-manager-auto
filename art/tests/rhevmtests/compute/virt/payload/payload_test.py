@@ -5,7 +5,6 @@ Virt - Payloads Test
 Check different cases for adding payloads to vm, via creation or update, also
 check mount of different types of payloads, cdrom, floppy.
 https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/Compute/Virt_Payload
-NOTE: Not support CLI API, BZ: 1198677
 """
 
 import pytest
@@ -38,7 +37,6 @@ class TestCreateVmWithCdromPayload(VirtTest):
     Create new vm with cdrom payload via create and check if payload exist,
     also check if payload object exist under vm
     """
-    apis = set(["rest", "java", "sdk"])
 
     vm_name = 'CreateVmWithCdromPayload'
     payload_filename = config.PAYLOADS_FILENAME[0]
@@ -80,7 +78,6 @@ class TestUpdateVmWithCdromPayloadAndCheckPayloadObject(VirtTest):
     """
     Create new vm with cdrom payload via update and check if payload exist
     """
-    apis = set(["rest", "java", "sdk"])
 
     vm_name = 'UpdateVmWithCdromPayload'
     payload_filename = config.PAYLOADS_FILENAME[0]
@@ -113,9 +110,8 @@ class TestCdromPayloadComplexContent(VirtTest):
     """
     Create new vm with cdrom payload, that have complex content via update
     and check if payload exist
-    """
-    apis = set(["rest", "java", "sdk"])
 
+    """
     vm_name = 'CdromPayloadComplexContent'
     payload_filename = config.PAYLOADS_FILENAME[0]
     payload_content = config.PAYLOADS_CONTENT[4]
@@ -147,7 +143,6 @@ class TestCreateVmWithFloppyPayload(VirtTest):
     """
     Create new vm with floppy payload via create and check if payload exist
     """
-    apis = set(["rest", "java", "sdk"])
 
     vm_name = 'CreateVmWithFloppyPayload'
     payload_filename = config.PAYLOADS_FILENAME[1]
@@ -181,7 +176,6 @@ class TestUpdateVmWithFloppyPayload(VirtTest):
     """
     Create new vm with floppy payload via update and check if payload exist
     """
-    apis = set(["rest", "java", "sdk"])
 
     vm_name = 'UpdateVmWithFloppyPayload'
     payload_filename = config.PAYLOADS_FILENAME[1]

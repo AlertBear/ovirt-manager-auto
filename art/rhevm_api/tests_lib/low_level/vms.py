@@ -2396,8 +2396,6 @@ def importVm(
     }
 
     action_name = 'import'
-    if ART_CONFIG['RUN']['engine'] in ('cli', 'sdk'):
-        action_name = 'import_vm'
 
     new_vm = data_st.Vm()
     if name:

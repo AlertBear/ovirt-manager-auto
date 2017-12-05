@@ -104,15 +104,6 @@ class GetApi(object):
                 if engine == 'rest':
                     from art.core_api.rest_utils import RestUtil
                     api = RestUtil(self._element, self._collection)
-                elif engine == 'sdk':
-                    from art.core_api.ovirtsdk_utils import SdkUtil
-                    api = SdkUtil(self._element, self._collection)
-                elif engine == 'cli':
-                    from art.core_api.ovirtcli_utils import CliUtil
-                    api = CliUtil(self._element, self._collection)
-                elif engine == 'java':
-                    from art.core_api.ovirtsdk_java_utils import JavaSdkUtil
-                    api = JavaSdkUtil(self._element, self._collection)
                 # adding to cache
                 self.update_util_cache(key, api)
             return getattr(api, opcode)

@@ -12,8 +12,6 @@ logger = logging.getLogger(__name__)
 class ServicesTest(TestCase):
     """ Base class for tests services """
 
-    apis = set(["rest", "java", "sdk"])
-
     @staticmethod
     def assert_service_is_running(machine, service):
         """
