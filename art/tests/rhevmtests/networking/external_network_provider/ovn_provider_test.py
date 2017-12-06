@@ -23,8 +23,7 @@ from art.rhevm_api.tests_lib.low_level import (
 )
 from art.test_handler.tools import bz, polarion
 from art.unittest_lib import NetworkTest, testflow, tier2, tier3
-from fixtures import (  # noqa: F401
-    check_running_on_rhevh,
+from fixtures import (
     check_ldap_availability,
     configure_ovn,
     configure_provider_plugin,

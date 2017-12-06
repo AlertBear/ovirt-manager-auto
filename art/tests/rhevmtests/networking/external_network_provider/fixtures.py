@@ -23,21 +23,6 @@ from art.unittest_lib import testflow
 from rhevmtests.networking import config_handler
 
 
-@pytest.fixture(scope="module", autouse=True)
-def check_running_on_rhevh(request):
-    """
-    Check if test is running on unsupported RHEVH environment
-
-    TODO: remove fixture when RHV-H 4.2 is available for testing
-    """
-    env_rhevh_hosts = [
-        h.name for h in global_config.HOSTS_RHEVH
-        if h.name in net_config.HOSTS[:2]
-    ]
-    if env_rhevh_hosts:
-        pytest.skip("Unsupported host(s) found: %s" % env_rhevh_hosts)
-
-
 @pytest.fixture(scope="class")
 def check_ldap_availability(request):
     """
