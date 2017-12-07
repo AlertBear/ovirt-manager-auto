@@ -58,8 +58,11 @@ def a0_initialize_variables_clean_storages(request):
             testflow.teardown(
                 "Copying templates disks to imported storage domain %s", sd
             )
+            template_disk_name = ll_templates.getTemplateDisks(
+                config.TEMPLATE_NAME[0]
+            )[0].get_name()
             ll_templates.copyTemplateDisk(
-                config.TEMPLATE_NAME[0], config.GOLDEN_GLANCE_IMAGE, sd
+                config.TEMPLATE_NAME[0], template_disk_name, sd
             )
             ll_jobs.wait_for_jobs([config.JOB_MOVE_COPY_DISK])
             ll_disks.wait_for_disks_status([config.GOLDEN_GLANCE_IMAGE])

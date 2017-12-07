@@ -424,9 +424,8 @@ class TestCase5246(TestCase):
         assert not ll_storageconnections.remove_storage_connection(conn_id), (
             "Removing the storage connection was expected to fail"
         )
-
         testflow.step("Detach the storage connection from the first domain")
-        assert not ll_sd.detachConnectionFromStorageDomain(
+        assert ll_sd.detachConnectionFromStorageDomain(
             self.sd_name_1, conn_id
         ), "Detaching storage connection failed"
         testflow.step("Try to remove the storage connection - should fail")
