@@ -579,7 +579,10 @@ def get_called_from_test(stack):
             fixture_fin = f.f_locals.get("fin", None)
             if fixture_fin:
                 try:
-                    scope = fixture_fin.func.im_self.scope
+                    if getattr(fixture_fin, "func", None):
+                        scope = fixture_fin.func.im_self.scope
+                    else:
+                        scope = fixture_fin.im_self.scope
                 except AttributeError:
                     scope = ""
         return "teardown", scope
