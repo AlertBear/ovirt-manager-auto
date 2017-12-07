@@ -15,7 +15,7 @@ unittest2
 pywinrm
 PyYAML
 winremote
-pytest >= 3.3
+pytest == 3.2.5
 pytest-xdist
 pytest-ordering
 git+git://github.com/rhevm-qe-automation/pytest-catchlog.git@rhevm_customization
