@@ -544,6 +544,7 @@ class TestCase6231(TestCase):
     interfaces = [config.VIRTIO, config.VIRTIO_SCSI]
 
     @polarion("RHEVM3-6231")
+    @bz({'1506677': {'storage': ['glusterfs']}})
     @tier1
     def test_activate_deactivate_disk(self):
         """

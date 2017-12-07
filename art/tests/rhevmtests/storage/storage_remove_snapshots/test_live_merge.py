@@ -15,7 +15,7 @@ class LiveMergeBaseClass(basePlan.BasicEnvironment):
     live_merge = True
 
 
-@bz({'1509635': {}})
+@bz({'1509635': {'storage': ['glusterfs']}})
 class TestCase6038(LiveMergeBaseClass, basePlan.TestCase6038):
     """
     Basic live delete and merge of snapshots
