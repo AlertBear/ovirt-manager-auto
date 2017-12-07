@@ -13,8 +13,6 @@ upstream_flag = 'ovirt' in product.lower()
 
 OVIRT_ENGINE = "ovirt-engine"
 
-HTTP_OK = 200
-
 WEB_IDS = {
     "release_notes": [
         "WelcomePage_releaseNotesHTML",

@@ -13,7 +13,7 @@ class TestDocsLinks(CoreSystemTest):
     """
     @staticmethod
     @polarion("RHEVM3-8689")
-    @bz({"1458444": {}})
+    @bz({"1523685": {}})
     @pytest.mark.skipif(
         config.upstream_flag, reason="Tests supported only on downstream"
     )

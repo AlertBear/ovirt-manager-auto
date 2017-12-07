@@ -12,15 +12,22 @@ def get_links():
         Makes a generator of links.
     Yields:
         str: Link to a documentation resource.
+    Throws:
+        AssertionError: documentation link not found
     """
     requests.packages.urllib3.disable_warnings()
-    testflow.step("Using %s as url.", config.root_url)
+    testflow.step("Fetching welcome page %s", config.root_url)
+    page = requests.get(config.root_url, verify=False)
+    tree = html.fromstring(page.content)
     for resource in config.WEB_IDS.values():
-        for id in resource:
-            page = requests.get(config.root_url, verify=False)
-            tree = html.fromstring(page.content)
-            tail = tree.xpath("//a[@id='{0}']/@href".format(id))
-            link = "{0}/{1}".format(config.root_url, tail[0])
+        for link_id in resource:
+            href_tail = tree.xpath("//a[@id='{0}']/@href".format(link_id))
+            if not href_tail:
+                raise AssertionError(
+                    "Documentation link for %s (%s) is missing"
+                    % (resource, link_id)
+                )
+            link = "{0}/{1}".format(config.root_url, href_tail[0])
             yield link
 
 
@@ -28,7 +35,7 @@ def check_link(link):
     """
     Description:
         Checks if GET HTTP request for a given link responded with
-        HTTP 200.
+        HTTP 200-ish code.
     Args:
         link (str): Link for check.
     Returns:
@@ -37,8 +44,8 @@ def check_link(link):
     requests.packages.urllib3.disable_warnings()
 
     testflow.step("Checking %s.", link)
-    status_code = requests.get(link, verify=False).status_code
-    return (status_code == config.HTTP_OK, link)
+    resp = requests.get(link, verify=False)
+    return resp.ok
 
 
 def check_links():
