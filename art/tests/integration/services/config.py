@@ -47,8 +47,8 @@ HOST_SERVICES = {
     'sanlock',
     'libvirtd',
     'ovirt-imageio-daemon',
-    'momd',
-    'ovirt-vmconsole-host-sshd'
+    'mom-vdsm',
+    'ovirt-vmconsole-host-sshd',
 }
 
 SERVICES = ENGINE_SERVICES.union(HOST_SERVICES)
@@ -63,15 +63,12 @@ ACTIONS = ('enabled', 'running', 'is-faultless')
 
 # Can't be in class scope
 # Python2 leaks the loop control variable
+# { 'service_name': 'bug_id'}
 BUGGED_SERVICES = {
-    'momd': '1427066',
-    'vdsmd': '1444087',
-    'libvirtd': '1443965',
 }
 
 DISABLED_SERVICES = [
     'ovirt-imageio-daemon',
-    'momd',
     'sanlock'
 ]
 
