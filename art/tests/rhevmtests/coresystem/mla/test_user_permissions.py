@@ -8,7 +8,6 @@ import pytest
 
 from art.core_api.apis_exceptions import EntityNotFound
 from art.rhevm_api.tests_lib.high_level import (
-    storagedomains as hl_sd,
     vmpools as hl_vmpools
 )
 from art.rhevm_api.tests_lib.low_level import (
@@ -20,7 +19,7 @@ from art.rhevm_api.tests_lib.low_level import (
 )
 from art.rhevm_api.utils import test_utils
 from art.test_handler.tools import polarion, bz
-from art.unittest_lib import do_not_run, tier1, tier2, testflow
+from art.unittest_lib import tier1, tier2, testflow
 
 import common
 import config
@@ -843,118 +842,6 @@ class TestPermissionsCase109086(common.BaseTestCase):
             "{0}-{1}".format(config.VMPOOL_NAME, 1),
             states=[common.ENUMS["vm_state_down"]]
         )
-
-
-# create a StorageDomain with templates and VMs
-# grant permissions for user X to some VMs & templates on that SD
-# destroy the SD take a look in the user under permission tab
-# extra_reqs={'datacenters_count': 2}
-@do_not_run
-class TestPermissionsCase111082(common.BaseTestCase):
-    """ Test if perms removed after object is removed """
-    apis = set(['rest'])
-
-    @classmethod
-    @pytest.fixture(autouse=True, scope="class")
-    def setup_class(cls, request):
-        super(TestPermissionsCase111082, cls).setup_class(request)
-
-        def finalize():
-            common.login_as_admin()
-            users.removeUser(True, config.USER_NAMES[0])
-            common.add_user(
-                True,
-                user_name=config.USER_NAMES[0],
-                domain=config.USER_DOMAIN
-            )
-            storagedomains.removeStorageDomain(
-                config.STORAGE_NAME[1],
-                config.DC_NAME[0],
-                config.HOSTS[0]
-            )
-
-        request.addfinalizer(finalize)
-        hl_sd.addNFSDomain(
-            config.HOSTS[0],
-            config.STORAGE_NAME[1],
-            config.DC_NAME[0],
-            config.ADDRESS[1],
-            config.PATH[1]
-        )
-        vms.createVm(
-            positive=True,
-            vmName=config.VM_NAMES[0],
-            cluster=config.CLUSTER_NAME[0],
-            storageDomainName=config.STORAGE_NAME[1],
-            provisioned_size=config.GB,
-            network=config.MGMT_BRIDGE
-        )
-        templates.createTemplate(
-            True,
-            vm=config.VM_NAMES[0],
-            name=config.TEMPLATE_NAMES[1],
-            cluster=config.CLUSTER_NAME[0]
-        )
-        disks.addDisk(
-            True,
-            alias=config.DISK_NAME1,
-            interface='virtio',
-            format='cow',
-            provisioned_size=config.GB,
-            storagedomain=config.STORAGE_NAME[1]
-        )
-        disks.wait_for_disks_status(config.DISK_NAME1)
-        mla.addVMPermissionsToUser(
-            True,
-            config.USER_NAMES[0],
-            config.VM_NAMES[0]
-        )
-        mla.addPermissionsForTemplate(
-            True,
-            config.USER_NAMES[0],
-            config.TEMPLATE_NAMES[1],
-            config.role.TemplateOwner
-        )
-        mla.addPermissionsForDisk(
-            True,
-            config.USER_NAMES[0],
-            config.DISK_NAME1
-        )
-
-    @polarion("RHEVM3-7171")
-    def test_permissions_removed_after_object_remove(self):
-        """ permissions removed after object is removed """
-        storagedomains.deactivateStorageDomain(
-            True,
-            config.DC_NAME[0],
-            config.STORAGE_NAME[1]
-        )
-        storagedomains.removeStorageDomain(
-            True,
-            config.STORAGE_NAME[1],
-            config.HOSTS[0],
-            destroy=True
-        )
-
-        # When destroying SD, then also vm is destroyed
-        # vms.removeVm(True, config.VM_NAMES[0])
-        user_vm_manager_id = users.rlUtil.find(
-            config.role.UserVmManager
-        ).get_id()
-        template_owner_id = users.rlUtil.find(
-            config.role.TemplateOwner
-        ).get_id()
-        disk_operator_id = users.rlUtil.find(
-            config.role.DiskOperator
-        ).get_id()
-
-        obj = users.util.find(config.USER_NAMES[0])
-        permits = mla.permisUtil.getElemFromLink(obj, get_href=False)
-
-        permits_id = [p.get_role().get_id() for p in permits]
-        assert user_vm_manager_id not in permits_id
-        assert template_owner_id not in permits_id
-        assert disk_operator_id not in permits_id
 
 
 @tier1

@@ -17,7 +17,7 @@ from art.rhevm_api.tests_lib.low_level import (
     storagedomains as ll_sd,
     mla, vms, users
 )
-from art.test_handler.tools import polarion
+from art.test_handler.tools import polarion, bz
 from art.unittest_lib import (
     tier2,
 )
@@ -561,6 +561,7 @@ class TestMoveOrCopyDisk(TestDiskTemplate):
         )
 
     @polarion("RHEVM3-7631")
+    @bz({'1503269': {}})
     def test_move_disk(self):
         """ Move disk with and without having permissions on sds """
 

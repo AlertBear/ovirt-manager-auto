@@ -158,12 +158,18 @@ class TestRoleCase54413(common.BaseTestCase):
 
             testflow.teardown(
                 "Removing user %s@%s.",
-                config.USER_NAMES[0], config.USER_DOMAIN
+                config.USER_NAMES[0],
+                config.USER_DOMAIN,
             )
-            users.removeUser(True, config.USER_NAMES[0])
+            try:
+                users.removeUser(True, config.USER_NAMES[0])
+            except EntityNotFound as err:
+                logger.warning(err)
 
             testflow.teardown(
-                "Adding user %s@%s.", config.USER_NAMES[0], config.USER_DOMAIN
+                "Adding user %s@%s.",
+                config.USER_NAMES[0],
+                config.USER_DOMAIN,
             )
             common.add_user(
                 True,
@@ -279,37 +285,32 @@ class TestRoleCase54401(common.BaseTestCase):
             testflow.teardown("Log in as admin.")
             common.login_as_admin()
 
-            testflow.teardown(
-                "Removing user %s@%s.",
-                config.USER_NAMES[0], config.USER_DOMAIN
-            )
-            users.removeUser(True, config.USER_NAMES[0])
-
-            testflow.teardown(
-                "Adding user %s@%s.", config.USER_NAMES[0], config.USER_DOMAIN
-            )
-            common.add_user(
-                True,
-                user_name=config.USER_NAMES[0],
-                domain=config.USER_DOMAIN
-            )
-
-            testflow.teardown(
-                "Removing user %s@%s.",
-                config.USER_NAMES[1], config.USER_DOMAIN
-            )
-            users.removeUser(True, config.USER_NAMES[1])
-
-            testflow.teardown(
-                "Removing user %s@%s.",
-                config.USER_NAMES[2], config.USER_DOMAIN
-            )
-            users.removeUser(True, config.USER_NAMES[2])
+            for user_name in config.USER_NAMES:
+                try:
+                    testflow.teardown(
+                        "Removing user %s@%s.",
+                        user_name,
+                        config.USER_DOMAIN,
+                    )
+                    users.removeUser(True, user_name)
+                except EntityNotFound as err:
+                    logger.warning(err)
 
             testflow.teardown("Removing role %s.", config.USER_ROLE)
             mla.removeRole(True, config.USER_ROLE)
 
         request.addfinalizer(finalize)
+
+        testflow.setup(
+            "Adding user %s@%s.",
+            config.USER_NAMES[0],
+            config.USER_DOMAIN,
+        )
+        assert common.add_user(
+            True,
+            user_name=config.USER_NAMES[0],
+            domain=config.USER_DOMAIN
+        )
 
     @polarion("RHEVM3-7146")
     def test_edit_role(self):

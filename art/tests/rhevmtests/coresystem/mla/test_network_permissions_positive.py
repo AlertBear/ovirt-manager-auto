@@ -1959,8 +1959,8 @@ class TestPositiveNetworkPermissions320610(NetworkingPositive):
         """
         common.login_as_user()
         testflow.step(
-            "Adding nic %s to VM %s.",
-            config.NIC_NAMES[0], config.VM_NAMES[0]
+            "Adding nic:%s with vnic profile:%s to VM:%s.",
+            config.NIC_NAMES[0], config.NETWORK_NAMES[0], config.VM_NAME
         )
         assert vms.addNic(
             True,
@@ -1970,19 +1970,18 @@ class TestPositiveNetworkPermissions320610(NetworkingPositive):
             network=config.NETWORK_NAMES[0],
             interface='virtio'
         )
-        with pytest.raises(EntityNotFound):
-            testflow.step(
-                "Adding nic %s to VM %s.",
-                config.NIC_NAMES[0], config.VM_NAME[0]
-            )
-            vms.addNic(
-                False,
-                config.VM_NAME,
-                name=config.NIC_NAMES[0],
-                vnic_profile=config.NETWORK_NAMES[1],
-                network=config.NETWORK_NAMES[0],
-                interface='virtio'
-            )
+        testflow.step(
+            "Adding nic:%s with vnic profile:%s to VM:%s.",
+            config.NIC_NAMES[0], config.NETWORK_NAMES[1], config.VM_NAME
+        )
+        assert vms.addNic(
+            False,
+            config.VM_NAME,
+            name=config.NIC_NAMES[0],
+            vnic_profile=config.NETWORK_NAMES[1],
+            network=config.NETWORK_NAMES[0],
+            interface='virtio'
+        )
 
 
 class TestPositiveNetworkPermissions317270(NetworkingPositive):
