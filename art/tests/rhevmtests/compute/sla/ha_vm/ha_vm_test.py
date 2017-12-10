@@ -2,12 +2,11 @@
 HA VM test
 Verify the restart of the HA VM under different conditions
 """
-import pytest
-import rhevmtests.compute.sla.config as conf
-
 import art.rhevm_api.tests_lib.low_level.events as ll_events
 import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
+import pytest
+import rhevmtests.compute.sla.config as conf
 import rhevmtests.helpers as rhevm_helpers
 from art.core_api.apis_exceptions import APITimeout
 from art.core_api.apis_utils import TimeoutingSampler
@@ -18,6 +17,7 @@ from rhevmtests.compute.sla.fixtures import (
     migrate_he_vm,
     run_once_vms,
     update_vms,
+    wait_fence_engine_restart_timeout,
     wait_for_hosts_status_up
 )
 
@@ -174,6 +174,7 @@ class TestHaVm04(BaseHaVm):
 
 
 @pytest.mark.usefixtures(
+    wait_fence_engine_restart_timeout.__name__,
     configure_hosts_power_management.__name__,
     wait_for_hosts_status_up.__name__
 )

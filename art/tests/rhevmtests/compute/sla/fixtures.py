@@ -4,24 +4,25 @@ SLA fixtures
 import copy
 import socket
 import time
-
-import pytest
-from concurrent.futures import ThreadPoolExecutor
+from datetime import datetime
 
 import art.rhevm_api.tests_lib.high_level.hosts as hl_hosts
 import art.rhevm_api.tests_lib.high_level.vms as hl_vms
 import art.rhevm_api.tests_lib.low_level.clusters as ll_clusters
 import art.rhevm_api.tests_lib.low_level.datacenters as ll_datacenters
+import art.rhevm_api.tests_lib.low_level.events as ll_events
 import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
 import art.rhevm_api.tests_lib.low_level.templates as ll_templates
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import art.unittest_lib as u_libs
 import config as sla_config
 import helpers as sla_helpers
+import pytest
 import rhevmtests.compute.sla.scheduler_tests.helpers as sch_helpers
 import rhevmtests.helpers as rhevm_helpers
 from art.core_api import apis_exceptions
 from art.rhevm_api.utils import test_utils
+from concurrent.futures import ThreadPoolExecutor
 
 logger = sla_config.logging.getLogger(__name__)
 
@@ -937,3 +938,28 @@ def skip_numa_tests():
             "than zero on the host %s less than 2" %
             sla_config.HOSTS[0]
         )
+
+
+@pytest.fixture(scope="class")
+def wait_fence_engine_restart_timeout():
+    """
+    Wait "DisableFenceAtStartupInSec" seconds to make sure that the engine can
+    run fence actions
+    """
+    arem_initialization_event = ll_events.get_last_event(
+        code=sla_config.EVENT_AREM_INITIALIZATION
+    )
+    if arem_initialization_event.get_id() == "1":
+        return
+
+    event_time = arem_initialization_event.get_time().replace(tzinfo=None)
+    time_pass = (datetime.now() - event_time).total_seconds()
+    if time_pass >= sla_config.FENCE_INITIALIZATION_TIMEOUT:
+        return
+    else:
+        time_to_wait = sla_config.FENCE_INITIALIZATION_TIMEOUT - time_pass
+        u_libs.testflow.setup(
+            "Wait %ss to be sure that the engine can run fence actions",
+            time_to_wait
+        )
+        time.sleep(int(time_to_wait))
