@@ -120,7 +120,9 @@ class TestDns01(NetworkTest):
                     }
                 }
             }
-            assert hl_host_network.setup_networks(host_name=host, **sn_dict)
+            assert hl_host_network.setup_networks(
+                host_name=host, retry=True, **sn_dict
+            )
 
         sample = apis_utils.TimeoutingSampler(
             timeout=30, sleep=1,

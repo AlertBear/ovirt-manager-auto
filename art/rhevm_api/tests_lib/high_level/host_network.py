@@ -8,7 +8,7 @@ http://www.ovirt.org/Features/NetworkingApi
 """
 
 import logging
-from art.core_api.apis_utils import data_st
+from art.core_api.apis_utils import data_st, TimeoutingSampler
 import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
 import art.rhevm_api.tests_lib.low_level.general as ll_general
 import art.rhevm_api.tests_lib.low_level.networks as ll_networks
@@ -121,7 +121,7 @@ def update_network_on_host(host_name, nic_name=None, **kwargs):
 
 
 @ll_general.generate_logs(step=True)
-def setup_networks(host_name, **kwargs):
+def setup_networks(host_name, retry=False, **kwargs):
     """
     Sends setupNetwork action request to VDS host
 
@@ -145,6 +145,8 @@ def setup_networks(host_name, **kwargs):
 
     Args:
         host_name (str): Host name
+        retry (bool): True to retry Setup Network request until timeout is
+            reached, False otherwise
 
     Keyword Args:
             persist (bool): Make network settings persistent on the host
@@ -283,18 +285,27 @@ def setup_networks(host_name, **kwargs):
         )
         synchronized_network_attachments.set_network_attachment(nets_to_sync)
 
-    res = bool(
-        ll_hosts.HOST_API.syncAction(
-            entity=host, action=SETUPNETWORKS, positive=True,
-            modified_network_attachments=network_attachments,
-            removed_network_attachments=removed_network_attachments,
-            modified_bonds=bonds, removed_bonds=removed_bonds,
-            modified_labels=labels, removed_labels=removed_labels,
-            synchronized_network_attachments=synchronized_network_attachments,
-            connectivity_timeout=check_connectivity_timeout,
-            check_connectivity=check_connectivity
+    sn_params = {
+        "entity": host,
+        "action": SETUPNETWORKS,
+        "positive": True,
+        "modified_network_attachments": network_attachments,
+        "removed_network_attachments": removed_network_attachments,
+        "modified_bonds": bonds,
+        "removed_bonds": removed_bonds,
+        "modified_labels": labels,
+        "removed_labels": removed_labels,
+        "synchronized_network_attachments": synchronized_network_attachments,
+        "connectivity_timeout": check_connectivity_timeout,
+        "check_connectivity": check_connectivity
+    }
+    res = bool(ll_hosts.HOST_API.syncAction(**sn_params))
+    if not res and retry:
+        sample = TimeoutingSampler(
+            timeout=15, sleep=1,
+            func=lambda: bool(ll_hosts.HOST_API.syncAction(**sn_params))
         )
-    )
+        res = sample.waitForFuncStatus(result=True)
 
     if persist and res:
         return ll_hosts.commit_network_config(host=host_name)
