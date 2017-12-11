@@ -21,6 +21,7 @@ from art.unittest_lib import NetworkTest, testflow
 from fixtures import import_vms, import_templates, remove_networks
 
 
+@bz({"1524302": {}})
 @pytest.mark.incremental
 @pytest.mark.usefixtures(import_vms.__name__)
 class TestImportExportCase01(NetworkTest):
@@ -61,6 +62,7 @@ class TestImportExportCase01(NetworkTest):
         )
 
 
+@bz({"1524302": {}})
 @pytest.mark.incremental
 @pytest.mark.usefixtures(import_templates.__name__)
 class TestImportExportCase02(NetworkTest):
@@ -106,6 +108,7 @@ class TestImportExportCase02(NetworkTest):
         )
 
 
+@bz({"1524302": {}})
 @pytest.mark.incremental
 @pytest.mark.usefixtures(
     remove_networks.__name__,
