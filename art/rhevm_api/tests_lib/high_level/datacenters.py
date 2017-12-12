@@ -44,16 +44,22 @@ def get_spm_host(positive, datacenter):
     return ll_hosts.HOST_API.find(spm_host['host'])
 
 
-def get_clusters_connected_to_datacenter(dc_id):
+def get_clusters_connected_to_datacenter(dc_id, all_content=False):
     """
-    Description: get list of clusters connected to datacenter
-    :param dc_id datacenter id
-    :type dc_id: str
-    :returns list of clusters names
-    :rtype: list
+    get list of clusters connected to datacenter
+
+    Args:
+        dc_id (str): datacenter id
+        all_content (bool): True to get cluster with all-content
+
+    Returns:
+        list: List of clusters objects
     """
 
-    all_clusters = clusters.util.get(abs_link=False)
+    all_clusters = clusters.util.get(
+        abs_link=False,
+        custom_headers={'All-content': True} if all_content else {}
+    )
     clusters_connected_to_dc = [
         cluster for cluster in all_clusters
         if cluster.get_data_center() is not None

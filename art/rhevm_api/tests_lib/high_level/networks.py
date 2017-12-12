@@ -595,7 +595,7 @@ def remove_unneeded_vnic_profiles(dc_name):
     """
     dc_id = ll_datacenters.get_data_center(datacenter=dc_name).get_id()
     clusters = hl_datacenters.get_clusters_connected_to_datacenter(
-        dc_id=dc_id
+        dc_id=dc_id, all_content=True
     )
 
     # Filter to safely remove vNIC profiles from non-management networks
