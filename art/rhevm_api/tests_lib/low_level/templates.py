@@ -105,12 +105,6 @@ def _prepareTemplateObject(**kwargs):
         vmObj = VM_API.find(vm)
         templ.set_vm(VM(id=vmObj.get_id()))
 
-    boot = kwargs.pop('boot', None)
-    if boot:
-        templ.set_os(
-            data_st.Boot(devices=data_st.devicesType(device=boot))
-        )
-
     storagedomain = kwargs.pop('storagedomain', None)
     if storagedomain:
         sd = SD_API.find(storagedomain)
@@ -156,17 +150,31 @@ def _prepareTemplateObject(**kwargs):
             )
         )
 
+    # os options
+    apply_os = False
     os_type = kwargs.pop("os_type", None)
-    boot_seq = kwargs.pop("boot", None)
     if os_type is not None:
-        os_type = data_st.OperatingSystem(type_=os_type)
-        if boot_seq:
-            if isinstance(boot_seq, basestring):
-                boot_seq = boot_seq.split()
-            os_type.set_boot(
-                [data_st.Boot(dev=boot_dev) for boot_dev in boot_seq]
+        apply_os = True
+    os_obj = data_st.OperatingSystem(type_=os_type)
+    for opt_name in "kernel", "initrd", "cmdline":
+        opt_val = kwargs.pop(opt_name, None)
+        if opt_val is not None:
+            apply_os = True
+            setattr(os_obj, opt_name, opt_val)
+    boot_seq = kwargs.pop("boot", None)
+    if boot_seq:
+        if isinstance(boot_seq, basestring):
+            boot_seq = boot_seq.split()
+        os_obj.set_boot(
+            boot=data_st.Boot(
+                devices=data_st.devicesType(
+                    device=boot_seq
                 )
-        templ.set_os(os_type)
+            )
+        )
+        apply_os = True
+    if apply_os:
+        templ.set_os(os_obj)
 
     # serial number
     serial_number = kwargs.pop("serial_number", None)

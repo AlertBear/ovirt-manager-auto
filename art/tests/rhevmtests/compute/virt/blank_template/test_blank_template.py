@@ -72,7 +72,7 @@ class TestsBlankTemplate(VirtTest):
         """
         Verify Blank template parameters are inherited by VM.
         """
-        testflow.step("Update blank template name.")
+        testflow.step("Update blank template.")
         assert ll_templ.updateTemplate(
             positive=True,
             template=config.BLANK_TEMPLATE,
