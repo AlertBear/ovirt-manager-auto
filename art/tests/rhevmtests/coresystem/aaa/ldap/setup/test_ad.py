@@ -1,4 +1,4 @@
-from art.test_handler.tools import bz, polarion
+from art.test_handler.tools import polarion
 
 from rhevmtests.coresystem.aaa.ldap.setup import base
 
@@ -16,7 +16,6 @@ class ADAutoSetup(base.TestCase):
         pass
 
 
-@bz({'1446525': {}})
 class TestADUserFromGroup(base.BaseUserFromGroup):
     """ Login as user from group. """
     domain = DOMAIN

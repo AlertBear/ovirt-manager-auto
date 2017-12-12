@@ -19,7 +19,7 @@ from art.rhevm_api.tests_lib.low_level.vms import waitForVMState
 from art.rhevm_api.tests_lib.low_level import vms
 from art.rhevm_api.tests_lib.high_level import hosts as hl_hosts
 from art.rhevm_api.utils.test_utils import get_api, wait_for_tasks
-from art.test_handler.tools import polarion, bz
+from art.test_handler.tools import polarion
 from art.unittest_lib import tier2
 from art.unittest_lib import testflow, CoreSystemTest as TestCase
 from rhevmtests.helpers import get_pm_details
@@ -115,7 +115,6 @@ def _check_host_state(host_num, service, job_status):
 
 
 @tier2
-@bz({"1508023": {}})
 class SoftFencing(TestCase):
     """
     Soft fencing base class

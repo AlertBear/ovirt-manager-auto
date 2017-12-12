@@ -14,7 +14,6 @@ from art.rhevm_api.tests_lib.low_level import (
     mla as ll_mla,
 )
 from rhevmtests.coresystem.helpers import XPathMatch
-from art.test_handler.tools import bz
 from art.unittest_lib import (
     CoreSystemTest as TestCase,
     testflow,
@@ -174,7 +173,6 @@ class TestCaseUserAndRoles(TestCase):
             logger.info("xPath is only supported for rest.")
 
     @tier1
-    @bz({"1446525": {}})
     def test_check_userp_properties_in_active_directory(self):
         """
         verify users functionality

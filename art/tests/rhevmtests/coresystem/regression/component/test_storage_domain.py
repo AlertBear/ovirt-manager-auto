@@ -5,7 +5,6 @@ test_storage_domain
 """
 import pytest
 
-from art.test_handler.tools import bz
 from art.core_api.apis_exceptions import APITimeout
 from art.rhevm_api.tests_lib.low_level import storagedomains as ll_sd
 from art.unittest_lib import (
@@ -69,7 +68,6 @@ class TestCaseStorageDomain(TestCase):
             path=data_domain_paths[0]
         )
 
-    @bz({"1451390": {}})
     @tier1
     def test_update_storage_domain(self):
         """

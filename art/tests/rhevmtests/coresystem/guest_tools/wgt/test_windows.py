@@ -9,7 +9,7 @@ import subprocess
 
 from art.core_api.apis_utils import TimeoutingSampler
 from art.rhevm_api.utils.name2ip import LookUpVMIpByName
-from art.test_handler.tools import polarion, bz
+from art.test_handler.tools import polarion
 from art.rhevm_api.tests_lib.low_level import (
     vms as ll_vms,
     storagedomains as ll_sds,
@@ -89,7 +89,6 @@ def module_setup(request, register_windows_templates):
         )
 
 
-@bz({"1506517": {}})
 class Windows(TestCase):
     """
     Class that implements testing of windows guest tools.

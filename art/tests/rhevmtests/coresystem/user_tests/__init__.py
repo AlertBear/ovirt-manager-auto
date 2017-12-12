@@ -146,31 +146,6 @@ def wrap_bz(cls=None, bzs=None):
 
 bugs = dict()
 
-bugs = add_bug(
-    "1428754",
-    ["ClusterAdmin", "GlusterAdmin", "DataCenterAdmin", "SuperUser"],
-    ["create_cluster"],
-    bugs
-)
-
-
-bugs = add_bug(
-    "1432105",
-    [
-        "PowerUserRole", "StorageAdmin", "HostAdmin",
-        "NetworkAdmin", "UserVmManager", "TemplateAdmin",
-        "DiskOperator", "DiskCreator", "GlusterAdmin",
-        "VmCreator", "TemplateCreator", "TemplateOwner",
-        "VnicProfileUser", "InstanceCreator", "UserInstanceManager",
-        "ReadOnlyAdmin", "TagManager", "BookmarkManager",
-        "EventNotificationManager", "AuditLogManager", "MacPoolAdmin",
-        "MacPoolUser", "UserVmRunTimeManager", "VmImporterExporter",
-        "UserRole"
-    ],
-    ["vm_pool_basic_operations"], bugs
-)
-
-
 """
 Code below will create for each module(test_user, test_admin)
 class with specific role and set mandatory attributes.

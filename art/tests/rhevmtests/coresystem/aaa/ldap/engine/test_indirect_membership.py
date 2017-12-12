@@ -6,7 +6,7 @@ import logging
 import pytest
 
 from art.rhevm_api.tests_lib.low_level import users, mla
-from art.test_handler.tools import polarion, bz
+from art.test_handler.tools import polarion
 from art.unittest_lib import (
     tier2,
 )
@@ -18,7 +18,6 @@ logger = logging.getLogger(__name__)
 
 
 @tier2
-@bz({'1446525': {}})
 class IndirectMembership(TestCase):
     """
     Test indirect membership.

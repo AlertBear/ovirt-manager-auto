@@ -8,7 +8,7 @@ import pytest
 
 from art.rhevm_api import resources
 from art.rhevm_api.tests_lib.low_level import users, mla
-from art.test_handler.tools import polarion, bz
+from art.test_handler.tools import polarion
 from art.unittest_lib import (
     tier2,
 )
@@ -122,7 +122,6 @@ def setup_module(request):
 
 
 @tier2
-@bz({'1446525': {}})
 class TestSSOLogin(TestCase):
     """
     Test sso login.

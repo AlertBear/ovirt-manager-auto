@@ -1,4 +1,4 @@
-from art.test_handler.tools import polarion, bz
+from art.test_handler.tools import polarion
 
 from rhevmtests.coresystem.aaa.ldap.setup import base
 
@@ -11,7 +11,6 @@ class OpenLdapAutoSetup(base.TestCase):
         pass
 
 
-@bz({'1446525': {}})
 class TestOpenLdapUserFromGroup(base.BaseUserFromGroup):
     """ Login as user from group. """
     domain = 'openldap'

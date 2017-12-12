@@ -5,7 +5,7 @@ Test possible configuration option of properties file.
 import pytest
 
 from art.rhevm_api.tests_lib.low_level import users, mla
-from art.test_handler.tools import polarion, bz
+from art.test_handler.tools import polarion
 from art.unittest_lib import (
     tier2,
 )
@@ -15,7 +15,6 @@ from rhevmtests.coresystem.aaa.ldap import config, common
 
 
 @tier2
-@bz({'1446525': {}})
 class TestADTLS(TestCase):
     """
     Test if start tls connection to AD succeed.

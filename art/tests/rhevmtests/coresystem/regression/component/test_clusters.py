@@ -135,7 +135,6 @@ class TestCaseCluster(TestCase):
             max=1
         )
 
-    @bz({"1451390": {}})
     @tier1
     def test_update_cluster_name(self):
         """
@@ -396,7 +395,7 @@ class TestCaseCluster(TestCase):
             properties=properties
         )
 
-    @bz({'1316456': {}, '1315657': {'engine': ['cli']}})
+    @bz({'1316456': {}})
     @tier1
     def test_update_cluster_scheduling_policy(self):
         """

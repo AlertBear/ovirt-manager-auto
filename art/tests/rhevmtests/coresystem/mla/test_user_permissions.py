@@ -18,7 +18,7 @@ from art.rhevm_api.tests_lib.low_level import (
     clusters as ll_cluster
 )
 from art.rhevm_api.utils import test_utils
-from art.test_handler.tools import polarion, bz
+from art.test_handler.tools import polarion
 from art.unittest_lib import tier1, tier2, testflow
 
 import common
@@ -361,7 +361,6 @@ class TestPermissionsCase54425(common.BaseTestCase):
         )
 
     @polarion("RHEVM3-7191")
-    @bz({"1460953": {}})
     def test_delegate_permissions(self):
         """ delegate permissions """
         # Test SuperUser that he can add permissions

@@ -3,7 +3,6 @@
 test_mixed
 -----------------
 """
-from art.test_handler.tools import bz
 from art.unittest_lib import (
     CoreSystemTest as TestCase,
     testflow,
@@ -43,7 +42,6 @@ class TestCaseMixed(TestCase):
         ), 'Failed to check existing permissions'
 
     @tier2
-    @bz({'1303346': {}})
     def test_check_xsd_schema_validations(self):
         """
         verify xsd functionality

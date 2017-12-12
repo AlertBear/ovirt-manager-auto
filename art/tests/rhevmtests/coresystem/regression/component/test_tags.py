@@ -14,7 +14,6 @@ from art.rhevm_api.tests_lib.low_level import (
     tags as ll_tags,
 )
 from rhevmtests.coresystem.helpers import XPathMatch
-from art.test_handler.tools import bz
 from art.unittest_lib import (
     testflow,
     CoreSystemTest as TestCase,
@@ -237,7 +236,6 @@ class TestCaseTags(TestCase):
         )
 
     @tier1
-    @bz({'1446525': {}})
     def test_associate_tag_with_vm_and_search_by_tag(self):
         """
         verify tags functionality
@@ -290,7 +288,6 @@ class TestCaseTags(TestCase):
         )
 
     @tier1
-    @bz({'1446525': {}})
     def test_associate_tag_with_host_and_search_host_by_tag(self):
         """
         verify tags functionality

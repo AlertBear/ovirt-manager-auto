@@ -9,7 +9,7 @@ from art.rhevm_api.tests_lib.low_level import (
     vms, hosts as ll_hosts, events, disks
 )
 from art.rhevm_api.tests_lib.high_level import hosts
-from art.test_handler.tools import polarion, bz
+from art.test_handler.tools import polarion
 from art.unittest_lib import tier2
 from art.unittest_lib import CoreSystemTest as TestCase, testflow
 from rhevmtests.helpers import get_pm_details
@@ -434,7 +434,6 @@ class Test05AddPMWithInvalidOptionPort(PMWithBadParameters):
     bad_parameter = {'options': {'port': 'rhv01'}}
 
     @polarion("RHEVM-21341")
-    @bz({'1442056': {}})
     def test_add_power_management_with_invalid_type(self):
         testflow.step("Add power management to host %s", HOST_WITH_PM)
         assert not hosts.add_power_management(
