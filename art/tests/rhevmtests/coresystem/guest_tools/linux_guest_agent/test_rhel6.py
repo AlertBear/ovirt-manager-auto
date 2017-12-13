@@ -2,7 +2,7 @@
 Sanity test of guest agent of rhel 6 32/64b
 """
 import pytest
-from art.test_handler.tools import polarion
+from art.test_handler.tools import polarion, bz
 from art.unittest_lib import tier2
 from art.unittest_lib import testflow
 from art.rhevm_api.tests_lib.low_level import vms
@@ -24,6 +24,7 @@ def setup_vms(request):
     common.prepare_vms([DISKx64_NAME, DISKx86_NAME])
 
 
+@bz({"1525549": {}})
 class RHEL6GATest(common.GABaseTestCase):
     """
     Cover basic testing of GA of rhel 6
