@@ -6,7 +6,6 @@ Memory hotplug tests
 """
 
 import pytest
-
 import art.rhevm_api.tests_lib.high_level.vms as hl_vms
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import helper
@@ -140,7 +139,9 @@ class TestMemoryHotplug(VirtTest):
         ), "Failed to start VM"
         testflow.step("Check VM memory on VM")
         assert global_helper.wait_for_vm_gets_to_full_memory(
-            vm_name=self.vm_name, expected_memory=new_memory
+            vm_name=self.vm_name,
+            expected_memory=new_memory,
+            threshold=0.85
         ), "Memory check on VM failed"
 
     @tier2

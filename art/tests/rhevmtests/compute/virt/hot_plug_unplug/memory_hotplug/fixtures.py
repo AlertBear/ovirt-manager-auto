@@ -5,12 +5,12 @@ import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 from art.unittest_lib.common import testflow
 from rhevmtests.compute.virt import config
 from rhevmtests.compute.virt.fixtures import(  # flake8: noqa
-    create_vm
+    create_vm_class
 )
 
 
 @pytest.fixture(scope="function")
-def reboot_vm(request, create_vm):
+def reboot_vm(request, create_vm_class):
     """
     Stop vm, update memory to 1 GB, start vm and update VM IP
     """
