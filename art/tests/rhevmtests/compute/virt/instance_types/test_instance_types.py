@@ -14,7 +14,7 @@ from art.rhevm_api.tests_lib.low_level import (
     vms as ll_vms,
     templates as ll_templates
 )
-from art.test_handler.tools import polarion, bz
+from art.test_handler.tools import polarion
 from art.unittest_lib import VirtTest, testflow
 from art.unittest_lib import (
     tier1,
@@ -322,7 +322,6 @@ class TestInstanceType(VirtTest):
         default_instance_type_teardown.__name__, remove_test_vms.__name__
     )
     @pytest.mark.instance_type_name(name=config.SMALL_INSTANCE_TYPE)
-    @bz({'1397118': {'ppc': config.PPC_ARCH}})
     def test_instance_type_mandetory_fields(self):
         """
         1. Create a vm from 'small' instance type

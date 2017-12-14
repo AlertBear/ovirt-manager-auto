@@ -18,7 +18,7 @@ from art.rhevm_api.tests_lib.low_level import (
     mla as ll_mla,
     templates as ll_templates
 )
-from art.test_handler.tools import bz, polarion
+from art.test_handler.tools import polarion
 from art.unittest_lib import (
     tier1,
 )
@@ -455,7 +455,6 @@ class TestTemplateSanity(VirtTest):
         )
 
     @tier1
-    @bz({"1331068": {"engine": ["sdk"]}})
     @pytest.mark.usefixtures(supply_base_templates.__name__)
     @pytest.mark.template_marker(template_versions=[1])
     @polarion("RHEVM3-12284")

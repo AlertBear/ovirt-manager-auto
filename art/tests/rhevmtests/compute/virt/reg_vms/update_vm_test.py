@@ -12,7 +12,7 @@ import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import art.test_handler.exceptions as errors
 import config
 import rhevmtests.helpers as helper
-from art.test_handler.tools import polarion, bz
+from art.test_handler.tools import polarion
 from art.unittest_lib import VirtTest, testflow
 from art.unittest_lib import tier1
 from fixtures import add_vm_fixture
@@ -176,7 +176,6 @@ class TestUpdateVm(VirtTest):
 
     @tier1
     @polarion("RHEVM3-12532")
-    @bz({'1218528': {'engine': ['java', 'sdk', 'cli']}})
     @pytest.mark.usefixtures(add_vm_fixture.__name__)
     def test_update_13_vm_cluster(self):
         """
