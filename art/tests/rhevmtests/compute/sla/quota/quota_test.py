@@ -19,7 +19,7 @@ import art.rhevm_api.tests_lib.low_level.templates as ll_templates
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import config as conf
 import helpers
-from art.test_handler.tools import polarion
+from art.test_handler.tools import polarion, bz
 from art.unittest_lib import testflow, SlaTest
 from art.unittest_lib import (
     tier1,
@@ -371,6 +371,7 @@ class TestDeleteQuotaInUseAudit(SlaTest):
 
     @tier1
     @polarion("RHEVM3-9406")
+    @bz({"1517492": {}})
     def test_delete_quota_in_use(self):
         """
         Delete quota in use
@@ -394,6 +395,7 @@ class TestDeleteQuotaInUseEnforced(SlaTest):
     }
 
     @tier1
+    @bz({"1517492": {}})
     @polarion("RHEVM3-9447")
     def test_delete_quota_in_use(self):
         """
