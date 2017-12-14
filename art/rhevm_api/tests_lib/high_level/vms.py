@@ -6,7 +6,6 @@ High-level functions above virtual machines
 import logging
 import shlex
 import urllib
-
 from concurrent.futures import ThreadPoolExecutor
 from art.core_api.timeout import TimeoutingSampler
 from art.rhevm_api.tests_lib.low_level import (
@@ -24,6 +23,7 @@ from art.rhevm_api import resources
 from art.rhevm_api.utils.test_utils import getStat, get_api
 from art.test_handler import exceptions
 from art.test_handler.settings import ART_CONFIG
+from time import sleep
 
 
 logger = logging.getLogger("art.hl_lib.vms")
@@ -41,6 +41,8 @@ SLEEP_TIME = 30
 MIGRATION_TIMEOUT = 300
 WGT_INSTALL_TIMEOUT = 600
 CHECK_MEMORY_COMMAND = "free -m | grep Mem | awk '{ print $2 }'"
+SLEEP_TIME_HOTPLUG_DEVICE = 4
+SLEEP_TIME_HOT_UNPLUG_DEVICE = 16
 
 
 def get_vm_ip(vm_name, start_vm=True):
@@ -620,14 +622,15 @@ def expand_vm_memory(vm_name, mem_size_to_expand, number_of_times=1):
     """
     Expand memory in multiple of given memory size
 
-    :param vm_name: vm name
-    :type vm_name: str
-    :param mem_size_to_expand: memory size in GB/MB
-    :type mem_size_to_expand: int
-    :param number_of_times: number of time to expend vm memory
-    :type number_of_times: int
-    :return: memory_size_before, memory_size_after, new_memory_size
-    :rtype: tuple
+    Args:
+        vm_name(str): VM name
+        mem_size_to_expand(int): memory size in GB/MB
+        number_of_times(int): number of time to expand vm memory
+
+    Returns:
+        tuple: memory size before hotplug on engine,
+        memory size after hotplugging on engine,
+        new memory size updated
     """
 
     memory_size_before = int(get_vm_memory(vm_name))
@@ -640,10 +643,17 @@ def expand_vm_memory(vm_name, mem_size_to_expand, number_of_times=1):
             positive=True,
             vm=vm_name,
             memory=new_memory_size,
+            memory_guaranteed=new_memory_size,
             compare=False
         ):
             logger.error("Failed to update memory")
             return memory_size_before, -1, -1
+        # Using sleep for the DIMM adding and removing command to succeed
+        if number_of_times > 1:
+            if mem_size_to_expand >= 0 and i > 2:
+                sleep(SLEEP_TIME_HOTPLUG_DEVICE)
+            else:
+                sleep(SLEEP_TIME_HOT_UNPLUG_DEVICE)
 
     memory_size_after = get_vm_memory(vm_name)
     logger.info(

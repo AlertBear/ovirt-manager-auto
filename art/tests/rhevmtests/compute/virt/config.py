@@ -111,6 +111,10 @@ MB_SIZE_256 = 256 * MB
 MB_SIZE_400 = 400 * MB
 MEMORY_HOTPLUG_VM = "memory_hotplug_test"
 
+# memory hot unplug
+MB_SIZE_512 = 512 * MB
+MEMORY_REMOVED = 1792 * MB
+MB_SIZE_3840 = 3840 * MB
 
 # VM parameters
 VM_MEMORY = "memory"
