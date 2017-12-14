@@ -1010,7 +1010,6 @@ class TestCase17665(BaseStorageVmLeaseTestWithFixtures):
     """
     vm_lease = False
 
-    @bz({'1459156': {}})
     @polarion("RHEVM-17665")
     @tier4
     def test_ha_failover_disk_different_storage_domains(self):
@@ -1090,7 +1089,6 @@ class TestCase18216(BaseStorageVMLeaseTest):
     6. Access the vm after it's active on the other host
     """
 
-    @bz({'1481691': {}})
     @polarion("RHEVM-18216")
     @tier3
     def test_ha_failover_from_template_with_lease(self):

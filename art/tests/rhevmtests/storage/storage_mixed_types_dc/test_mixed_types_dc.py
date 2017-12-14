@@ -428,7 +428,6 @@ class TestCase4557(IscsiNfsSD):
     """
     polarion_test_case = '4557'
 
-    @bz({'1422508': {}})
     @polarion("RHEVM3-4557")
     @tier2
     def test_basic_operations_reconstruct(self):

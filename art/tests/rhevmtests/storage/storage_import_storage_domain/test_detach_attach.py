@@ -752,7 +752,6 @@ class TestCase5200(DomainImportWithTemplate):
     partial_import = True
 
     @polarion("RHEVM3-5200")
-    @bz({'1422508': {}})
     @tier3
     def test_import_template_cross_domain(self):
         """
@@ -781,7 +780,6 @@ class TestCase5297(DomainImportWithTemplate):
     polarion_test_case = '5297'
 
     @polarion("RHEVM3-5297")
-    @bz({'1422508': {}})
     @tier2
     def test_new_vm_from_imported_domain_template(self):
         """

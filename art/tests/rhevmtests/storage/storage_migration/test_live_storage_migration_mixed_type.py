@@ -90,7 +90,6 @@ class TestCase10338_wait_for_lunch(TestCase5994_wait_for_lunch):
     polarion_test_case = '10338'
 
 
-@bz({'1420258': {}})
 class TestCase10337(TestCase5993):
     """
     live migration with thin provision copy

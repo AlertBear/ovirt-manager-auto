@@ -248,7 +248,6 @@ class TestCase18906(ColdMergeBaseClass, basePlan.TestCase6050):
     test_case = '18906'
 
 
-@bz({'1422508': {}})
 class TestCase18920(ColdMergeBaseClass, basePlan.TestCase12216):
     """
     Basic offline merge after disk with snapshot is extended
@@ -260,7 +259,6 @@ class TestCase18920(ColdMergeBaseClass, basePlan.TestCase12216):
     test_case = '18920'
 
 
-@bz({'1422508': {}})
 class TestCase18975(ColdMergeBaseClass):
     """
     Cold Merge with SPM and several HSMs

@@ -6,7 +6,7 @@ Storage/3_3_Storage_Ram_Snapshots
 from rhevmtests.storage import config
 import logging
 import pytest
-from art.test_handler.tools import bz, polarion
+from art.test_handler.tools import polarion
 from art.rhevm_api.tests_lib.low_level import (
     jobs as ll_jobs,
     vms as ll_vms,
@@ -195,7 +195,6 @@ class TestCase5139(ReturnToSnapshot):
         self.return_to_ram_snapshot()
 
 
-@bz({'1523399': {}})
 class TestCase5138(ReturnToSnapshot):
     """
     Polarion Test Case 5138 - Restore RAM Snapshot
@@ -389,7 +388,6 @@ class TestCase5134(VMWithMemoryStateSnapshot):
     persist_network = True
 
     @polarion("RHEVM3-5134")
-    @bz({'1496805': {}})
     @tier2
     def test_import_vm_with_memory_state_snapshot(self):
         """

@@ -27,7 +27,6 @@ class TestCase6038(LiveMergeBaseClass, basePlan.TestCase6038):
     test_case = '6038'
 
 
-@bz({'1509675': {}})
 class TestCase6052(LiveMergeBaseClass, basePlan.TestCase6052):
     """
     Basic live delete and merge of snapshots with continuous I/O

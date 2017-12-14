@@ -368,7 +368,6 @@ class TestCase10144(ResizeVmDiskOperations):
     extended_size = 25
     size_diff = -2
 
-    @bz({'1458548': {}})
     @polarion("RHEVM3-10144")
     @tier3
     def test_live_storage_migration_after_extending_lun(self):

@@ -589,7 +589,6 @@ class TestCase18340(TestCase):
 
     @polarion("RHEVM-18340")
     @tier2
-    @bz({'1490119': {}})
     def test_create_new_thin_vm_from_template(self):
         testflow.step(
             "Create a template of VM %s" % self.vm_name

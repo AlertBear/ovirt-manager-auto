@@ -167,7 +167,6 @@ class TestCase4906(DefaultEnvironment):
 
     @polarion("RHEVM3-4906")
     @tier2
-    @bz({'1390498': {}})
     def test_attach_RO_disk(self):
         """
         - VM with OS
@@ -301,7 +300,6 @@ class TestCase4909(DefaultEnvironment):
 
     @polarion("RHEVM3-4909")
     @tier2
-    @bz({'1390498': {}})
     def test_RO_persistent_after_snapshot_creation_to_a_shared_disk(self):
         """
         - 2 VMs with OS
@@ -548,7 +546,6 @@ class TestCase4914(DefaultEnvironment):
 
     @polarion("RHEVM3-4914")
     @tier3
-    @bz({'1390498': {}})
     def test_migrate_vm_with_RO_disk(self):
         """
         - VM with OS
@@ -599,7 +596,6 @@ class TestCase4915(DefaultEnvironment):
 
     @polarion("RHEVM3-4915")
     @tier3
-    @bz({'1390498': {}})
     def test_RO_disk_persistent_after_suspend_the_vm(self):
         """
         - VM with OS
@@ -645,7 +641,7 @@ class TestCase4917(DefaultEnvironment):
 
     @polarion("RHEVM3-4917")
     @tier3
-    @bz({'1309788': {}, '1390498': {}})
+    @bz({'1309788': {}})
     def test_import_more_than_once_VM_with_RO_disk(self):
         """
         - VM with OS
@@ -710,7 +706,6 @@ class TestCase4918(DefaultSnapshotEnvironment):
     )
     @polarion("RHEVM3-4918")
     @tier2
-    @bz({'1390498': {}})
     def test_preview_snapshot_with_RO_disk(self):
         """
         - VM with OS
@@ -753,7 +748,6 @@ class TestCase4919(DefaultSnapshotEnvironment):
 
     @polarion("RHEVM3-4919")
     @tier3
-    @bz({'1390498': {}})
     def test_preview_and_undo_snapshot_with_RO_disk(self):
         """
         - VM with OS
@@ -809,7 +803,6 @@ class TestCase4920(DefaultSnapshotEnvironment):
 
     @polarion("RHEVM3-4920")
     @tier2
-    @bz({'1390498': {}})
     def test_preview_and_commit_snapshot_with_RO_disk(self):
         """
         - VM with OS
@@ -860,7 +853,6 @@ class TestCase4921(DefaultSnapshotEnvironment):
 
     @polarion("RHEVM3-4921")
     @tier3
-    @bz({'1390498': {}, '1450866': {}})
     def test_delete_snapshot_with_RO_disk(self):
         """
         - VM with OS
@@ -970,7 +962,6 @@ class TestCase4923(DefaultEnvironment):
     cloned = False
 
     @polarion("RHEVM3-4923")
-    @bz({'1390498': {}})
     @tier2
     def test_create_vms_from_template_with_RO_disk(self):
         """
@@ -1052,7 +1043,6 @@ class TestCase4924(DefaultEnvironment):
 
     @polarion("RHEVM3-4924")
     @tier3
-    @bz({'1390498': {}})
     def test_moving_RO_disk(self):
         """
         - 2 storage domains
@@ -1121,7 +1111,6 @@ class TestCase4925(DefaultEnvironment):
 
     @polarion("RHEVM3-4925")
     @tier3
-    @bz({'1246114': {}, '1390498': {}})
     def test_live_migrate_RO_disk(self):
         """
         - 2 storage domains
