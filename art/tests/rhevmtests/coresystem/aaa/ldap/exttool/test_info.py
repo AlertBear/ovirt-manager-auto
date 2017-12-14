@@ -32,6 +32,7 @@ class TestExttoolInfo(TestCase):
         testflow.setup("Setting up class %s", cls.__name__)
         cls.info_cli = EngineCLI(
             tool=config.TOOL,
+            log_level='FINEST',
             session=config.ENGINE_HOST.executor().session(),
         ).setup_module(
             module='info',
