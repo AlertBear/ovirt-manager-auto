@@ -236,6 +236,7 @@ class TestSriovVm01(NetworkTest):
         assert sriov_conf.HOST_0_PF_OBJECT_1.set_number_of_vf(4)
 
     @tier2
+    @bz({"1526133": {}})
     @polarion("RHEVM3-6316")
     def test_09_hotplug_hotunplug(self):
         """
@@ -642,7 +643,6 @@ class TestSriovVm04(NetworkTest):
     create_and_attach_networks.__name__,
     reset_host_sriov_params.__name__,
     set_num_of_vfs.__name__,
-    setup_networks_fixture.__name__,
     add_vnic_profile.__name__,
     add_vnics_to_vm.__name__,
     start_vm.__name__,
@@ -669,14 +669,12 @@ class TestSriovVm05(NetworkTest):
 
     # add_vnics_to_vm
     vnic_1 = sriov_conf.VM_TEST_VNICS[5][0]
-    vnic_2 = sriov_conf.VM_TEST_VNICS[5][0]
-    vnic_3 = sriov_conf.VM_TEST_VNICS[5][1]
-    net_3 = sriov_conf.VM_NETS[5][0]
-    nics = [vnic_1, vnic_2, vnic_3]
-    nets = [conf.MGMT_BRIDGE, conf.MGMT_BRIDGE, net_3]
+    vnic_2 = sriov_conf.VM_TEST_VNICS[5][1]
+    nics = [vnic_1, vnic_2]
+    nets = [conf.MGMT_BRIDGE, conf.MGMT_BRIDGE]
     vms = [vm_1, vm_2, vm_1]
-    profiles = ["mgmt_passthrough", "mgmt_vitio", net_3]
-    pass_through_vnic = [True, False, False]
+    profiles = ["mgmt_passthrough", "mgmt_vitio"]
+    pass_through_vnic = [True, False]
 
     # start_vm
     start_vms_dict = {
@@ -702,20 +700,6 @@ class TestSriovVm05(NetworkTest):
         vm_2: {
             "ip": vm_2_ip,
             "inter": None
-        }
-    }
-
-    # create_bond
-    vm_name = vm_1
-    sriov_vnics = [vnic_1, vnic_3]
-
-    # setup_networks_fixture
-    hosts_nets_nic_dict = {
-        0: {
-            net_3: {
-                "nic": 3,
-                "network": net_3,
-            }
         }
     }
 

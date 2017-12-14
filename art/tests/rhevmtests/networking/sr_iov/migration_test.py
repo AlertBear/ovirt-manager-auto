@@ -176,6 +176,10 @@ class TestSriovMigration01(NetworkTest):
         sriov_net_1: {
             "pass_through": True,
             "network_filter": "None"
+        },
+        sriov_net_2: {
+            "pass_through": True,
+            "network_filter": "None"
         }
     }
 
@@ -236,6 +240,7 @@ class TestSriovMigration01(NetworkTest):
         assert sriov_conf.PF_OBJECT.set_number_of_vf(2)
 
     @tier2
+    @bz({"1526133": {}})
     @polarion("RHEVM-17177")
     def test_03_migrate_when_not_all_vnics_have_migratable_enabled(self):
         """
