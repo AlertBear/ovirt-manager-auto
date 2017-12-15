@@ -5,6 +5,7 @@ import pytest
 
 import config
 import rhevmtests.compute.virt.helper as virt_helper
+from rhevm_api.utils.test_utils import wait_for_tasks
 from art.rhevm_api.tests_lib.low_level import (
     vms as ll_vms,
     clusters as ll_clusters,
@@ -264,3 +265,8 @@ def deactivate_redundant_hosts(request):
         for host in host_with_cpu_model[1:]:
             testflow.setup("Deactivate host: %s", host)
             assert ll_hosts.deactivate_host(True, host)
+    wait_for_tasks(
+        engine=config.ENGINE,
+        datacenter=config.DC_NAME[0],
+        timeout=600
+    )
