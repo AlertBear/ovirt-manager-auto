@@ -5,7 +5,7 @@ import pytest
 
 import config
 import rhevmtests.compute.virt.helper as virt_helper
-from rhevm_api.utils.test_utils import wait_for_tasks
+from art.rhevm_api.utils.test_utils import wait_for_tasks
 from art.rhevm_api.tests_lib.low_level import (
     vms as ll_vms,
     clusters as ll_clusters,
