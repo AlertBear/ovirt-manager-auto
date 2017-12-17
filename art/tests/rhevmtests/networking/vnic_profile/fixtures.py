@@ -7,6 +7,8 @@ Fixtures for vNIC profile feature tests
 
 import pytest
 
+import config as vnic_conf
+import rhevmtests.networking.config as conf
 from art.rhevm_api.tests_lib.high_level import (
     host_network as hl_host_networks,
     networks as hl_networks
@@ -16,7 +18,6 @@ from art.rhevm_api.tests_lib.low_level import (
     vms as ll_vms
 )
 from art.unittest_lib import testflow
-import rhevmtests.networking.config as conf
 
 
 @pytest.fixture(scope="class")
@@ -82,6 +83,6 @@ def clean_host_interfaces(request):
         Remove all networks from host interfaces
         """
         assert hl_host_networks.clean_host_interfaces(
-            host_name=conf.HOST_0_NAME
+            host_name=vnic_conf.HOST_NAME
         )
     request.addfinalizer(fin)
