@@ -9,6 +9,7 @@ from art.rhevm_api.tests_lib.low_level import (
     datacenters as ll_dc,
     vms as ll_vms,
     hosts as ll_hosts,
+    disks as ll_disks,
 )
 from art.unittest_lib.common import testflow
 from rhevmtests import helpers as rhevm_helpers
@@ -155,6 +156,7 @@ def set_ovf_store_count(request):
         "Update number of OVF stores failed to execute on '%s'" % config.VDC
     )
     hl_dc.ensure_data_center_and_sd_are_active(config.DATA_CENTER_NAME)
+    rhevm_helpers.wait_for_tasks(config.ENGINE, config.DATA_CENTER_NAME)
 
 
 @pytest.fixture(scope='class')
@@ -197,3 +199,29 @@ def initialize_vm_pool_name(request, storage):
     self.pool_name = storage_helpers.create_unique_object_name(
         self.__name__, config.OBJECT_TYPE_POOL
     )
+
+
+@pytest.fixture(scope='class')
+def remove_ovf_store_disks(request, storage):
+    """
+    Remove remaining OVF store disks after test
+    """
+    self = request.node.cls
+
+    def finalizer():
+        for sd in self.storage_domains:
+            ovf_disks = ll_sd.get_storage_domain_ovf_store_disks(sd)
+
+            if len(ovf_disks) > config.DEFAULT_NUM_OVF_STORES_PER_SD:
+                for disk_to_remove in (
+                    ovf_disks[config.DEFAULT_NUM_OVF_STORES_PER_SD:]
+                ):
+                    config.ENGINE.db.psql(
+                        config.SQL_MARK_AS_ILLEGAL % disk_to_remove
+                    )
+                    assert ll_disks.deleteDisk(True, disk_id=disk_to_remove), (
+                        "Failed to delete OVF store disk with ID %s" %
+                        disk_to_remove
+                    )
+
+    request.addfinalizer(finalizer)

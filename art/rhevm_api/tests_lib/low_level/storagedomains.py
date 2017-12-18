@@ -2149,3 +2149,23 @@ def update_ovf_store(storage_domain):
     return bool(
         util.syncAction(sd_obj, "updateovfstore", positive=True)
     )
+
+
+@generate_logs()
+def get_storage_domain_ovf_store_disks(storage_domain):
+    """
+    Receive all OVF store disks from a storage domain
+
+    Args:
+        storage_domain (str): Name of the storage domain
+
+    Returns:
+        list: List of OVF store disk IDs
+    """
+    ovf_disks = []
+    all_disks = getStorageDomainDisks(storage_domain, False)
+    for disk in all_disks:
+        if disk.get_name() == OVF_STORE_DISK_NAME:
+            ovf_disks.append(disk.get_id())
+
+    return ovf_disks

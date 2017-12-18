@@ -14,6 +14,9 @@ if STORAGE_TYPE_ISCSI in STORAGE_SELECTOR:
     EXTEND_LUN_TARGET = UNUSED_LUN_TARGETS
     EXTEND_LUN = UNUSED_LUNS
 
+SQL_MARK_AS_ILLEGAL = (
+    "UPDATE images SET imagestatus=4 where image_group_id=\'%s\';"
+)
 ENGINE_REGEX_VM_NAME = (
     "START, SetVolumeDescriptionVDSCommand("".|\n)*"
     "imageGroupGUID=%s(.|\n)*"

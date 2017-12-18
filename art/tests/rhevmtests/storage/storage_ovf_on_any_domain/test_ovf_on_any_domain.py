@@ -31,6 +31,7 @@ from fixtures import (
     init_params_for_diskless_test, initialize_template_params,
     set_ovf_store_count, initalize_vm_to_remove,
     remove_ovf_store_from_glance_domain, initialize_vm_pool_name,
+    remove_ovf_store_disks,
 )
 from rhevmtests.storage.fixtures import (
     create_vm, remove_vms, add_disk, delete_disk, create_second_vm,
@@ -943,6 +944,7 @@ class TestCase6260(BasicEnvironment):
 @pytest.mark.usefixtures(
     set_ovf_store_count.__name__,
     initialize_new_disk_params.__name__,
+    remove_ovf_store_disks.__name__,
 )
 class TestCase6261(BasicEnvironment):
     """
@@ -963,6 +965,14 @@ class TestCase6261(BasicEnvironment):
     @tier2
     def test_change_ovf_store_count(self):
         """ Polarion case 6261 """
+        sd_list = [self.storage_domain, self.storage_domain_1]
+        for sd in sd_list:
+            ll_sd.deactivateStorageDomain(
+                True, config.DATA_CENTER_NAME, sd
+            )
+            ll_sd.activateStorageDomain(
+                True, config.DATA_CENTER_NAME, sd
+            )
         logger.info(
             "Ensure that OVF store count is %s after the engine "
             "configuration change", config.UPDATED_NUM_OVF_STORES_PER_SD
@@ -1009,7 +1019,6 @@ class TestCase6261(BasicEnvironment):
         ll_disks.wait_for_disks_status([self.new_disk_name])
 
         disk_names = [self.disk_name, self.new_disk_name]
-        sd_list = [self.storage_domain, self.storage_domain_1]
 
         ll_disks.attachDisk(True, self.new_disk_name, self.vm_name)
 
