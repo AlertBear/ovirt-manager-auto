@@ -90,6 +90,7 @@ class TestCase6178(BaseTestCase):
     """
     __test__ = True
 
+    @bz({'1526815': {}})
     @polarion("RHEVM3-6178")
     @tier3
     def test_shutdown_backup_vm_with_attached_snapshot(self):
@@ -128,6 +129,7 @@ class TestCase6182(BaseTestCase):
     """
     __test__ = True
 
+    @bz({'1526815': {}})
     @polarion("RHEVM3-6182")
     @tier4
     def test_restart_VDSM_and_engine_while_disk_attached_to_backup_vm(self):
@@ -210,6 +212,7 @@ class TestCase6183(BaseTestCase):
     """
     __test__ = True
 
+    @bz({'1526815': {}})
     @polarion("RHEVM3-6183")
     @tier2
     def test_temporary_snapshot_is_created_after_backup_vm_starts(self):
@@ -261,6 +264,7 @@ class TestCase6176(BaseTestCase):
     __test__ = True
     attach_backup_disk = False
 
+    @bz({'1526815': {}})
     @polarion("RHEVM3-6176")
     @tier3
     def test_attach_and_hotplug_snapshot_disk_of_source_vm_to_backup_vm(self):
@@ -461,6 +465,7 @@ class TestCase6168(BaseTestCase):
     blocked = False
     attach_backup_disk = False
 
+    @bz({'1526815': {}})
     @polarion("RHEVM3-6168")
     @tier4
     def test_storage_failure_of_snapshot(self):
@@ -512,7 +517,7 @@ class TestCase6169(BaseTestCase):
     # in string literals
     deep_copy = True
 
-    @bz({'1477600': {}})
+    @bz({'1526815': {}})
     @polarion("RHEVM3-6169")
     @tier2
     def test_full_flow_of_backup_restore(self):
@@ -763,6 +768,7 @@ class TestCase6173(BaseTestCase):
     # 1259785: Error 'Unable to find org.ovirt.engine.core.common.job.Step with
     # id' after live migrate a Virtio RAW disk, job stays in status STARTED
 
+    @bz({'1526815': {}})
     @rhevm_helpers.wait_for_jobs_deco([config.JOB_MOVE_COPY_DISK])
     @polarion("RHEVM3-6173")
     @tier3
