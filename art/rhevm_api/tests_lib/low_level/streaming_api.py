@@ -118,7 +118,7 @@ class StreamingApi(object):
             disk_object.get_storage_domains().get_storage_domain()[0].
             get_id()
         )
-        if storage_type in [STORAGE_TYPE_ISCSI or STORAGE_TYPE_FCP]:
+        if storage_type in [STORAGE_TYPE_ISCSI, STORAGE_TYPE_FCP]:
             transfer_size = ll_disks.get_disk_obj(
                 disk_id, attribute='id'
             ).get_provisioned_size()
