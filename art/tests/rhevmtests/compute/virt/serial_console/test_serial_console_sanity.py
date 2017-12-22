@@ -167,6 +167,7 @@ class SerialConsoleClass(VirtTest):
         )
         testflow.step('Connect to VM via SC using proper command.')
         child = helper.sc_ssh_connector(cmd, authorize=True)
+        child.logfile = open('/tmp/sc_basic_connect.log', 'w')
         testflow.step('Verify SC is working properly.')
         helper.verify_sc(child)
 
@@ -190,6 +191,7 @@ class SerialConsoleClass(VirtTest):
         )
         testflow.step('Connect to VM via SC using proper command.')
         child = helper.sc_ssh_connector(cmd, authorize=True)
+        child.logfile = open('/tmp/sc_before_suspension.log', 'w')
         testflow.step('Verify SC is working properly.')
         helper.verify_sc(child)
         testflow.step('Suspend test VM.')
@@ -204,9 +206,11 @@ class SerialConsoleClass(VirtTest):
             vm=sc_conf.SERIAL_CONSOLE_VM,
             wait_for_status=sc_conf.VM_UP,
             wait_for_ip=True,
+            timeout=900
         ), 'Was not able to start VM after suspension.'
         testflow.step('Connect to VM via SC using proper command.')
-        child = helper.sc_ssh_connector(cmd, authorize=True)
+        child = helper.sc_ssh_connector(cmd, authorize=False)
+        child.logfile = open('/tmp/sc_after_suspension.log', 'w')
         testflow.step('Verify SC is working properly.')
         helper.verify_sc(child)
 
@@ -230,15 +234,26 @@ class SerialConsoleClass(VirtTest):
         )
         testflow.step('Connect to VM via SC using proper command.')
         child = helper.sc_ssh_connector(cmd, authorize=True)
+        child.logfile = open('/tmp/sc_on_reboot.log', 'w')
         testflow.step('Reboot test VM and wait for it to become active again.')
         ll_vms.reboot_vm(positive=True, vm=sc_conf.SERIAL_CONSOLE_VM)
+        testflow.step('Rebooting')
+        assert ll_vms.waitForVMState(
+            sc_conf.SERIAL_CONSOLE_VM,
+            sc_conf.VM_REBOOT
+        ), 'VM did not go for reboot.'
+        testflow.step('Activating')
         assert ll_vms.waitForVMState(
             sc_conf.SERIAL_CONSOLE_VM,
             sc_conf.VM_UP
         ), 'VM did not recover successfully after reboot.'
+        assert ll_vms.wait_for_vm_ip(sc_conf.SERIAL_CONSOLE_VM)
         testflow.step(
             'Verify SC is working after reboot of VM and SC session did not '
             'drop.'
+        )
+        assert helper.get_prompt(child, authorize=True), (
+            "Failed to obtain expected prompt"
         )
         helper.credentials_provider(child)
         helper.verify_sc(child)
@@ -264,6 +279,7 @@ class SerialConsoleClass(VirtTest):
         )
         testflow.step('Connect to VM via SC using proper command.')
         child = helper.sc_ssh_connector(cmd, authorize=True)
+        child.logfile = open('/tmp/sc_before_migration.log', 'w')
         testflow.step('Verify SC is working properly.')
         helper.verify_sc(child)
         testflow.step('Migrate VM.')
@@ -276,6 +292,7 @@ class SerialConsoleClass(VirtTest):
         helper.verify_child_dead(child, action='migrate', timeout=300)
         testflow.step('Connect to VM via SC using proper command.')
         child = helper.sc_ssh_connector(cmd, authorize=False)
+        child.logfile = open('/tmp/sc_after_migration_1.log', 'w')
         testflow.step('Verify SC is working properly.')
         helper.verify_sc(child)
         testflow.step('Migrate VM.')
@@ -287,5 +304,6 @@ class SerialConsoleClass(VirtTest):
         testflow.step('Verify SC session dropped upon migration of VM.')
         helper.verify_child_dead(child, action='migrate', timeout=300)
         child = helper.sc_ssh_connector(cmd, authorize=False)
+        child.logfile = open('/tmp/sc_after_migration_2.log', 'w')
         testflow.step('Verify SC is working properly.')
         helper.verify_sc(child)
