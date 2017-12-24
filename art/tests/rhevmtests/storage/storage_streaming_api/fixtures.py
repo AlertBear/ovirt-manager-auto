@@ -6,6 +6,7 @@ from art.rhevm_api.tests_lib.low_level import (
     hosts as ll_hosts,
     storagedomains as ll_sd,
     disks as ll_disks,
+    vms as ll_vms,
 )
 from art.unittest_lib import testflow
 from rhevmtests import helpers as rhevm_helpers
@@ -14,6 +15,7 @@ from subprocess import Popen, PIPE
 from rhevmtests.storage.config import *  # flake8: noqa
 import pexpect
 from _pytest_art.ssl import configure
+import os
 
 logger = logging.getLogger(__name__)
 
@@ -49,11 +51,18 @@ def create_certificate_for_test(request):
 
 
 @pytest.fixture(scope='module', autouse=True)
-def copy_images_for_upload(request):
+def prepare_images_for_upload(request):
     """
-    Copy upload images to localhost needed for the upload test plan only if
-    they do not exist on localhost
+    Create directory and copy upload images to localhost needed for the upload
+    test plan only if they do not exist on localhost
     """
+    testflow.setup(
+        "Create a directory for upload images on localhost exist if it does "
+        "not already exist"
+    )
+    if not os.path.isdir(os.path.expanduser(config.UPLOAD_DIR_PATH)):
+        os.mkdir(os.path.expanduser(config.UPLOAD_DIR_PATH))
+
     upload_file_names = [
         config.UPLOAD_FILES_LOCALHOST_PATH[index].split('/')[-1]
         for index in xrange(len(config.UPLOAD_FILES_LOCALHOST_PATH))
@@ -128,7 +137,7 @@ def initialize_variables(request, storage):
     self.storage_domain = ll_sd.getStorageDomainNamesForType(
         config.DATA_CENTER_NAME, storage
     )[0]
-    self.disks_names = list()
+    self.disk_names = list()
 
 
 @pytest.fixture(scope='class')
@@ -142,13 +151,13 @@ def test_detach_disks(request, storage):
     disk_ids = self.DISKS_MOUNTS_EXECUTOR[self.vm_name]['disks']
     for disk in disk_ids:
         disk_name = ll_disks.get_disk_obj(disk, attribute='id').get_name()
-        self.disks_names.append(disk_name)
+        self.disk_names.append(disk_name)
         testflow.setup("detach disk %s", disk_name)
 
         assert ll_disks.detachDisk(
             True, disk_name, self.vm_name
         ), "Failed to detach disk %s to vm %s" % (self.disk_name, self.vm_name)
-    self.disks_to_remove = self.disks_names
+    self.disks_to_remove = self.disk_names
 
 
 @pytest.fixture(scope='class')
@@ -191,7 +200,7 @@ def add_disks_for_upload(request, storage):
     """
     self = request.node.cls
 
-    self.disks_names = []
+    self.disk_names = []
     self.disks_ids = []
     for name, spares, allocation_policy in DISK_ALLOCATIONS:
         disk_params = config.disk_args.copy()
@@ -213,12 +222,71 @@ def add_disks_for_upload(request, storage):
         assert ll_disks.addDisk(True, **disk_params), (
             "Failed to create disk %s" % disk_name
         )
-        self.disks_names.append(disk_name)
+        self.disk_names.append(disk_name)
         self.disks_ids.append(
             ll_disks.get_disk_obj(disk_name, attribute='name').get_id()
         )
     testflow.setup('Waiting for disks to be OK')
-    assert ll_disks.wait_for_disks_status(self.disks_names), (
-        "Disks %s failed to reach status OK" % self.disks_names
+    assert ll_disks.wait_for_disks_status(self.disk_names), (
+        "Disks %s failed to reach status OK" % self.disk_names
     )
-    self.disks_to_remove = self.disks_names
+    self.disks_to_remove = self.disk_names
+
+
+@pytest.fixture(scope='class')
+def test_detach_disks(request, storage):
+    """
+    Detach disks from VM before test
+    """
+
+    self = request.node.cls
+
+    for disk_name in self.disk_names:
+        testflow.setup("detach disk %s", disk_name)
+
+        assert ll_disks.detachDisk(
+            True, disk_name, self.vm_name
+        ), "Failed to detach disk %s to vm %s" % (self.disk_name, self.vm_name)
+    self.disks_to_remove = self.disk_names
+
+
+@pytest.fixture(scope='class')
+def disk_names_for_test(request, storage):
+    """
+    Find disks name needed for test
+    """
+
+    self = request.node.cls
+
+    disk_ids = self.DISKS_MOUNTS_EXECUTOR[self.vm_name]['disks']
+    for disk in disk_ids:
+        disk_name = ll_disks.get_disk_obj(disk, attribute='id').get_name()
+        self.disk_names.append(disk_name)
+
+
+@pytest.fixture(scope='class')
+def extend_disks_for_test(request, storage):
+    """
+    Extend a list of disks virtual size
+    """
+    self = request.node.cls
+
+    new_size = getattr(self, 'new_size')
+
+    testflow.setup("Resizing disks %s to %s Bytes", self.disk_names, new_size)
+
+    extend_disks_status = [
+        ll_vms.extend_vm_disk_size(
+            positive=True, vm=self.vm_name, disk=disk_name,
+            provisioned_size=new_size
+        ) for disk_name in self.disk_names
+    ]
+
+    for index, status in enumerate(extend_disks_status):
+        assert status, "Failed to resize disk %s to size %s" % (
+            self.disk_names[index], new_size
+        )
+
+    assert ll_disks.wait_for_disks_status(
+        self.disk_names, timeout=config.DISK_RESIZE_TIMEOUT
+    ), "Disks %s are not in the expected state 'OK" % self.disk_names

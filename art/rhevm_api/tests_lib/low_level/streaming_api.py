@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-# Copyright (C) 2010 Red Hat, Inc.
+# Copyright (C) 2018 Red Hat, Inc.
 #
 # This is free software; you can redistribute it and/or modify it
 # under the terms of the GNU Lesser General Public License as
@@ -19,10 +19,7 @@
 from art.rhevm_api.tests_lib.low_level import (
     disks as ll_disks,
 )
-from art.unittest_lib import testflow
-from art.test_handler import exceptions
 from art.test_handler.settings import ART_CONFIG, GE
-from concurrent.futures import ThreadPoolExecutor
 import ovirtsdk4 as sdk
 import ovirtsdk4.types as types
 import ssl
@@ -33,6 +30,7 @@ from httplib import HTTPSConnection
 from urlparse import urlparse
 import logging
 import os
+from time import sleep
 logger = logging.getLogger(__name__)
 
 
@@ -48,10 +46,13 @@ CA_FILE = "ca.crt"
 WORKSPACE_PATH = os.getenv('WORKSPACE', '~/')
 CA_FILE_PATH = os.path.expanduser(os.path.join(WORKSPACE_PATH, CA_FILE))
 FILE_PATH = os.path.expanduser('~')
+UPLOAD_DIR_PATH = '~/upload/'
 UPLOAD_FILES_LOCALHOST = [
-    os.path.expanduser('~/qcow2_v2_rhel7.4_ovirt4.2_guest_disk_1G'),
-    os.path.expanduser('~/qcow2_v3_cow_sparse_disk_1G'),
-    os.path.expanduser('~/test_raw_to_delete')
+    os.path.expanduser(
+        UPLOAD_DIR_PATH + 'qcow2_v2_rhel7.4_ovirt4.2_guest_disk_1G'
+    ),
+    os.path.expanduser(UPLOAD_DIR_PATH + 'qcow2_v3_cow_sparse_disk_1G'),
+    os.path.expanduser(UPLOAD_DIR_PATH + 'test_raw_to_delete')
 
 ]
 MD5SUM_BLOCK_IMAGE_PATH = 'md5sum /dev/%s/%s'
@@ -63,6 +64,10 @@ LOCAL_IMAGE_FILE_SIZE_CMD = 'ls -l %s'
 TRANSFER_INITIALIZING_STATE_TIMEOUT = 300
 DOWNLOAD = 'download'
 UPLOAD = 'upload'
+COW_FORMAT = 'cow'
+STATE_TIMEOUT = 60
+PAUSE_SLEEP = 60
+PAUSE_TRANSFER_PER = 50
 
 
 class StreamingApi(object):
@@ -71,6 +76,8 @@ class StreamingApi(object):
     Virtualization images (for example, virtual machine images) using the
     Red Hat Virtualization ImageIO API.
     """
+
+    result = None
 
     def __init__(self, image_path, image_size, direction):
         """
@@ -98,7 +105,8 @@ class StreamingApi(object):
 
     @staticmethod
     def image_size_for_download(
-        host=None, storage_type=None, disk_id=None, sp_id=None
+        host=None, storage_type=None, disk_object=None, sp_id=None,
+        extend=False
     ):
         """
         Returns disk image size (in bytes) for download
@@ -106,31 +114,33 @@ class StreamingApi(object):
         Args:
             host (host): Host resource object
             storage_type (str): Specify the storage type
-            disk_id (str): The disk id
+            disk_object (Disk): The disk object
             sp_id (str): Storage pool id (only needed for File)
+            extend (bool): True if image is extended,False otherwise
 
         Returns:
             int: Download size of a specific disk image in bytes
         """
-        disk_object = ll_disks.get_disk_obj(disk_id, attribute='id')
-        image_id = disk_object.get_image_id()
         sd_id = (
-            disk_object.get_storage_domains().get_storage_domain()[0].
-            get_id()
+            disk_object.get_storage_domains().get_storage_domain()[0].get_id()
         )
         if storage_type in [STORAGE_TYPE_ISCSI, STORAGE_TYPE_FCP]:
-            transfer_size = ll_disks.get_disk_obj(
-                disk_id, attribute='id'
-            ).get_provisioned_size()
-
+            if not extend or disk_object.get_format() != COW_FORMAT:
+                transfer_size = disk_object.get_provisioned_size()
+            else:
+                transfer_size = disk_object.get_actual_size()
         else:
-            cmd = shlex.split(HOST_IMAGE_FILE_SIZE_CMD % (
-                    sp_id, sd_id, disk_id, image_id
-                ))
+            cmd = shlex.split(
+                HOST_IMAGE_FILE_SIZE_CMD % (
+                    sp_id, sd_id, disk_object.get_id(),
+                    disk_object.get_image_id()
+                )
+            )
             rc, output, error = host.run_command(cmd)
             assert not rc, "Size command %s failed with error %s" % (
                 cmd, error
             )
+
             transfer_size = int(shlex.split(output)[4])
 
         return transfer_size
@@ -157,8 +167,8 @@ class StreamingApi(object):
         return int(shlex.split(output)[4])
 
     def image_size_for_transfer(
-        self, host=None, storage_type=None, disk_id=None, sp_id=None,
-        image_path=None
+        self, host=None, storage_type=None, disk_object=None, sp_id=None,
+        image_path=None, extend=False
     ):
         """
         Returns disk image size (in bytes) for transfer(download/upload)
@@ -166,9 +176,10 @@ class StreamingApi(object):
         Args:
             host (host): Host resource object
             storage_type (str): Specify the storage type
-            disk_id (str): The disk id
+            disk_object (Disk): The disk id
             sp_id (str): Storage pool id (only needed for File)
             image_path (str): The upload file path
+            extend (bool): True if disk is extended, False otherwise
 
         Returns:
             int: Transfer size of a specific disk image before download/upload
@@ -178,8 +189,8 @@ class StreamingApi(object):
         if not self.image_size:
             if self.direction == DOWNLOAD:
                 transfer_size = self.image_size_for_download(
-                    host=host, storage_type=storage_type, disk_id=disk_id,
-                    sp_id=sp_id
+                    host=host, storage_type=storage_type,
+                    disk_object=disk_object, sp_id=sp_id, extend=extend
                 )
             else:
                 transfer_size = self.image_size_for_upload(
@@ -193,7 +204,7 @@ class StreamingApi(object):
 
     @staticmethod
     def check_disk_space_before_download_image(
-        disk_id, file_path=FILE_PATH, image_size=None
+        disk_id=None, file_path=FILE_PATH, image_size=None
     ):
         """
         Check available disk space at the target directory before download.
@@ -256,14 +267,16 @@ class StreamingApi(object):
         return shlex.split(out)[0]
 
     @staticmethod
-    def md5sum_on_vdsm_host(host, storage_type=None, disk_id=None, sp_id=None):
+    def md5sum_on_vdsm_host(
+        host, storage_type=None, disk_object=None, sp_id=None
+    ):
         """
         Returns the md5sum of a specific disk image on VDSM host
 
         Args:
             host (host): Host resource object
             storage_type (str): Specific the storage type
-            disk_id (str): The disk id
+            disk_object (Disk): The disk id
             sp_id (str): Storage pool id (only needed for File)
 
         Returns:
@@ -272,7 +285,6 @@ class StreamingApi(object):
         Raises:
             AssertionError: If any of the commands fails
         """
-        disk_object = ll_disks.get_disk_obj(disk_id, attribute='id')
         image_id = disk_object.get_image_id()
         sd_id = (
             disk_object.get_storage_domains().get_storage_domain()[0].get_id()
@@ -300,7 +312,9 @@ class StreamingApi(object):
 
         else:
             cmd = shlex.split(
-                MD5SUM_FILE_IMAGE_PATH % (sp_id, sd_id, disk_id, image_id)
+                MD5SUM_FILE_IMAGE_PATH % (
+                    sp_id, sd_id, disk_object.get_id(), image_id
+                )
             )
             rc, output, error = host.run_command(cmd)
             assert not rc, "Md5sum command %s failed %s" % (cmd, error)
@@ -309,136 +323,7 @@ class StreamingApi(object):
 
         return shlex.split(output)[0]
 
-    def md5sum_before_transfer(
-        self, host=None, storage_type=None, disk_id=None, sp_id=None,
-        image_path=image_path
-    ):
-        """
-        Returns the md5sum of a specific disk before transfer(download/upload)
-        Download direction- ms5sum before transfer will be on VDSM host
-        Upload direction - ms5sum before transfer will be on localhost
-
-        Args:
-            host (host): Host resource object
-            storage_type (str): Specific the storage type
-            disk_id (str): The disk id
-            sp_id (str): Storage pool id (only needed for File)
-            image_path (str): Path of the transferred image on the local host
-
-        Returns:
-            str: The md5sum of a specific disk image before transfer
-
-        """
-        if self.direction == DOWNLOAD:
-            out = self.md5sum_on_vdsm_host(host, storage_type, disk_id, sp_id)
-        else:
-            out = self.md5sum_on_localhost(image_path)
-
-        return out
-
-    def md5sum_after_transfer(
-        self, host=None, storage_type=None, disk_id=None, sp_id=None,
-        image_path=image_path
-    ):
-        """
-        Returns the md5sum output of a specific disk after image transfer
-        Download direction- ms5sum after transfer will be on localhost
-        Upload direction - ms5sum before transfer will be on VDSM host
-
-        Args:
-            host (host): Host resource object
-            storage_type (str): Specific the storage type
-            disk_id (str): The disk id
-            sp_id (str): Storage pool id (only needed for File)
-            image_path (str): Path of the transferred image on the local host
-
-        Returns:
-            str: The md5sum of the image after transfer
-
-        """
-        if self.direction == UPLOAD:
-            out = self.md5sum_on_vdsm_host(host, storage_type, disk_id, sp_id)
-        else:
-            out = self.md5sum_on_localhost(image_path)
-
-        return out
-
-    def md5sums_sizes_before_transfer(
-        self, host=None, storage_type=None, disks_names=None, sp_id=None,
-        image_paths=UPLOAD_FILES_LOCALHOST
-    ):
-        """
-        Returns the md5sums and sizes of selected disks before image transfer
-
-        Args:
-            host (host): Host resource object
-            storage_type (str): Specify the storage type
-            disks_names (list): Disks names about to be downloaded
-            sp_id (str): Storage pool id (only needed for File)
-            image_paths (list): Upload image paths on local host
-
-        Returns:
-            list: lists of md5sums and sizes of selected disks before download
-
-        """
-
-        if self.direction == DOWNLOAD:
-            md5sums_before = [self.md5sum_before_transfer(
-                host, storage_type, ll_disks.get_disk_obj(disk).get_id(),
-                sp_id
-            ) for disk in disks_names]
-            sizes_before = [self.image_size_for_transfer(
-                host, storage_type, ll_disks.get_disk_obj(disk).get_id(),
-                sp_id
-            ) for disk in disks_names]
-
-        else:
-            md5sums_before = [
-                self.md5sum_before_transfer(image_path=path)
-                for path in image_paths
-            ]
-            sizes_before = [
-                self.image_size_for_transfer(image_path=path)
-                for path in image_paths
-            ]
-
-        return md5sums_before, sizes_before
-
-    def compare_md5sum_before_after_transfer(
-        self, md5sum_before, output=image_path, host=None, storage_type=None,
-        disk_id=None, sp_id=None
-    ):
-        """
-        Compare md5sum before and after image transfer
-
-        Args:
-            md5sum_before (str): The md5sum value fo the disk before download
-            output (str): Output path of the downloaded file
-            host (host): Host resource object
-            storage_type (str): Specific the storage type
-            disk_id (str): The disk id
-            sp_id (str): Storage pool id (only needed for File)
-
-
-        Raises:
-            AssertionError: if md5sum is not the same before and after the
-                download
-        """
-        if self.direction == DOWNLOAD:
-            md5sum_after = self.md5sum_after_transfer(image_path=output)
-        else:
-            md5sum_after = self.md5sum_after_transfer(
-                host, storage_type, disk_id, sp_id
-            )
-
-        assert md5sum_before == md5sum_after, (
-            "Md5sum not the same before transfer is: %s and after its: %s" % (
-                md5sum_before, md5sum_after
-            )
-        )
-        logger.info("Md5sum comparison before and after transfer successful")
-
-    def prepare_for_transfer(self, image_id):
+    def prepare_for_transfer(self, image_id=None, snapshot=False):
         """
         Prepare for transfer and returns all needed services&arguments.
 
@@ -448,78 +333,187 @@ class StreamingApi(object):
         proxy_connection,proxy_url,disks_service
 
         Args:
-            image_id (str): Id of the disk image
+            image_id (str): Id of the disk/snapshot disk
+            snapshot (bool): True when transferring a disk snapshot
 
         Returns:
             list: Returns a list with all needed arguments for transfer
         """
         prepare_transfer_args = list()
-        # Create the connection to the server:
-        connection = sdk.Connection(
-            url=ENGINE_URL,
-            username=ADMIN_USER_NAME,
-            password=ORIG_VDC_PASSWORD,
-            ca_file=CA_FILE_PATH,
-            debug=True,
-            log=logger,
-        )
+
+        def get_connection():
+            """
+            Get the connection object to the server
+
+            Returns:
+                connection object: responsible for managing an HTTP connection
+                    to the engine server
+            """
+            # Create the connection to the server:
+            return sdk.Connection(
+                url=ENGINE_URL,
+                username=ADMIN_USER_NAME,
+                password=ORIG_VDC_PASSWORD,
+                ca_file=CA_FILE_PATH,
+                debug=True,
+                log=logger,
+            )
+
+        def get_disk_service(connection):
+            """
+            Get the disks service object that reference to the service that
+                manages the disks available in the storage domain.
+
+            Args:
+                connection (Connection): Object responsible for managing an
+                    HTTP connection to the engine server
+
+            Returns:
+                Service: disk service object
+            """
+            disks_service = connection.system_service().disks_service()
+            return disks_service.disk_service(image_id)
+
+        def get_disk(disk_service):
+            """
+            Get the object that reference to the service that manages a
+                specific disk.
+
+            Args:
+                disk_service (Service): The object responsible for managing a
+                    specific disk
+
+            Returns:
+                Service: object that manages a specific disk
+            """
+            return disk_service.get()
+
+        def get_transfer_service(
+            image_id, disk=None, snapshot=False, system_service=None
+        ):
+            """
+            Get the reference to the service that manages the image transfer
+
+            Args:
+                image_id (str): Id of the disk/snapshot disk image
+                disk (Disk): disk object from the disk service object
+                snapshot (bool): True if transfer is for a disk snapshot
+                system_service (Service): system_service object is the
+                    reference to the root of the services
+
+            Returns:
+                Service: ImageTransferService object
+            """
+            transfers_service = system_service.image_transfers_service()
+
+            # Add a new image transfer:
+            if self.direction == DOWNLOAD and snapshot is True:
+                transfer = transfers_service.add(
+                    types.ImageTransfer(
+                        snapshot=types.DiskSnapshot(id=image_id),
+                        direction=types.ImageTransferDirection.DOWNLOAD,
+                    )
+                )
+
+            elif self.direction == DOWNLOAD:
+                transfer = transfers_service.add(
+                    types.ImageTransfer(
+                        image=types.Image(
+                            id=disk.id
+                        ),
+                        direction=types.ImageTransferDirection.DOWNLOAD,
+                    )
+                )
+
+            else:
+                transfer = transfers_service.add(
+                    types.ImageTransfer(
+                        image=types.Image(
+                            id=disk.id
+                        ),
+                    )
+                )
+
+            # Get reference to the created transfer service:
+            transfer_service = transfers_service.image_transfer_service(
+                transfer.id
+            )
+            while transfer.phase == types.ImageTransferPhase.INITIALIZING:
+                time.sleep(1)
+                transfer = transfer_service.get()
+
+            # After adding a new transfer for the disk, the transfer's status
+            # will be INITIALIZING. Wait until the init phase is over.
+            # The actual transfer can start when its status is "Transferring".
+            init_phase_time = 0
+            while transfer.phase == types.ImageTransferPhase.INITIALIZING:
+                time.sleep(1)
+                init_phase_time += 1
+                assert (
+                    init_phase_time == TRANSFER_INITIALIZING_STATE_TIMEOUT
+                ), (
+                    "Transfer status is in init state for %s seconds" %
+                    TRANSFER_INITIALIZING_STATE_TIMEOUT
+                )
+                transfer = transfer_service.get()
+
+            return transfer_service
+
+        def get_proxy_connection(proxy_url):
+            """
+            Returns the proxy_connection connection object which create a new
+                HTTPS connection to the proxy server
+
+            At this stage, the SDK granted the permission to start
+            transferring the disk, and the user should choose its preferred
+            tool for doing it - regardless of the SDK.
+            In this example, we will use Python's httplib.HTTPSConnection
+            for transferring the data.
+
+            Args:
+                proxy_url (str): The address of a proxy server to the image
+
+             Returns:
+                HTTPConnection: returns a new HTTPS connection object
+                  to the proxy server
+            """
+
+            context = ssl.create_default_context()
+
+            # Note that ovirt-imageio-proxy by default checks the certificates,
+            #  so if you don't have your CA certificate of the engine in the
+            # system, you need to pass it to HTTPSConnection.
+            context.load_verify_locations(cafile=CA_FILE_PATH)
+
+            return HTTPSConnection(
+                proxy_url.hostname,
+                proxy_url.port,
+                context=context,
+            )
+
+        # Create a connection to the server:
+        connection = get_connection()
         prepare_transfer_args.append(connection)
+
         # Get reference to the created transfer service:
         system_service = connection.system_service()
         logger.info(
             "Get the reference to the root service %s", system_service
         )
-
-        # Get the reference to the disks service:
-        disks_service = connection.system_service().disks_service()
-
-        logger.info(
-            "Get the reference to the disks service %s", disks_service
-        )
-        disk_service = disks_service.disk_service(image_id)
-        disk = disk_service.get()
-
-        # Get a reference to the service that manages the image
-        # transfer that was added in the previous step:
-        transfers_service = system_service.image_transfers_service()
-
-        # Add a new image transfer:
-        if self.direction == DOWNLOAD:
-            transfer = transfers_service.add(
-                types.ImageTransfer(
-                    image=types.Image(
-                        id=disk.id
-                    ),
-                    direction=types.ImageTransferDirection.DOWNLOAD,
-                )
+        if not snapshot:
+            disk_service = get_disk_service(connection)
+            disk = get_disk(disk_service)
+            transfer_service = get_transfer_service(
+                image_id, disk=disk, system_service=system_service
             )
-
         else:
-            transfer = transfers_service.add(
-                types.ImageTransfer(
-                    image=types.Image(
-                        id=disk.id
-                    ),
-                )
+            transfer_service = get_transfer_service(
+                image_id, snapshot=snapshot, system_service=system_service
             )
-        transfer_service = transfers_service.image_transfer_service(
-            transfer.id
-        )
 
         prepare_transfer_args.append(transfer_service)
 
-        # After adding a new transfer for the disk, the transfer's status
-        # will be INITIALIZING. Wait until the init phase is over.
-        # The actual transfer can start when its status is "Transferring".
-        init_phase_time = 0
-        while transfer.phase == types.ImageTransferPhase.INITIALIZING:
-            time.sleep(1)
-            init_phase_time += 1
-            assert init_phase_time == TRANSFER_INITIALIZING_STATE_TIMEOUT, (
-                "Transfer status is in init state for %s seconds" %
-                TRANSFER_INITIALIZING_STATE_TIMEOUT
-            )
-            transfer = transfer_service.get()
+        transfer = transfer_service.get()
 
         if self.direction == DOWNLOAD:
             # Set needed headers for downloading:
@@ -528,27 +522,11 @@ class StreamingApi(object):
             }
         else:
             transfer_headers = None
+
         prepare_transfer_args.append(transfer_headers)
-
-        # At this stage, the SDK granted the permission to start
-        # transferring the disk, and the user should choose its preferred
-        # tool for doing it regardless of the SDK . In this example, we
-        # will use Python's httplib.HTTPSConnection for transferring the
-        # data.
         proxy_url = urlparse(transfer.proxy_url)
-        context = ssl.create_default_context()
         prepare_transfer_args.append(proxy_url)
-
-        # Note that ovirt-imageio-proxy by default checks the certificates,
-        # so if you don't have your CA certificate of the engine in the
-        # system, you need to pass it to HTTPSConnection.
-        context.load_verify_locations(cafile=CA_FILE_PATH)
-
-        proxy_connection = HTTPSConnection(
-            proxy_url.hostname,
-            proxy_url.port,
-            context=context,
-        )
+        proxy_connection = get_proxy_connection(proxy_url)
         prepare_transfer_args.append(proxy_connection)
         prepare_transfer_args.append(transfer)
 
@@ -558,34 +536,44 @@ class StreamingApi(object):
     def download_disk(
         connection=None, transfer_service=None, transfer_headers=None,
         proxy_url=None, proxy_connection=None, image_path=None,
-        transfer_size=None, image_id=None,
+        transfer_size=None, image_id=None, pause=False, interrupt=False,
+        vm_name=None, disk_name=None
     ):
         """
         Download disk from VDSM host to localhost running the test
 
         Args:
 
-            connection (object): responsible for managing an HTTP connection to
-                the engine server
+            connection (Connection): Object responsible for managing an HTTP
+                connection to the engine server
             transfer_service (Service): Get a reference to the service that
                 manages the image transfer that was added in the previous
             transfer_headers(dict): Set needed headers for transfer disk image
-            proxy_url(str): The address of a proxy server to the image
+            proxy_url (str): The address of a proxy server to the image
             proxy_connection(HTTPConnection): Create new HTTPS connection to
                 the proxy server
             image_path (str): Image location before transfer on localhost
             transfer_size (int): Actual size of the transferred image in bytes
             image_id (str): Id of the disk image
+            pause (bool): True performing pause during transfer,False otherwise
+            interrupt (bool): True if additional action is planed during
+                 disk download, False otherwise
+            vm_name (string): Name of the VM
+            disk_name (string): Name of the transferred disk
 
+         Returns:
+            bool: True if download succeeded False if failed
         """
+        status = True
+        transfer = None
+
         try:
             path = image_path
-            mib_per_request = 1
 
             with open(path, "wb") as mydisk:
                 size = transfer_size
                 logger.info("Provisioned size: %s", size)
-                chunk_size = 1024 * 1024 * mib_per_request
+                chunk_size = 64 * 1024 * 1024
                 pos = 0
                 while pos < size:
                     # Extend the transfer session.
@@ -606,19 +594,204 @@ class StreamingApi(object):
                     # Check the response status:
                     if r.status >= 300:
                         logger.info("Error: %s", r.read())
+                        status = False
                         break
 
                     # Write the content to file:
                     mydisk.write(r.read())
                     logger.info("Completed: %s%% on disk id %s", int(
                         pos / float(size) * 100), image_id)
+
+                    if pause:
+                        # If transfer size is PAUSE_PER perform pause
+                        if int(pos / float(size) * 100) == PAUSE_TRANSFER_PER:
+                            logger.info(
+                                "Pause transfer on disk id %s", image_id
+                            )
+                            transfer_service.pause()
+                            start = time.time()
+                            transfer = transfer_service.get()
+                            # Check the transfer phase until it changes to
+                            # "paused_user"
+                            while transfer.phase != (
+                                types.ImageTransferPhase.PAUSED_USER
+                            ):
+                                time.sleep(1)
+                                logger.info(
+                                    "Current Image id %s transfer phase is not"
+                                    "paused_user yet but: %s",
+                                    transfer.phase, image_id
+                                )
+                                transfer = transfer_service.get()
+                                if transfer.phase == (
+                                    types.ImageTransferPhase.PAUSED_USER
+                                ):
+                                    logger.info(
+                                        "Image %s phase is %s",
+                                        image_id, transfer.phase
+                                    )
+                                    break
+                                now = time.time()
+                                # If the time it took to change to
+                                # "paused_user" state took more than the
+                                # designated timeout fail the test
+                                if now - start > STATE_TIMEOUT:
+                                    assert True, (
+                                        "Waiting for paused_user state for"
+                                        "more than %s" % STATE_TIMEOUT
+                                    )
+                            # Now that disk transfer is paused , sleep for
+                            # a while , in this case for PAUSE_SLEEP
+                            logger.info(
+                                "Sleeping for 1min on disk id %s", image_id)
+                            sleep(PAUSE_SLEEP)
+                            # Resume disk transfer
+                            logger.info(
+                                "Resume transfer on disk id %s", image_id
+                            )
+                            transfer = transfer_service.get()
+                            transfer_service.resume()
+                            # Check the transfer phase is
+                            while transfer.phase == (
+                                types.ImageTransferPhase.RESUMING
+                            ):
+                                time.sleep(1)
+                                transfer = transfer_service.get()
+                                logger.info(
+                                    "Image %s phase is %s", image_id,
+                                    transfer.phase
+                                )
+                                now = time.time()
+                                # If the time it took to change to
+                                # "resuming" state took more than the
+                                # designated timeout fail the test
+                                if now - start > STATE_TIMEOUT:
+                                    assert True, (
+                                        "Waiting for 'resuming' state for"
+                                        "more than %s" % STATE_TIMEOUT
+                                    )
+                    if interrupt:
+                        if int(pos / float(size) * 100) == 50:
+                            logger.info(
+                                "Start additonal action during transfer on "
+                                "disk %s", disk_name
+                            )
+                            logger.info(
+                                "Attaching disk %s to vm %s", disk_name,
+                                vm_name
+                            )
+                            assert ll_disks.attachDisk(
+                                positive=False, alias=disk_name,
+                                vm_name=vm_name
+                            ), (
+                                "Succeeded to attach disk %s to vm %s during "
+                                "download , attach should fail"
+                                % (disk_name, vm_name)
+                            )
+
                     # Continue to next chunk.
                     pos += chunk_size
+
         finally:
             # Finalize the session.
             transfer_service.finalize()
             # Close the connection to the server:
             connection.close()
+        return status
+
+    @staticmethod
+    def download_disk_snapshot(
+        connection=None, transfer_service=None, proxy_url=None,
+        proxy_connection=None, image_path=None, image_id=None
+    ):
+        """
+        Download disk snapshot from VDSM host to localhost running the test
+
+        Args:
+            connection (Connection): Object responsible for managing an HTTP
+                connection to the engine server
+            transfer_service (Service): Get a reference to the service that
+                manages the image transfer that was added in the previous
+            proxy_url (str): The address of a proxy server to the image
+            proxy_connection (HTTPConnection): Create new HTTPS connection
+                object to connect to the proxy server
+            image_path (str): Image location before transfer on localhost
+            image_id (str): Id of the disk snapshot
+
+         Returns:
+            bool: True if disk snapshot download succeeded False if failed
+        """
+
+        logger.info("Downloading disk snapshot id %s" % image_id)
+
+        status = True
+
+        try:
+            transfer_service = transfer_service
+            transfer = transfer_service.get()
+            proxy_url = proxy_url
+            proxy_connection = proxy_connection
+            path = image_path
+
+            with open(path, "wb") as mydisk:
+                # Set needed headers for downloading:
+                transfer_headers = {
+                    'Authorization': transfer.signed_ticket,
+                }
+
+                # Perform the request.
+                proxy_connection.request(
+                    'GET',
+                    proxy_url.path,
+                    headers=transfer_headers,
+                )
+                # Get response
+                r = proxy_connection.getresponse()
+
+                # Check the response status:
+                if r.status >= 300:
+                    logger.info("Error: %s" % r.read())
+                    status = False
+
+                bytes_to_read = int(r.getheader('Content-Length'))
+                chunk_size = 64 * 1024 * 1024
+
+                logger.info(
+                    "Disk snapshot size: %s bytes" % str(bytes_to_read)
+                )
+
+                while bytes_to_read > 0:
+                    # Calculate next chunk to read
+                    to_read = min(bytes_to_read, chunk_size)
+
+                    # Read next chunk
+                    chunk = r.read(to_read)
+
+                    if chunk == "":
+                        status = False
+                        logger.error("Socket disconnected")
+                        break
+
+                    # Write the content to file:
+                    mydisk.write(chunk)
+
+                    # Update bytes_to_read
+                    bytes_to_read -= len(chunk)
+
+                    completed = 1 - (
+                        bytes_to_read / float(r.getheader('Content-Length'))
+                    )
+
+                    logger.info("Completed: %s%% disk snapshot id %s", int(
+                        completed * 100), image_id)
+        finally:
+            # Finalize the session.
+            if transfer_service is not None:
+                transfer_service.finalize()
+            # Close the connection to the server:
+            connection.close()
+
+        return status
 
     @staticmethod
     def upload_disk(
@@ -631,8 +804,8 @@ class StreamingApi(object):
 
         Args:
 
-            connection (object): responsible for managing an HTTP connection to
-                the engine server
+            connection (Connection): Object responsible for managing an HTTP
+                connection to the engine server
             transfer_service (Service): Get a reference to the service that
                 manages the image transfer that was added in the previous
             proxy_url (str): The address of a proxy server to the image
@@ -644,10 +817,15 @@ class StreamingApi(object):
                 to transfer data to/from
             image_path (str): Image location before transfer on localhost
             transfer_size (int): Actual size of the transferred image in bytes
+
+         Returns:
+            bool: True if upload succeeded False if failed
+
         """
         size = transfer_size
         path = image_path
         start = last_progress = last_extend = time.time()
+        status = True
 
         # This seems to give the best throughput when uploading
         # SSD to a server that drop the data.
@@ -695,8 +873,8 @@ class StreamingApi(object):
                 chunk = disk.read(to_read)
                 if not chunk:
                     transfer_service.pause()
-                    raise RuntimeError(
-                        "Unexpected end of file at pos=%d" % pos)
+                    logger.error("Unexpected end of file at pos=%d" % pos)
+                    return False
 
                 proxy_connection.send(chunk)
                 pos += len(chunk)
@@ -704,10 +882,12 @@ class StreamingApi(object):
         # Get the response
         response = proxy_connection.getresponse()
         if response.status != 200:
+            status = False
             transfer_service.pause()
-            assert True, "Upload failed: %s %s" % (
-                response.status, response.reason
+            logger.error(
+                "Upload failed: %s %s" % (response.status, response.reason)
             )
+
         # Successful cleanup
         transfer_service.finalize()
         connection.close()
@@ -717,104 +897,4 @@ class StreamingApi(object):
             "Uploaded %.2fg in %.2f seconds %.2fm/s",
             size / float(1024 ** 3), elapsed, size / 1024 ** 2 / elapsed
         )
-
-    def transfer_image(
-        self, image_id, image_path=image_path, transfer_size=image_size,
-    ):
-        """
-        Transfer disk image
-
-        Args:
-            image_id (str): Id of the disk image
-            image_path (str): Image location before transfer on localhost
-            transfer_size (int): Actual size of the transferred image in bytes
-        """
-        (
-            connection, transfer_service, transfer_headers,
-            proxy_url, proxy_connection, transfer
-        ) = self.prepare_for_transfer(image_id)
-
-        if self.direction == DOWNLOAD:
-            self.download_disk(
-                connection, transfer_service, transfer_headers, proxy_url,
-                proxy_connection, image_path=image_path,
-                transfer_size=transfer_size, image_id=image_id
-            )
-        else:
-            self.upload_disk(
-                connection, transfer_service, proxy_url,
-                proxy_connection, transfer, image_path=image_path,
-                transfer_size=transfer_size
-            )
-
-        logger.info("Waiting for disk %s to go back to 'OK' state", image_id)
-        ll_disks.wait_for_disks_status([image_id], key='id')
-
-    def transfer_multiple_disks(self, disks_names, sizes_before):
-        """
-        Transfer multiple disk images in parallel
-
-        Args:
-            disks_names (list): list of disks names about to be transferred
-            sizes_before (list): list of disks sizes about to be transferred
-
-        Returns:
-            list: Output path list of the image location before/after transfer
-
-        Raises:
-            DiskException: If download fails
-        """
-        results = list()
-        disk_ids = list()
-        output_path = list()
-
-        if self.direction == DOWNLOAD:
-            with ThreadPoolExecutor(
-                max_workers=len(disks_names)
-            ) as executor:
-                for index, disk in enumerate(disks_names):
-                    disk_ids.append(ll_disks.get_disk_obj(disk).get_id())
-                    output_path.append(FILE_PATH + '/' + disk)
-                    self.check_disk_space_before_download_image(
-                        disk_ids[index]
-                    )
-                    testflow.step("Download image id %s", disk_ids[index])
-                    results.append(
-                        executor.submit(
-                            self.transfer_image, disk_ids[index],
-                            output_path[index], sizes_before[index]
-                        )
-                    )
-            for index, result in enumerate(results):
-                if result.exception():
-                    raise result.exception()
-                if not result.result:
-                    raise exceptions.DiskException(
-                        "Download disk id %s failed", disk_ids[index]
-                    )
-                logger.info(
-                    "Download disk id %s succeeded", disk_ids[index]
-                )
-        else:
-            with ThreadPoolExecutor(
-                max_workers=len(disks_names)
-            ) as executor:
-                for index, disk in enumerate(disks_names):
-                    disk_ids.append(ll_disks.get_disk_obj(disk).get_id())
-                    output_path.append(UPLOAD_FILES_LOCALHOST[index])
-                    testflow.step("Upload image id %s", disk_ids[index])
-                    results.append(
-                        executor.submit(
-                            self.transfer_image, disk_ids[index],
-                            output_path[index], sizes_before[index]
-                        )
-                    )
-            for index, result in enumerate(results):
-                if result.exception():
-                    raise result.exception()
-                if not result.result:
-                    raise exceptions.DiskException(
-                        "Upload image id %s failed", disk_ids[index]
-                    )
-
-        return output_path
+        return status

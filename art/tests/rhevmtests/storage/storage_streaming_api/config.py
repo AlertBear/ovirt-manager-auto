@@ -7,10 +7,13 @@ TARGET_FILE_PATH = os.path.expanduser('~')
 DOWNLOAD = 'download'
 UPLOAD = 'upload'
 IMAGE_FULL_SIZE = 0
+UPLOAD_DIR_PATH = '~/upload/'
 UPLOAD_FILES_LOCALHOST_PATH = [
-    os.path.expanduser('~/qcow2_v2_rhel7.4_ovirt4.2_guest_disk_1G'),
-    os.path.expanduser('~/qcow2_v3_cow_sparse_disk_1G'),
-    os.path.expanduser('~/test_raw_to_delete')
+    os.path.expanduser(
+        UPLOAD_DIR_PATH + 'qcow2_v2_rhel7.4_ovirt4.2_guest_disk_1G'
+    ),
+    os.path.expanduser(UPLOAD_DIR_PATH + 'qcow2_v3_cow_sparse_disk_1G'),
+    os.path.expanduser(UPLOAD_DIR_PATH + 'test_raw_to_delete')
 ]
 RSYNC_CMD = '/usr/bin/rsync --ignore-existing '
 REMOTE_HOST = 'yellow-vdsb.qa.lab.tlv.redhat.com'
@@ -28,3 +31,4 @@ CA_FILE = "ca.crt"
 WORKSPACE_PATH = os.getenv('WORKSPACE', '~/')
 CA_FILE_NEW = os.path.expanduser(os.path.join(WORKSPACE_PATH, CA_FILE))
 COPY_CERT_CMD = 'cp %s %s'
+DISK_RESIZE_TIMEOUT = 1200
