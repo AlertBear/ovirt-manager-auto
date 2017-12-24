@@ -20,7 +20,6 @@ import helpers as sla_helpers
 import pytest
 import rhevmtests.compute.sla.scheduler_tests.helpers as sch_helpers
 import rhevmtests.helpers as rhevm_helpers
-from art.core_api import apis_exceptions
 from art.rhevm_api.utils import test_utils
 from concurrent.futures import ThreadPoolExecutor
 
@@ -377,15 +376,14 @@ def choose_specific_host_as_spm(request):
         u_libs.testflow.setup(
             "Wait until all async tasks will be gone from the engine"
         )
-        try:
-            test_utils.wait_for_tasks(
-                engine=sla_config.ENGINE,
-                datacenter=sla_config.DC_NAME[0]
-            )
-        except apis_exceptions.APITimeout:
-            logger.error("Engine has async tasks that still running")
-            return False
-        assert sla_helpers.clear_spm_tasks_from_host()
+        test_utils.wait_for_tasks(
+            engine=sla_config.ENGINE,
+            datacenter=sla_config.DC_NAME[0]
+        )
+        u_libs.testflow.setup(
+            "Wait until all SPM tasks will be gone from the SPM host"
+        )
+        assert sla_helpers.wait_for_spm_tasks_on_host()
         assert sla_helpers.wait_for_dc_and_storagedomains()
         u_libs.testflow.setup("Choose the host %s as SPM", host_as_spm)
         assert ll_hosts.select_host_as_spm(
