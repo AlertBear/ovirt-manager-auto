@@ -521,3 +521,25 @@ class TestCase5918(DirectLunAttachTestCase):
         )
         assert status, "Direct LUN disk's parameters are not updated"
         self.disks_to_remove.append(self.new_alias)
+
+
+class TestCase24944(DirectLunAttachTestCase):
+    """
+    Migrate VM with direct LUN attached
+    """
+    polarion_test_case = "24944"
+
+    @polarion("RHEVM-24944")
+    @tier2
+    def test_migrate_vm_with_direct_lun(self):
+        """
+        1) Attach direct LUN
+        2) Migrate VM
+        """
+        self.attach_disk_to_vm()
+        assert ll_vms.startVm(True, self.vm_name, config.VM_UP), (
+            "Failed to start VM %s" % self.vm_name
+        )
+        assert ll_vms.migrateVm(
+            positive=True, vm=self.vm_name
+        ), "Failed to migrate VM %s" % self.vm_name
