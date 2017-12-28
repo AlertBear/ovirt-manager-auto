@@ -81,6 +81,8 @@ VM_PROTECTED = "protected"
 VM_CPU_PROFILE = "cpu_profile_id"
 VM_CUSTOM_PROPERTIES = "custom_properties"
 VM_IOTHREADS = "io_threads"
+VM_RESUME_BEHAVIOR = "storage_error_resume_behaviour"
+VM_LEASE = "lease"
 
 DEFAULT_VM_PARAMETERS = {
     VM_MEMORY: GB,
@@ -101,7 +103,9 @@ DEFAULT_VM_PARAMETERS = {
     VM_CPU_MODE: "custom",
     VM_PROTECTED: False,
     VM_CUSTOM_PROPERTIES: "clear",
-    VM_IOTHREADS: 1
+    VM_IOTHREADS: 1,
+    VM_RESUME_BEHAVIOR: "auto_resume",
+    VM_LEASE: False
 }
 
 VM_WITHOUT_DISK = "vm_without_disk_sla"
@@ -379,3 +383,7 @@ NUMA_NODE_PARAMS_INDEX = "index"
 NUMA_NODE_PARAMS_CORES = "cores"
 NUMA_NODE_PARAMS_MEMORY = "memory"
 NUMA_NODE_PARAMS_PIN_LIST = "pin_list"
+
+# Block storage params
+INPUT_CHAIN = "INPUT"
+RULE_DROP = "DROP"

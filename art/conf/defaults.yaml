@@ -436,6 +436,9 @@ elements_conf:
         start_vm: start
         stop_vm: stop
         detach_vm: detach
+        vm_auto_resume: auto_resume
+        vm_kill: kill
+        vm_leave_paused: leave_paused
 
         job_add_vm: Creating VM .* in Cluster .*
         job_add_vm_from_template: Creating VM .* from Template.* in Cluster .*

@@ -135,7 +135,7 @@ def _prepare_vm_object(**kwargs):
     """
     Prepare vm object
 
-    Args:
+    Keyword Args:
         name (str): vm name
         description (str): new vm description
         cluster (str): new vm cluster
@@ -206,6 +206,8 @@ def _prepare_vm_object(**kwargs):
         rng_period (int): Period duration (ms)
         lease (str): Storage domain name for the lease or ''(empty string) to
             remove the lease
+        storage_error_resume_behaviour (str): defines VM behavior after the
+            storage IO error is solved
 
     Returns:
         instance of VM: vm object
@@ -594,6 +596,13 @@ def _prepare_vm_object(**kwargs):
             rate=data_st.Rate(bytes=rng_bytes, period=rng_period)
         )
         vm.set_rng_device(rng)
+
+    # storage_error_resume_behaviour
+    resume_behaviour = kwargs.pop("storage_error_resume_behaviour", None)
+    if resume_behaviour:
+        vm.set_storage_error_resume_behaviour(
+            storage_error_resume_behaviour=resume_behaviour
+        )
 
     return vm
 

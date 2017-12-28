@@ -26,7 +26,11 @@ def stop_vms_fixture_function(request):
     """
     Stop VM(s).
     """
-    vms_dict = request.getfixturevalue("start_vms_dict")
+    vms_dict = fixtures_helper.get_fixture_val(
+        request=request,
+        attr_name="start_vms_dict",
+        default_value=dict()
+    )
     vms_dict = vms_dict or dict()
     vms_to_stop = fixtures_helper.get_fixture_val(
         request=request, attr_name="vms_to_stop", default_value=vms_dict.keys()
@@ -66,9 +70,21 @@ def start_vms_fixture_function(request, stop_vms_fixture_function):
     """
     Run VMs once.
     """
-    vms_dict = request.getfixturevalue("start_vms_dict") or dict()
+    vms_dict = fixtures_helper.get_fixture_val(
+        request=request,
+        attr_name="start_vms_dict",
+        default_value=dict()
+    )
+    wait_for_vms_ip = fixtures_helper.get_fixture_val(
+        request=request,
+        attr_name="wait_for_vms_ip",
+        default_value=False
+    )
     if vms_dict:
         fixtures_helper.start_vm_helper(vms_dict=vms_dict)
+        if wait_for_vms_ip:
+            for vm_name in vms_dict.keys():
+                assert ll_vms.wait_for_vm_ip(vm=vm_name)
 
 
 @pytest.fixture(scope="class")

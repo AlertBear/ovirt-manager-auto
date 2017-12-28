@@ -413,6 +413,11 @@ VM_HOST_PASS_THROUGH = 'host_passthrough'
 VM_NOT_RESPONDING = ENUMS['vm_state_not_responding']
 VM_UNKNOWN = ENUMS['vm_state_unknown']
 
+# VM Resume Behavior states
+VM_RB_AUTO_RESUME = ENUMS['vm_auto_resume']
+VM_RB_KILL = ENUMS['vm_kill']
+VM_RB_LEAVE_PAUSED = ENUMS['vm_leave_paused']
+
 # VM types
 VM_TYPE_DESKTOP = ENUMS['vm_type_desktop']
 VM_TYPE_SERVER = ENUMS['vm_type_server']

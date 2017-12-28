@@ -14,6 +14,7 @@ import art.rhevm_api.tests_lib.low_level.events as ll_events
 import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
 import art.rhevm_api.tests_lib.low_level.templates as ll_templates
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
+import art.rhevm_api.tests_lib.low_level.jobs as ll_jobs
 import art.unittest_lib as u_libs
 import config as sla_config
 import helpers as sla_helpers
@@ -958,3 +959,32 @@ def wait_fence_engine_restart_timeout():
             time_to_wait
         )
         time.sleep(int(time_to_wait))
+
+
+@pytest.fixture()
+def update_vms_parametrizied(request):
+    """
+    Update VM's fixture that could be used for parametrized tests.
+    """
+    vms_to_params = request.getfixturevalue("vms_to_params")
+
+    def fin():
+        """
+        1) Update VM's to default parameters
+        """
+        results = []
+        for vm_name in vms_to_params.iterkeys():
+            results.append(
+                ll_vms.updateVm(
+                    positive=True,
+                    vm=vm_name,
+                    **sla_config.DEFAULT_VM_PARAMETERS
+                )
+            )
+        assert all(results)
+        ll_jobs.wait_for_jobs([sla_config.JOB_UPDATE_VM])
+    request.addfinalizer(fin)
+
+    for vm_name, vm_params in vms_to_params.iteritems():
+        assert ll_vms.updateVm(positive=True, vm=vm_name, **vm_params)
+        ll_jobs.wait_for_jobs([sla_config.JOB_UPDATE_VM])
