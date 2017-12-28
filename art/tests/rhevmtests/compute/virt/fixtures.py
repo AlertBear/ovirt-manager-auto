@@ -8,6 +8,7 @@ import pytest
 import art.rhevm_api.tests_lib.high_level.storagedomains as hl_storagedomains
 import config
 import rhevmtests.fixtures_helper as fixture_helper
+from art.rhevm_api.utils.test_utils import wait_for_tasks
 from art.rhevm_api.tests_lib.low_level import (
     vms as ll_vms,
     vmpools as ll_vmpools,
@@ -144,7 +145,12 @@ def create_vm_class(request):
         """
         Remove created VM
         """
-        assert ll_vms.safely_remove_vms([vm_name])
+        assert ll_vms.stopVm(positive=True, vm=vm_name)
+        wait_for_tasks(
+            engine=config.ENGINE,
+            datacenter=config.DATA_CENTER_NAME
+        )
+        assert ll_vms.removeVm(positive=True, vm=vm_name)
 
     request.addfinalizer(fin)
     assert ll_vms.addVm(True, **vm_parameters)

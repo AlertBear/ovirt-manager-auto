@@ -76,8 +76,6 @@ def stop_pool_vms_safely_before_removal(request):
                 assert ll_mla.removeUserRoleFromVm(
                     True, vm, config.ADMIN_USER_NAME, config.USER_ROLE
                 )
-        testflow.teardown("Remove pool: %s", pool_name)
-        assert ll_vmpools.removeVmPool(positive=True, vmpool=pool_name)
 
     request.addfinalizer(fin)
 

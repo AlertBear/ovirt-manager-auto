@@ -7,7 +7,7 @@ import pytest
 
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import rhevmtests.config as config
-from art.test_handler.tools import polarion, bz
+from art.test_handler.tools import polarion
 from art.unittest_lib import (
     VirtTest,
     tier2,
@@ -54,7 +54,7 @@ class TestLinuxBootParameters(VirtTest):
             ),
             pytest.param(
                 "updateVm", "d", "d", "", False, True,
-                marks=(polarion("RHEVM-21997"), bz({'1472143': {}}))
+                marks=(polarion("RHEVM-21997"))
             ),
             pytest.param(
                 "updateVm", "ab", "ab", "", False, True,

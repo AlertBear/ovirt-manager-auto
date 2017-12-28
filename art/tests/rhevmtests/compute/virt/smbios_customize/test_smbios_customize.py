@@ -5,7 +5,7 @@ import pytest
 import config
 import helper
 from art.rhevm_api.tests_lib.low_level import vms as ll_vms
-from art.test_handler.tools import polarion, bz
+from art.test_handler.tools import polarion
 from art.unittest_lib import VirtTest, tier1, tier3
 from art.unittest_lib import testflow
 from rhevmtests import helpers
@@ -27,7 +27,6 @@ class TestSMBiOSCustomData(VirtTest):
 
     @tier1
     @polarion("RHEVM3-10622")
-    @bz({"1466270": {}})
     def test_negative_smbios_incorrect_uuid(self):
         """
         Create vm with incorrect UUID
