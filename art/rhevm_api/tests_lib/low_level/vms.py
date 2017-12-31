@@ -5943,3 +5943,17 @@ def get_vm_uuid(vm_name):
         vm_uuid (str): VM uuid
     """
     return get_vm(vm_name).get_id()
+
+
+@ll_general.generate_logs()
+def get_vm_type(vm_name):
+    """
+    Get VM type
+
+    Args:
+        vm_name (str): VM name
+
+    Returns:
+        str: VM type
+    """
+    return get_vm(vm_name).get_type()

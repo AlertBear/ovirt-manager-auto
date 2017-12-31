@@ -850,3 +850,56 @@ def wait_for_spm_tasks_on_host(
             "%s: unfinished SPM tasks %s", spm_resource, unfinished_tasks
         )
         return False
+
+
+def parse_pinning_values(values):
+    """
+    Return pinning values for lines that include "-" and ","
+
+    Args:
+        values (str): Values that include "-" and ","
+
+    Returns:
+        list: Pinning values
+    """
+    pinning_arr = []
+    if "," in values:
+        values = values.split(",")
+        for value in values:
+            pinning_arr.extend(parse_pinning_values(value))
+    elif "-" in values:
+        start, end = values.split("-")
+        pinning_arr.extend(
+            range(int(start), int(end) + 1)
+        )
+    else:
+        pinning_arr.append(int(values))
+    return pinning_arr
+
+
+def check_vm_libvirt_parameters(vm_name, param, substring):
+    """
+    Verify that substring exists under VM libvirt parameters
+
+    Args:
+        vm_name (str): VM name
+        param (str): Libvirt XML parameter
+        substring (str): String to find under XML libvirt parameter
+
+    Returns:
+        bool: True, if substring placed under parameter, otherwise False
+    """
+    vm_host = ll_vms.get_vm_host(vm_name=conf.VM_NAME[0])
+    host_resource = conf.VDS_HOSTS[conf.HOSTS.index(vm_host)]
+
+    command = [
+        "virsh", "-r", "dumpxml", vm_name, "|", "grep", param
+    ]
+    rc, out, _ = host_resource.run_command(command=command)
+    if rc:
+        return False
+
+    if not re.findall(substring, out):
+        return False
+
+    return True

@@ -252,6 +252,7 @@ elements_conf:
         ovf_disk_alias: OVF_STORE
         vm_type_desktop: desktop
         vm_type_server: server
+        vm_type_high_performance: high_performance
         role_name_user_role: UserRole
         role_name_power_user_role: PowerUserRole
         role_name_user_vm_manager: UserVmManager

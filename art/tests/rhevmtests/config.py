@@ -416,6 +416,7 @@ VM_UNKNOWN = ENUMS['vm_state_unknown']
 # VM types
 VM_TYPE_DESKTOP = ENUMS['vm_type_desktop']
 VM_TYPE_SERVER = ENUMS['vm_type_server']
+VM_TYPE_HIGH_PERFORMANCE = ENUMS['vm_type_high_performance']
 if PPC_ARCH:
     # TODO: Known issue, vms should be created as server with rest api
     # https://bugzilla.redhat.com/show_bug.cgi?id=1253261

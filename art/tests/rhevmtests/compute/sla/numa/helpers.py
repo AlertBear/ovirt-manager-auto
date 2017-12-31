@@ -29,31 +29,6 @@ def get_numa_parameters_from_vm(vm_name):
     return sla_helpers.get_numa_parameters_from_resource(resource=vm_resource)
 
 
-def parse_pinning_values(values):
-    """
-    Return pinning values for lines that include "-" and ","
-
-    Args:
-        values (str): Values that include "-" and ","
-
-    Returns:
-        list: Pinning values
-    """
-    pinning_arr = []
-    if "," in values:
-        values = values.split(",")
-        for value in values:
-            pinning_arr.extend(parse_pinning_values(value))
-    elif "-" in values:
-        values = values.split("-")
-        pinning_arr.extend(
-            range(int(values[0]), int(values[1]) + 1)
-        )
-    else:
-        pinning_arr.append(int(values))
-    return pinning_arr
-
-
 def get_vm_numa_pinning(resource, vm_name, pinning_type):
     """
     Get VM CPU and memory NUMA pinning information from the host
@@ -86,7 +61,7 @@ def get_vm_numa_pinning(resource, vm_name, pinning_type):
     )
     results = re.findall(proc_pattern, out)
     for proc_index, result in enumerate(results):
-        pinning_dict[proc_index] = parse_pinning_values(result)
+        pinning_dict[proc_index] = sla_helpers.parse_pinning_values(result)
     logger.debug("VM %s pinning information: %s", vm_name, pinning_dict)
     return pinning_dict
 
