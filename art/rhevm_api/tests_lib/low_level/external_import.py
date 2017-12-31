@@ -80,17 +80,18 @@ def prepare_external_vm_import_object(cluster, storage_domain, vm, **kwargs):
 
 @ll_general.generate_logs(step=True)
 def import_vm_from_external_provider(
-    name, cluster, storage_domain, vm, user_name, password, provider,
-    url, driver_iso=None, sparse=True, engine_url=None, host=None
+    provider_vm_name, cluster, storage_domain, new_vm_name, user_name,
+    password, provider, url, driver_iso=None, sparse=True,
+    engine_url=None, host=None
 ):
     """
     Import a vm from an external provider e.g. VmWare or KVM
 
     Args:
-        name (str): Name of vm in the provider
+        provider_vm_name (str): Name of vm in the provider
         cluster (str): Name of cluster
         storage_domain (str): Name of destination storage domain
-        vm (str): Name for the vm in the system
+        new_vm_name (str): Name for the vm in the system
         user_name (str): User name for the provider
         password (str): Password for the provider
         provider (str): Name of the provider
@@ -104,8 +105,8 @@ def import_vm_from_external_provider(
         bool: True if vm was created successfully, False otherwise
     """
     external_vm_import_object = prepare_external_vm_import_object(
-        name=name, cluster=cluster, storage_domain=storage_domain,
-        host=host, vm=vm, sparse=sparse, user_name=user_name,
+        name=provider_vm_name, cluster=cluster, storage_domain=storage_domain,
+        host=host, vm=new_vm_name, sparse=sparse, user_name=user_name,
         password=password, provider=provider, url=url,
         driver_iso=driver_iso
     )

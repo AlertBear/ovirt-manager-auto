@@ -2,51 +2,90 @@
 # -*- coding: utf-8 -*-
 
 import pytest
-
+import helper
 import config
-import rhevmtests.compute.virt.helper as helper
-from art.rhevm_api.tests_lib.low_level import (
-    external_import as ll_external_import,
-    vms as ll_vms
-)
+from art.rhevm_api.utils import jobs
 from art.unittest_lib import testflow
+from art.rhevm_api.tests_lib.low_level import (
+    vms as ll_vms,
+)
+from art.rhevm_api.tests_lib.high_level import (
+    storagedomains as hl_storagedomains
+)
 
 
-@pytest.fixture(scope='class', params=['kvm', 'vmware'])
-def v2v_import_fixture(request):
+@pytest.fixture(scope='class')
+def teardown_fixture(request):
     """
-    Imports vm from the external provider like VMWare, KVM and waits for its
-    conversion
+    Remove vms safely
+    """
+    def fin():
+        testflow.teardown("Remove all vms in list: %s", config.ALL_V2V_VMS)
+        ll_vms.safely_remove_vms(config.ALL_V2V_VMS)
+    request.addfinalizer(fin)
+
+
+@pytest.fixture(scope='class')
+def v2v_parallel_import_fixture(request):
+    """
+    Imports vms parallel from the external provider like VMWare, KVM
+    """
+    vms_to_import = request.node.cls.vms_to_import
+    providers = getattr(
+        request.node.cls, 'providers', config.VMWARE_PROVIDERS
+    )
+    vms_to_remove = [vms[1] for vms in vms_to_import]
+
+    def fin():
+        """
+        Remove created vm/s safely if it exists
+        """
+        testflow.teardown("Remove all vms in list: %s", vms_to_remove)
+        ll_vms.safely_remove_vms(vms_to_remove)
+    request.addfinalizer(fin)
+    job_list = list()
+    for provider in providers:
+        for vm_info in helper.get_all_vms_import_info(
+            provider=provider, vms_to_import=vms_to_import
+        ):
+            job_list.append(
+                jobs.Job(
+                    helper.import_vm_from_external_provider, (),
+                    vm_info
+                )
+            )
+    job_set = jobs.JobsSet()
+    job_set.addJobs(job_list)
+    job_set.start()
+    job_set.join()
+    results = list()
+    for job in job_list:
+        if not job.result or job.result is False:
+            results.append(False)
+            testflow.setup("Failed to import {vm} , Exception: {ex}".format(
+                vm=job.kwargs["provider_vm_name"], ex=job.exception)
+            )
+        else:
+            results.append(True)
+    assert all(results)
+
+
+@pytest.fixture(scope='class')
+def attach_and_activate_iso_domain(request):
+    """
+    Attach / detach iso domain to setup
     """
     def fin():
         """
-        Remove created vm safely if it exists
+        teardown detach iso domain
         """
-        assert ll_vms.safely_remove_vms([vm_name])
-
+        testflow.teardown("Detach iso domain")
+        hl_storagedomains.detach_and_deactivate_domain(
+            config.DC_NAME[0], config.SHARED_ISO_DOMAIN_NAME,
+            engine=config.ENGINE
+        )
     request.addfinalizer(fin)
-
-    vm_name = getattr(request.node.cls, 'vm_name', 'v2v_test_automation_vm')
-    provider = request.param
-    vm_conf = config.EXTERNAL_VM_IMPORTS.get(provider)
-    vm_name_ext = vm_conf['name']
-    testflow.step(
-        "Importing {vm_name_ext} VM from {provider_name} as {vm_name}".format(
-            vm_name_ext=vm_name_ext,
-            provider_name=vm_conf['provider'],
-            vm_name=vm_name
-        )
+    testflow.setup("Attach and activate iso domain")
+    assert hl_storagedomains.attach_and_activate_domain(
+        config.DC_NAME[0], config.SHARED_ISO_DOMAIN_NAME
     )
-    assert ll_external_import.import_vm_from_external_provider(**vm_conf)
-    vm_status = ll_vms.get_vm(vm_name).get_status_detail()
-    testflow.step(
-        "Waiting for event of successful import, vm status is {}".format(
-            vm_status
-        )
-    )
-    assert helper.wait_for_v2v_import_event(
-        vm_name_ext, vm_conf['cluster'], timeout=3600
-    )
-    testflow.step("Check that VM status_detail is None")
-    assert ll_vms.get_vm(vm_name).get_status_detail() is None
-    assert ll_vms.get_vm(vm_name).get_status() == 'down'

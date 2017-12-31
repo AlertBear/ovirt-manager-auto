@@ -2305,6 +2305,7 @@ def removeTagFromVm(positive, vm, tag):
     return VM_API.delete(tagObj, positive)
 
 
+@ll_general.generate_logs(step=True)
 def exportVm(
     positive, vm, storagedomain, exclusive='false',
     discard_snapshots='false', timeout=VM_ACTION_TIMEOUT, async=False

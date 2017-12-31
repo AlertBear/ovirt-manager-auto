@@ -282,3 +282,5 @@ PRE_CASE_CONDITIONS = {
     "set_authorized_ssh_keys": False,
     "cloud_init_user": VM_USER_CLOUD_INIT_1
 }
+
+IMPORT_V2V_TIMEOUT = 5600
