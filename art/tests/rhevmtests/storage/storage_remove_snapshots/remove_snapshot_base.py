@@ -97,8 +97,10 @@ class BaseTestCase(StorageTest):
         return True
 
     def perform_snapshot_operation(
-        self, snapshot_description, wait=True
+        self, snapshot_description, wait=True, live=False
     ):
+        if not live:
+            ll_vms.stop_vms_safely([self.vm_name])
         testflow.step(
             "Adding new snapshot to vm %s", self.vm_name
         )
@@ -112,6 +114,8 @@ class BaseTestCase(StorageTest):
             )
             ll_jobs.wait_for_jobs([config.JOB_CREATE_SNAPSHOT])
         self.snapshot_list.append(snapshot_description)
+        if not live:
+            ll_vms.start_vms([self.vm_name])
 
     def perform_snapshot_with_verification(
         self, snap_description, disks_for_snap
