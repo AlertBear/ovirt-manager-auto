@@ -187,7 +187,9 @@ class GABaseTestCase(TestCase):
 
     def services(self, service_name):
         """ rhevm-guest-agent start-stop-restart-status """
-        ga_service = self.machine.service(service_name)
+        ga_service = self.machine.service(
+            service_name, timeout=config.SAMPLER_TIMEOUT
+        )
         ga_service.stop()
         testflow.step("Starting service %s", service_name)
         assert ga_service.start()
@@ -201,7 +203,7 @@ class GABaseTestCase(TestCase):
             config.SAMPLER_TIMEOUT, config.SAMPLER_SLEEP,
             vms.get_vm, self.vm_name
         ):
-            if sample.get_fqdn() and len(sample.get_fqdn()) > 0:
+            if sample.get_fqdn():
                 break
         fqdn_agent = self._get_vm_stats(
             self.vm_name
@@ -280,7 +282,7 @@ class GABaseTestCase(TestCase):
             testflow.step("Checking app: %s", app_real)
             if app_real.endswith(('i686', 'x86_64', 'noarch')):
                 app_real = app_real[:app_real.rfind('.')]
-            assert len(filter(lambda x: app_real in x, app_list)) > 0
+            assert len(filter(lambda x: app_real in x, app_list))
 
     def _check_guestIP(self):
         ip_list = self._get_vm_stats(
@@ -291,7 +293,7 @@ class GABaseTestCase(TestCase):
         testflow.step("Check that IP reported is correct")
         for ip_real in self.machine.network.find_ips()[0]:
             logger.info("Get IP line returned: %s", ip_real)
-            if ip_real:
+            if ip_real and not ip_real.startswith("172"):
                 ip_check_ran = True
                 assert ip_real in ip_list
         assert ip_check_ran, "Check for IP was unsuccessful"
