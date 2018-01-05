@@ -1,11 +1,13 @@
+from lxml import etree
 import logging
 import os
+
+from art.core_api.apis_exceptions import EngineTypeError
+from art.rhevm_api.tests_lib.low_level import hosts
 from art.rhevm_api.utils import test_utils
 from art.test_handler import find_test_file
 
-from lxml import etree
-from art.core_api.apis_exceptions import EngineTypeError
-
+import config
 
 logger = logging.getLogger(__name__)
 
@@ -268,3 +270,11 @@ class EngineCLI(object):
             lambda (k, v): '--%s=%s' % (k.replace('_', '-'), v),  # flake8: noqa E999
             kwargs.iteritems()
         )
+
+
+def set_he_host_num():
+    if config.HE_ENV:
+        he_host_fqdn = hosts.get_host_vm_run_on(config.HE_VM)
+        for host_name in hosts.get_host_names_list():
+            if he_host_fqdn == hosts.get_host_ip(host_name):
+                config.HE_HOST_NUM = int(host_name[-1]) - 1

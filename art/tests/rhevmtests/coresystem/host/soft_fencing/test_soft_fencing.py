@@ -8,23 +8,17 @@ import logging
 import pytest
 from socket import timeout
 
-from art.rhevm_api.tests_lib.low_level.hosts import (
-    wait_for_hosts_states, remove_host, add_host, is_host_up,
-    activate_host, select_host_as_spm, wait_for_spm, fence_host
+from art.rhevm_api.tests_lib.low_level import (
+    hosts as ll_hosts, jobs as ll_jobs, vms
 )
-from art.rhevm_api.tests_lib.low_level.jobs import (
-    check_recent_job, wait_for_jobs
-)
-from art.rhevm_api.tests_lib.low_level.vms import waitForVMState
-from art.rhevm_api.tests_lib.low_level import vms
 from art.rhevm_api.tests_lib.high_level import hosts as hl_hosts
 from art.rhevm_api.utils.test_utils import get_api, wait_for_tasks
 from art.test_handler.tools import polarion
-from art.unittest_lib import tier2
-from art.unittest_lib import testflow, CoreSystemTest as TestCase
+from art.unittest_lib import tier2, testflow, CoreSystemTest as TestCase
 from rhevmtests.helpers import get_pm_details
+from rhevmtests.coresystem.helpers import set_he_host_num
 
-from rhevmtests.coresystem.soft_fencing import config
+import config
 
 HOST_API = get_api('host', 'hosts')
 VM_API = get_api('vm', 'vms')
@@ -37,30 +31,10 @@ sql = '%s FROM job WHERE action_type=\'VdsNotRespondingTreatment\''
 logger = logging.getLogger(__name__)
 
 
-@pytest.fixture(scope="module", autouse=True)
-def module_setup(request):
-    """
-    Prepare environment for Soft Fencing tests
-    """
-    def fin():
-        testflow.teardown("Check if host %s is up", config.host_with_pm)
-        if not is_host_up(True, config.host_with_pm):
-            testflow.teardown("Fence host %s to clean up", config.host_with_pm)
-            fence_host(
-                host=config.host_with_pm,
-                fence_type=config.ENUMS['fence_type_restart']
-            )
-        testflow.teardown(
-            "Remove power management of host %s", config.host_with_pm
-        )
-        assert hl_hosts.remove_power_management(host_name=config.host_with_pm)
-    request.addfinalizer(fin)
-
-    config.host_with_pm = config.HOSTS[0]
-    config.host_with_pm_num = 0
-    config.host_without_pm = config.HOSTS[1]
-    config.host_without_pm_num = 1
-    hostname = config.VDS_HOSTS[0].fqdn
+def _add_power_management(host_num=None, **kwargs):
+    if not host_num:
+        host_num = config.host_with_pm_num
+    hostname = config.VDS_HOSTS[host_num].fqdn
     testflow.setup("Get power management details of host %s", hostname)
     host_pm = get_pm_details(hostname).get(hostname)
     if not host_pm:
@@ -73,10 +47,39 @@ def module_setup(request):
         "concurrent": False,
         "order": 1
     }
-    testflow.setup("Add power management to host %s", config.host_with_pm)
+    testflow.setup("Add power management to host %s", config.HOSTS[host_num])
     assert hl_hosts.add_power_management(
-        host_name=config.host_with_pm, pm_agents=[agent]
+        host_name=config.HOSTS[host_num], pm_agents=[agent], **kwargs
     )
+
+
+@pytest.fixture(scope="module", autouse=True)
+def module_setup(request):
+    """
+    Prepare environment for Soft Fencing tests
+    """
+    def fin():
+        testflow.teardown("Check if host %s is up", config.host_with_pm)
+        if not ll_hosts.is_host_up(True, config.host_with_pm):
+            testflow.teardown("Fence host %s to clean up", config.host_with_pm)
+            ll_hosts.fence_host(
+                host=config.host_with_pm,
+                fence_type=config.ENUMS['fence_type_restart']
+            )
+        testflow.teardown(
+            "Remove power management of host %s", config.host_with_pm
+        )
+        assert hl_hosts.remove_power_management(host_name=config.host_with_pm)
+    request.addfinalizer(fin)
+
+    testflow.setup("Get HE host number for host selection")
+    set_he_host_num()
+    not_he_host_num = 1 if config.HE_HOST_NUM == 0 else 0
+    config.host_with_pm = config.HOSTS[not_he_host_num]
+    config.host_with_pm_num = not_he_host_num
+    config.host_without_pm = config.HOSTS[config.HE_HOST_NUM]
+    config.host_without_pm_num = config.HE_HOST_NUM
+    _add_power_management()
 
 
 def _check_host_state(host_num, service, job_status):
@@ -94,7 +97,7 @@ def _check_host_state(host_num, service, job_status):
         "Check if %s job was invoked for host: %s",
         JOB, config.HOSTS[host_num]
     )
-    if not wait_for_hosts_states(
+    if not ll_hosts.wait_for_hosts_states(
             True, config.HOSTS[host_num],
             states=[
                 config.HOST_CONNECTING,
@@ -102,11 +105,11 @@ def _check_host_state(host_num, service, job_status):
             ]
     ):
         assert config.ENGINE.db.psql(sql, 'SELECT *')
-    wait_for_hosts_states(True, config.HOSTS[host_num])
-    wait_for_jobs()
+    ll_hosts.wait_for_hosts_states(True, config.HOSTS[host_num])
+    ll_jobs.wait_for_jobs()
 
     testflow.step("Check recent jobs for job %s", config.job_description)
-    assert check_recent_job(
+    assert ll_jobs.check_recent_job(
         description=config.job_description, job_status=job_status
     ), "No job with given description"
     logger.info(
@@ -130,9 +133,9 @@ class SoftFencing(TestCase):
         request.addfinalizer(fin)
 
         for host in config.host_with_pm, config.host_without_pm:
-            if not is_host_up(True, host=host):
+            if not ll_hosts.is_host_up(True, host=host):
                 testflow.setup("Activate host %s", host)
-                assert activate_host(True, host=host)
+                assert ll_hosts.activate_host(True, host=host)
 
 
 class TestSoftFencingPassedWithoutPM(SoftFencing):
@@ -218,7 +221,7 @@ class TestCheckVmAfterSoftFencing(SoftFencing):
             config.host_with_pm_num, config.service_vdsmd, config.job_finished
         )
         testflow.step("Check VM state")
-        assert waitForVMState(self.vm_test)
+        assert vms.waitForVMState(self.vm_test)
 
 
 class TestSoftFencingToHostNoProxies(SoftFencing):
@@ -231,32 +234,29 @@ class TestSoftFencingToHostNoProxies(SoftFencing):
         """
         Remove another host in cluster
         """
+        clean_host_num = filter(
+            lambda x: x not in (
+                config.host_with_pm_num, config.host_without_pm_num
+            ), [0, 1, 2]
+        )[0]
+
         def fin():
-            for host_num in 1, 2:
-                testflow.teardown(
-                    "Add host %s that was removed", config.HOSTS[host_num]
-                )
-                assert add_host(
-                    name=config.HOSTS[host_num],
-                    address=config.VDS_HOSTS[host_num].fqdn,
-                    root_password=config.HOSTS_PW,
-                    cluster=config.CLUSTER_NAME[0],
-                    comment=config.VDS_HOSTS[host_num].ip
-                )
-                testflow.teardown("Wait for host %s", config.HOSTS[host_num])
-                assert wait_for_hosts_states(True, config.HOSTS[host_num])
+            for host_num in config.host_with_pm_num, clean_host_num:
+                ll_hosts.activate_host(True, config.HOSTS[host_num])
+            hl_hosts.remove_power_management(config.host_without_pm)
         request.addfinalizer(fin)
 
         wait_for_tasks(config.ENGINE, config.DC_NAME[0])
-        select_host_as_spm(True, config.host_with_pm, config.DC_NAME[0])
-        wait_for_spm(
+        ll_hosts.select_host_as_spm(
+            True, config.host_without_pm, config.DC_NAME[0]
+        )
+        ll_hosts.wait_for_spm(
             config.DC_NAME[0], config.SAMPLER_TIMEOUT, config.SAMPLER_SLEEP
         )
-        for host_num in 1, 2:
-            testflow.setup("Remove host %s", config.HOSTS[host_num])
-            assert remove_host(
-                True, config.HOSTS[host_num], deactivate=True
-            )
+        assert hl_hosts.deactivate_hosts_if_up(
+            [config.host_with_pm, config.HOSTS[clean_host_num]]
+        )
+        _add_power_management(config.host_without_pm_num)
 
     @polarion("RHEVM3-8405")
     def test_check_soft_fencing_without_proxies(self):
@@ -264,5 +264,6 @@ class TestSoftFencingToHostNoProxies(SoftFencing):
         Check that host do soft fencing with out proxies
         """
         _check_host_state(
-            config.host_with_pm_num, config.service_vdsmd, config.job_finished
+            config.host_without_pm_num, config.service_vdsmd,
+            config.job_finished
         )

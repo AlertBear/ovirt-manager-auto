@@ -8,13 +8,13 @@ from copy import copy
 from art.rhevm_api.tests_lib.low_level import (
     vms, hosts as ll_hosts, events, disks
 )
-from art.rhevm_api.tests_lib.high_level import hosts
+from art.rhevm_api.tests_lib.high_level import hosts as hl_hosts
 from art.test_handler.tools import polarion
-from art.unittest_lib import tier2
-from art.unittest_lib import CoreSystemTest as TestCase, testflow
+from art.unittest_lib import tier2, CoreSystemTest as TestCase, testflow
+from rhevmtests.coresystem.helpers import set_he_host_num
 from rhevmtests.helpers import get_pm_details
 
-from rhevmtests.coresystem.power_management import config
+import config
 
 VDSM_PORT = "54321"
 HOST_WITH_PM = None  # Filled in setup_module
@@ -37,10 +37,19 @@ def module_setup():
     Prepare environment for Power Management tests
     """
     global HOST_WITH_PM, HOST_WITH_PM_FQDN, HOST_1, HOST_2, host_restart_event
-    HOST_WITH_PM = config.HOSTS[0]
-    HOST_WITH_PM_FQDN = config.VDS_HOSTS[0].fqdn
-    HOST_1 = config.HOSTS[1]
-    HOST_2 = config.HOSTS[2]
+
+    testflow.setup("Get HE host number for host selection")
+    set_he_host_num()
+
+    pm_host_num = 0 if not config.HE_HOST_NUM == 0 else 1
+    HOST_WITH_PM = config.HOSTS[pm_host_num]
+    HOST_WITH_PM_FQDN = config.VDS_HOSTS[pm_host_num].fqdn
+    HOST_1 = config.HOSTS[config.HE_HOST_NUM]
+    HOST_2 = config.HOSTS[
+        filter(
+            lambda x: x not in (pm_host_num, config.HE_HOST_NUM), [0, 1, 2]
+        )[0]
+    ]
     host_restart_event = '"Host %s was restarted by"' % HOST_WITH_PM
 
 
@@ -66,33 +75,11 @@ def _fence_host(positive, fence_type, timeout=config.FENCING_TIMEOUT):
     )
 
 
-def _block_outgoing_vdsm_port(host_num, testflow_func=testflow.setup):
-    cmd = [
-        "iptables", "-A", "OUTPUT", "-p", "tcp", "--sport", VDSM_PORT,
-        "-j", "DROP"
-    ]
-    testflow_func("Run cmd: %s", " ".join(cmd))
-    config.VDS_HOSTS[host_num].executor().run_cmd(cmd)
-    testflow_func(
-        "Wait for host %s to became non responsive", config.HOSTS[host_num]
-    )
-    assert ll_hosts.wait_for_hosts_states(
-        True, config.HOSTS[host_num], config.HOST_NONRESPONSIVE
-    )
-
-
-def _unblock_outgoing_vdsm_port(host_num, testflow_func=testflow.teardown):
-    cmd = [
-        "iptables", "-D", "OUTPUT", "-p", "tcp", "--sport", VDSM_PORT,
-        "-j", "DROP"
-    ]
-    testflow_func("Run cmd: %s", " ".join(cmd))
-    config.VDS_HOSTS[host_num].executor().run_cmd(cmd)
-    testflow_func("Wait for host %s to be up", config.HOSTS[host_num])
-    assert ll_hosts.wait_for_hosts_states(True, config.HOSTS[host_num])
-
-
-def _add_power_management(host_num=0, testflow_func=testflow.setup, **kwargs):
+def _add_power_management(
+    host_num=None, testflow_func=testflow.setup, **kwargs
+):
+    if not host_num:
+        host_num = int(HOST_WITH_PM[-1]) - 1
     hostname = config.VDS_HOSTS[host_num].fqdn
     testflow_func("Get power management details of host %s", hostname)
     host_pm = get_pm_details(hostname).get(hostname)
@@ -107,7 +94,7 @@ def _add_power_management(host_num=0, testflow_func=testflow.setup, **kwargs):
         "order": 1
     }
     testflow_func("Add power management to host %s", config.HOSTS[host_num])
-    assert hosts.add_power_management(
+    assert hl_hosts.add_power_management(
         host_name=config.HOSTS[host_num], pm_agents=[agent], **kwargs
     )
 
@@ -123,11 +110,10 @@ def _remove_power_management(host=None, testflow_func=testflow.teardown):
     if not host:
         host = HOST_WITH_PM
     testflow_func("Remove power management from host %s", host)
-    assert hosts.remove_power_management(host_name=host)
+    assert hl_hosts.remove_power_management(host_name=host)
 
 
 @tier2
-@pytest.mark.skipif(config.HE_ENV, reason=config.HE_SKIP_REASON)
 class WithHighAvailableVm(TestCase):
     """
     Base test class for tests with high available vm
@@ -166,7 +152,10 @@ class WithHighAvailableVm(TestCase):
             alias=vms.getVmDisks(cls.vm_ha_name)[0].get_alias(),
             bootable=True
         )
-        assert vms.runVmOnce(True, cls.vm_ha_name, host=HOST_WITH_PM)
+        assert vms.runVmOnce(
+            True, cls.vm_ha_name, host=HOST_WITH_PM,
+            wait_for_state=config.VM_UP
+        )
         testflow.setup(
             "Creating VM %s from template %s, with disk on "
             "host: %s", cls.vm2_name, config.TEMPLATE_NAME[0], HOST_WITH_PM
@@ -184,7 +173,10 @@ class WithHighAvailableVm(TestCase):
             alias=vms.getVmDisks(cls.vm2_name)[0].get_alias(),
             bootable=True
         )
-        assert vms.runVmOnce(True, cls.vm2_name, host=HOST_WITH_PM)
+        assert vms.runVmOnce(
+            True, cls.vm2_name, host=HOST_WITH_PM,
+            wait_for_state=config.VM_UP
+        )
 
 
 @tier2
@@ -217,7 +209,6 @@ class PMWithBadParameters(TestCase):
 
 
 @tier2
-@pytest.mark.skipif(config.HE_ENV, reason=config.HE_SKIP_REASON)
 class FenceOnHost(TestCase):
     """
     Base class for fence tests
@@ -231,18 +222,17 @@ class FenceOnHost(TestCase):
     def setup_class(cls, request):
         def fin():
             _remove_power_management()
-            hosts.activate_host_if_not_up(HOST_WITH_PM)
+            hl_hosts.activate_host_if_not_up(HOST_WITH_PM)
         request.addfinalizer(fin)
 
         _add_power_management()
         if cls.up:
-            hosts.activate_host_if_not_up(HOST_WITH_PM)
+            hl_hosts.activate_host_if_not_up(HOST_WITH_PM)
         elif cls.maintenance:
-            hosts.deactivate_host_if_up(HOST_WITH_PM)
+            hl_hosts.deactivate_host_if_up(HOST_WITH_PM)
 
 
 @tier2
-@pytest.mark.skipif(config.HE_ENV, reason=config.HE_SKIP_REASON)
 class FenceHostWithTwoPMAgents(TestCase):
     """
     Base class for fence tests with two power management agents
@@ -307,7 +297,7 @@ class FenceHostWithTwoPMAgents(TestCase):
                 "options": agent_options
             }
             agents.append(agent_d)
-        assert hosts.add_power_management(
+        assert hl_hosts.add_power_management(
             host_name=HOST_WITH_PM,
             pm_agents=agents,
             pm_proxies=['cluster', 'dc']
@@ -317,7 +307,6 @@ class FenceHostWithTwoPMAgents(TestCase):
 
 
 @tier2
-@pytest.mark.skipif(config.HE_ENV, reason=config.HE_SKIP_REASON)
 class FenceProxySelection(TestCase):
     """
     Base class for fencing proxy selection tests
@@ -333,13 +322,11 @@ class FenceProxySelection(TestCase):
             testflow.teardown(
                 "Move host %s to cluster %s", HOST_2, config.CLUSTER_NAME[0]
             )
-            hosts.move_host_to_another_cluster(HOST_2, config.CLUSTER_NAME[0])
+            hl_hosts.move_host_to_another_cluster(
+                HOST_2, config.CLUSTER_NAME[0]
+            )
             for host in cls.hosts_state:
-                if cls.hosts_state[host]["state"] == config.HOST_NONRESPONSIVE:
-                    _unblock_outgoing_vdsm_port(
-                        cls.hosts_state[host]["host_num"]
-                    )
-                hosts.activate_host_if_not_up(host)
+                hl_hosts.activate_host_if_not_up(host)
         request.addfinalizer(fin)
 
         if not cls.hosts_state:
@@ -357,18 +344,14 @@ class FenceProxySelection(TestCase):
         testflow.setup(
             "Move host %s to cluster %s", HOST_2, config.CLUSTER_NAME[1]
         )
-        hosts.move_host_to_another_cluster(HOST_2, config.CLUSTER_NAME[1])
+        hl_hosts.move_host_to_another_cluster(HOST_2, config.CLUSTER_NAME[1])
         for host in cls.hosts_state:
             if cls.hosts_state[host]["state"] == config.HOST_UP:
-                hosts.activate_host_if_not_up(host)
+                hl_hosts.activate_host_if_not_up(host)
             elif (
                 cls.hosts_state[host]["state"] == config.HOST_MAINTENANCE
             ):
-                hosts.deactivate_host_if_up(host)
-            else:
-                _block_outgoing_vdsm_port(
-                    cls.hosts_state[host]["host_num"]
-                )
+                hl_hosts.deactivate_host_if_up(host)
 
 
 class Test01AddPMWithNoPassword(PMWithBadParameters):
@@ -380,7 +363,7 @@ class Test01AddPMWithNoPassword(PMWithBadParameters):
     @polarion("RHEVM3-8919")
     def test_add_power_management_with_no_password(self):
         testflow.step("Add power management to host %s", HOST_WITH_PM)
-        assert not hosts.add_power_management(
+        assert not hl_hosts.add_power_management(
             host_name=HOST_WITH_PM, pm_agents=[self.t_agent]
         ), "Adding PM with no password succeeded"
 
@@ -394,7 +377,7 @@ class Test02AddPMWithNoUsername(PMWithBadParameters):
     @polarion("RHEVM3-8917")
     def test_add_power_management_with_no_username(self):
         testflow.step("Add power management to host %s", HOST_WITH_PM)
-        assert not hosts.add_power_management(
+        assert not hl_hosts.add_power_management(
             host_name=HOST_WITH_PM, pm_agents=[self.t_agent]
         ), "Adding PM with no username succeeded"
 
@@ -408,7 +391,7 @@ class Test03AddPMWithNoAddress(PMWithBadParameters):
     @polarion("RHEVM3-8918")
     def test_add_power_management_with_no_address(self):
         testflow.step("Add power management to host %s", HOST_WITH_PM)
-        assert not hosts.add_power_management(
+        assert not hl_hosts.add_power_management(
             host_name=HOST_WITH_PM, pm_agents=[self.t_agent]
         ), "Adding PM with no address succeeded"
 
@@ -422,7 +405,7 @@ class Test04AddPMWithInvalidType(PMWithBadParameters):
     @polarion("RHEVM3-8916")
     def test_add_power_management_with_invalid_type(self):
         testflow.step("Add power management to host %s", HOST_WITH_PM)
-        assert not hosts.add_power_management(
+        assert not hl_hosts.add_power_management(
             host_name=HOST_WITH_PM, pm_agents=[self.t_agent]
         ), "Adding PM with invalid type succeeded"
 
@@ -436,7 +419,7 @@ class Test05AddPMWithInvalidOptionPort(PMWithBadParameters):
     @polarion("RHEVM-21341")
     def test_add_power_management_with_invalid_type(self):
         testflow.step("Add power management to host %s", HOST_WITH_PM)
-        assert not hosts.add_power_management(
+        assert not hl_hosts.add_power_management(
             host_name=HOST_WITH_PM, pm_agents=[self.t_agent]
         ), "Adding PM with invalid option 'port' succeeded"
 
@@ -610,6 +593,7 @@ class Test15ProxyChosenFromDataCenter(FenceProxySelection):
         ), "Fence proxy wasn't chosen from data center"
 
 
+@pytest.mark.skipif(config.HE_ENV, reason=config.HE_SKIP_REASON)
 class Test16ProxyChosenFromSecondClusterAsFallback(FenceProxySelection):
     """
     Test proxy selection when priority is (cluster, dc) and host in cluster
@@ -627,7 +611,7 @@ class Test16ProxyChosenFromSecondClusterAsFallback(FenceProxySelection):
         cls.hosts_state = {
             HOST_1: {
                 "host_num": 1,
-                "state": config.HOST_NONRESPONSIVE
+                "state": config.HOST_MAINTENANCE
             },
             HOST_2: {
                 "host_num": 2,

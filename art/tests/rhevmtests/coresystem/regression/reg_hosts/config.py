@@ -10,3 +10,5 @@ PM1_USER = 'user1'
 PM2_USER = 'user2'
 PM1_PASS = 'pass1'
 PM2_PASS = 'pass2'
+
+HOST_WITHOUT_HE = None  # Filled in setup fixture
