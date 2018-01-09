@@ -7,7 +7,7 @@ Storage_4_0/4_1_Storage_Upload_Disk_Image_Through_REST_AP
 
 import config
 import pytest
-from art.test_handler.tools import polarion
+from art.test_handler.tools import polarion, bz
 
 from art.unittest_lib import (
     tier1,
@@ -46,6 +46,7 @@ class TestCase17322(TestCase):
 
     polarion_test_case = '17322'
 
+    @bz({'1532537': {}})
     @polarion("RHEVM3-17322")
     @tier1
     def test_disks_matrix_uploads(self, storage):

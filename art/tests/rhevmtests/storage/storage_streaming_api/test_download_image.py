@@ -53,6 +53,7 @@ class TestCase18258(TestCase):
     @polarion("RHEVM3-18258")
     @tier1
     @bz({'1506677': {'storage': ['glusterfs']}})
+    @bz({'1532537': {}})
     def test_floating_disks_matrix_downloads(self, storage):
         sapi_obj = ll_sapi.StreamingApi(
             config.TARGET_FILE_PATH, config.IMAGE_FULL_SIZE, config.DOWNLOAD)
