@@ -1431,6 +1431,7 @@ class TestSanity18(NetworkTest):
         )
 
 
+@bz({"1532018": {}})
 @pytest.mark.incremental
 @pytest.mark.usefixtures(
     configure_ovn.__name__,

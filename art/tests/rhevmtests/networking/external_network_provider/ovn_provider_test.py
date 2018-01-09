@@ -178,6 +178,7 @@ class TestOVNAuthorization(NetworkTest):
     ]
 
     @tier2
+    @bz({"1532018": {}})
     @pytest.mark.parametrize(
         ("username", "password", "group", "plugin", "positive"),
         [
@@ -307,6 +308,7 @@ class TestOVNComponent(NetworkTest):
     save_vm_resources_params = [net_conf.VM_0]
 
     @tier2
+    @bz({"1532018": {}})
     @polarion("RHEVM-24286")
     def test_01_add_additional_subnet_to_ovn_network(self):
         """
@@ -332,6 +334,7 @@ class TestOVNComponent(NetworkTest):
         )
 
     @tier2
+    @bz({"1532018": {}})
     @polarion("RHEVM3-17296")
     def test_02_hot_add_vnic_with_ovn_network_on_live_vm(self):
         """
@@ -359,6 +362,7 @@ class TestOVNComponent(NetworkTest):
         }
 
     @tier2
+    @bz({"1532018": {}})
     @polarion("RHEVM3-16927")
     def test_03_ping_same_ovn_network_and_host(self):
         """
@@ -382,6 +386,7 @@ class TestOVNComponent(NetworkTest):
         )
 
     @tier2
+    @bz({"1532018": {}})
     @polarion("RHEVM3-16928")
     def test_04_hot_unplug_and_hot_plug_vnic_with_ovn_network(self):
         """
@@ -415,6 +420,7 @@ class TestOVNComponent(NetworkTest):
         )
 
     @tier2
+    @bz({"1532018": {}})
     @polarion("RHEVM3-16930")
     def test_05_hot_update_vnic_profile_with_ovn_network(self):
         """
@@ -468,6 +474,7 @@ class TestOVNComponent(NetworkTest):
         )
 
     @tier2
+    @bz({"1532018": {}})
     @polarion("RHEVM3-17064")
     def test_06_ovn_networks_separation(self):
         """
@@ -536,6 +543,7 @@ class TestOVNComponent(NetworkTest):
         )
 
     @tier2
+    @bz({"1532018": {}})
     @polarion("RHEVM3-17062")
     def test_07_migrate_vm_different_host(self):
         """
@@ -567,6 +575,7 @@ class TestOVNComponent(NetworkTest):
         )
 
     @tier2
+    @bz({"1532018": {}})
     @polarion("RHEVM3-21702")
     def test_08_copy_test_file_between_vms_on_different_hosts(self):
         """
@@ -597,6 +606,7 @@ class TestOVNComponent(NetworkTest):
             assert helper.set_vm_non_mgmt_interface_mtu(vm=vm, mtu=1500)
 
     @tier2
+    @bz({"1532018": {}})
     @polarion("RHEVM3-17236")
     def test_09_ovn_network_with_subnet(self):
         """
@@ -641,6 +651,7 @@ class TestOVNComponent(NetworkTest):
             self.vms_ips.append(ip)
 
     @tier2
+    @bz({"1532018": {}})
     @polarion("RHEVM3-17436")
     def test_10_ovn_network_with_subnet_validation(self):
         """
@@ -661,6 +672,7 @@ class TestOVNComponent(NetworkTest):
         assert self.vms_ips[0] != self.vms_ips[1]
 
     @tier2
+    @bz({"1532018": {}})
     @polarion("RHEVM3-17437")
     def test_11_ovn_network_with_subnet_ping(self):
         """
@@ -672,6 +684,7 @@ class TestOVNComponent(NetworkTest):
         assert helper.check_ping(vm=net_conf.VM_0, dst_ip=self.vms_ips[1])
 
     @tier2
+    @bz({"1532018": {}})
     @polarion("RHEVM-19599")
     def test_12_static_mac_change_on_ovn_network(self):
         """
@@ -699,6 +712,7 @@ class TestOVNComponent(NetworkTest):
         assert sampler.waitForFuncStatus(result=True)
 
     @tier2
+    @bz({"1532018": {}})
     @polarion("RHEVM3-17365")
     def test_13_migrate_vm_with_subnet(self):
         """
@@ -730,6 +744,7 @@ class TestOVNComponent(NetworkTest):
         )
 
     @tier2
+    @bz({"1532018": {}})
     @polarion("RHEVM-22212")
     def test_14_long_network_names(self):
         """
@@ -768,7 +783,12 @@ class TestOVNComponent(NetworkTest):
         assert helper.check_ping(vm=net_conf.VM_0, dst_ip=ip, count=3)
 
     @tier2
-    @bz({"1503566": {}})
+    @bz(
+        {
+            "1503566": {},
+            "1532018": {}
+        }
+    )
     @polarion("RHEVM-24247")
     def test_15_ovn_subnet_without_gateway(self):
         """
@@ -867,6 +887,7 @@ class TestOVNPerformance(NetworkTest):
     test_provider_connection = True
 
     @tier3
+    @bz({"1532018": {}})
     @polarion("RHEVM-22061")
     def test_ovn_over_tunnel_traffic(self):
         """
