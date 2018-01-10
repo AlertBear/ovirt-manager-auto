@@ -18,6 +18,7 @@
 # 02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
 import logging
+import shlex
 
 import art.core_api.apis_exceptions as apis_exceptions
 import art.rhevm_api.tests_lib.high_level.host_network as hl_host_network
@@ -54,6 +55,8 @@ RHEVH = "Red Hat Enterprise Virtualization Hypervisor"
 # command variables
 IP_CMD = "/sbin/ip"
 MODPROBE_CMD = "/sbin/modprobe"
+NM_CONNECTION_REALOD_CMD = "nmcli connection reload"
+IF_UP_CMD = "ifup {interface}"
 
 
 @ll_general.generate_logs(step=True)
@@ -648,3 +651,74 @@ def get_vm_interface_by_vnic(vm, vm_resource, vnic):
         ]
     )
     return vm_macs_interfaces.get(vm_mac, "")
+
+
+@ll_general.generate_logs(step=True)
+def create_bond(
+    bond, host_resource, host_nics, via="ifcfg", macaddr=None, mode="1"
+):
+    """
+    Create BOND on host
+
+    Args:
+        bond (str): BOND name
+        host_resource (Host): Host resource
+        host_nics (list): Host NICs for BOND slaves
+        via (str): Create BOND via IFCFG files (ifcfg) or NetworkManager (nm)
+        macaddr (str): MAC address to set in MACADDR=
+        mode (str): BOND mode
+
+    Returns:
+        bool: True if BOND created, False otherwise
+    """
+    IF_UP_CMD.format(interface=bond)
+    slave_params = {
+        "MASTER": bond,
+        "SLAVE": "yes",
+        "BOOTPROTO": "none",
+        "TYPE": "Ethernet"
+    }
+    bond_params = {
+        "BONDING_MASTER": "yes",
+        "TYPE": "Bond",
+        "BONDING_OPTS": "mode={mode} miimon=100".format(mode=mode),
+        "BOOTPROTO": "none",
+    }
+    if macaddr:
+        bond_params["MACADDR"] = macaddr
+
+    if via == "ifcfg":
+        bond_params["NM_CONTROLLED"] = "no"
+        slave_params["NM_CONTROLLED"] = "no"
+
+    for nic in host_nics:
+        host_resource.network.create_ifcfg_file(nic=nic, params=slave_params)
+
+    host_resource.network.create_ifcfg_file(nic=bond, params=bond_params)
+    if via == "nm":
+        if host_resource.run_command(
+            command=shlex.split(NM_CONNECTION_REALOD_CMD)
+        )[0]:
+            return False
+
+        # WA for NM bug not getting BOND mode from IFCFG file
+        mode_cmd = (
+            "nmcli connection modify Bond\ {bond} mode active-backup".format(
+                bond=bond
+            )
+        )
+        down_cmd = "nmcli connection down Bond\ {bond}".format(bond=bond)
+        up_cmd = "nmcli connection up Bond\ {bond}".format(bond=bond)
+        for cmd in (mode_cmd, down_cmd, up_cmd):
+            if host_resource.run_command(command=shlex.split(cmd))[0]:
+                if cmd == down_cmd:
+                    continue
+                return False
+    else:
+        if host_resource.run_command(
+            command=shlex.split(IF_UP_CMD.format(interface=bond))
+        )[0]:
+            return False
+
+        return host_resource.network.if_up(nic=bond)
+    return True

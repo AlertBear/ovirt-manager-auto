@@ -516,3 +516,33 @@ def setup_ldap_integration(request):
 
     testflow.setup("Restarting ovirt-engine service")
     conf.ENGINE.restart()
+
+
+@pytest.fixture()
+def create_bond(request):
+    """
+    Create BOND on host via IFCFG files
+    """
+    nics = []
+    bond = "bond1"
+    macaddr = fixtures_helper.get_fixture_val(
+        request=request, attr_name="macaddr"
+    )
+    via = fixtures_helper.get_fixture_val(
+        request=request, attr_name="via"
+    )
+    host_resource = fixtures_helper.get_fixture_val(
+        request=request, attr_name="host_resource"
+    )
+    host_nics = fixtures_helper.get_fixture_val(
+        request=request, attr_name="host_nics"
+    )
+    vds_resource = conf.VDS_HOSTS[host_resource]
+
+    for nic in host_nics:
+        nics.append(vds_resource.nics[nic])
+
+    assert hl_networks.create_bond(
+        bond=bond, host_resource=vds_resource, host_nics=nics, via=via,
+        macaddr=macaddr
+    )
