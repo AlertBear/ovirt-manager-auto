@@ -14,7 +14,7 @@ from log_collector_base import LogCollectorTest
 
 @pytest.fixture(scope='module', autouse=True)
 def module_setup(request):
-    new_line = 'passwd=%s' % config.ADMIN_PASSWORD
+    new_line = 'passwd=%s' % config.REST_CONNECTION['password']
     cmd = [
         'echo', new_line, '>>',
         '%s' % config.CONFIG_FILE_LOCATION

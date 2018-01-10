@@ -50,7 +50,7 @@ class HystrixTemplate(CoreSystemTest):
                 config.HYSTRIX_PROPERTY_KEY
             )
 
-            assert config.engine.engine_config(
+            assert config.ENGINE.engine_config(
                 action="set",
                 param=[
                     "{0}=false".format(config.HYSTRIX_PROPERTY_KEY),
@@ -65,7 +65,7 @@ class HystrixTemplate(CoreSystemTest):
             "Setting %s property to new value.\nEnabling Hystrix.",
             config.HYSTRIX_PROPERTY_KEY
         )
-        assert config.engine.engine_config(
+        assert config.ENGINE.engine_config(
             action="set",
             param=[
                 "{0}=true".format(config.HYSTRIX_PROPERTY_KEY),
@@ -85,7 +85,7 @@ class TestHystrixSanity(HystrixTemplate):
             "Checking if %s default value is 'false'.",
             config.HYSTRIX_PROPERTY_KEY
         )
-        hystrix_property = config.engine.engine_config(
+        hystrix_property = config.ENGINE.engine_config(
             action="get",
             param=config.HYSTRIX_PROPERTY_KEY,
             restart=self.need_restart
@@ -127,7 +127,7 @@ class TestHystrixIntegration(HystrixTemplate):
             "Checking if %s value doesn't flush after engine restart.",
             config.HYSTRIX_PROPERTY_KEY
         )
-        hystrix_property = config.engine.engine_config(
+        hystrix_property = config.ENGINE.engine_config(
             action="get",
             param=config.HYSTRIX_PROPERTY_KEY,
             restart=self.need_restart

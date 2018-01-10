@@ -2,7 +2,7 @@ from . import config
 
 
 def get_property_value(key):
-    prop = config.engine.engine_config(
+    prop = config.ENGINE.engine_config(
         "get",
         key,
         restart=False
@@ -11,10 +11,10 @@ def get_property_value(key):
 
 
 def set_property_value(key, value):
-    return config.engine.engine_config(
+    return config.ENGINE.engine_config(
         "set",
         [
             "{0}={1} ".format(key, value),
-            "--cver={0}".format(config.compatibility_version)
+            "--cver={0}".format(config.COMP_VERSION)
         ]
     )["results"]

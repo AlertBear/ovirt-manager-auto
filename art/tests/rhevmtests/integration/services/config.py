@@ -1,31 +1,5 @@
-from art.rhevm_api import resources
-from art.test_handler.settings import ART_CONFIG
+from rhevmtests.config import *  # flake8: noqa
 
-PARAMETERS = ART_CONFIG['PARAMETERS']
-VDC_ROOT_PASSWORD = PARAMETERS.get('vdc_root_password')
-REST_CONNECTION = ART_CONFIG['REST_CONNECTION']
-VDC_PASSWORD = REST_CONNECTION['password']
-VDC_PORT = REST_CONNECTION['port']
-ENGINE_ENTRY_POINT = REST_CONNECTION['entry_point']
-
-VDC_ADMIN_USER = 'admin'
-VDC_ADMIN_DOMAIN = 'internal'
-VDC_HOST = REST_CONNECTION['host']
-
-ENGINE_HOST = resources.Host(VDC_HOST)
-ENGINE_HOST.users.append(resources.RootUser(VDC_ROOT_PASSWORD))
-
-ENGINE = resources.Engine(
-    ENGINE_HOST,
-    resources.ADUser(
-        VDC_ADMIN_USER,
-        VDC_PASSWORD,
-        resources.Domain(VDC_ADMIN_DOMAIN)
-    ),
-    schema=REST_CONNECTION.get('schema'),
-    port=VDC_PORT,
-    entry_point=ENGINE_ENTRY_POINT
-)
 
 HOST_RHVH = 'ovirt_node'
 HOST_RHEL = 'rhel'

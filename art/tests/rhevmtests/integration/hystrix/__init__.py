@@ -131,7 +131,7 @@ def check_hystrix_status():
         config.hystrix_stream_url,
         auth=(
             config.hystrix_auth_user,
-            config.vdc_password
+            config.VDC_PASSWORD
         ),
         stream=True,
         verify=False
@@ -158,7 +158,7 @@ def get_hystrix_stream_commands(d):
         config.hystrix_stream_url,
         auth=(
             config.hystrix_auth_user,
-            config.vdc_password
+            config.VDC_PASSWORD
         ),
         stream=True,
         verify=False
@@ -197,8 +197,8 @@ def generate_events():
     res = ll_vms.createVm(
         positive=True,
         vmName=config.HYSTRIX_VM_NAME,
-        cluster=config.clusters_names[0],
-        template=config.templates_names[0],
+        cluster=config.CLUSTER_NAME[0],
+        template=config.TEMPLATE_NAME[0],
         provisioned_size=config.gb,
     )
     write_message(config.status_pipe, "ok" if res else "err")
@@ -207,9 +207,9 @@ def generate_events():
     res = ll_vms.startVm(
         positive=True,
         vm=config.HYSTRIX_VM_NAME,
-        wait_for_status=config.vm_state_up,
+        wait_for_status=config.VM_UP,
         wait_for_ip=False,
-        placement_host=config.hosts[0]
+        placement_host=config.HOSTS[0]
     )
     write_message(config.status_pipe, "ok" if res else "err")
 
@@ -219,7 +219,7 @@ def generate_events():
         try:
             ll_vms.wait_for_vm_states(
                 vm_name=config.HYSTRIX_VM_NAME,
-                states=[config.vm_state_down]
+                states=[config.VM_DOWN]
             )
         except APITimeout:
             write_message(config.status_pipe, "err")

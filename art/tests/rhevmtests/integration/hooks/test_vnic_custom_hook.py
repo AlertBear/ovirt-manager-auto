@@ -44,8 +44,8 @@ logger = logging.getLogger(__name__)
 @pytest.fixture(autouse=True, scope="module")
 def setup_module(request):
     def finalize():
-        testflow.teardown("Removing all hooks from %s.", config.hosts_ips[0])
-        assert config.hooks_host.run_command(split(REMOVE_HOOKS))[0] == 0
+        testflow.teardown("Removing all hooks from %s.", config.HOSTS_IP[0])
+        assert config.VDS_HOSTS[0].run_command(split(REMOVE_HOOKS))[0] == 0
 
         testflow.teardown("Removing VM %s.", config.HOOKS_VM_NAME)
         assert vms.stopVm(positive=True, vm=config.HOOKS_VM_NAME)
@@ -59,16 +59,16 @@ def setup_module(request):
         assert networks.remove_vnic_profile(
             positive=True,
             vnic_profile_name=PROFILE_A,
-            network=config.mgmt_bridge,
-            cluster=config.clusters_names[0]
+            network=config.MGMT_BRIDGE,
+            cluster=config.CLUSTER_NAME[0]
         )
 
         testflow.teardown("Removing VNIC profile %s.", PROFILE_A)
         assert networks.remove_vnic_profile(
             positive=True,
             vnic_profile_name=PROFILE_B,
-            network=config.mgmt_bridge,
-            cluster=config.clusters_names[0]
+            network=config.MGMT_BRIDGE,
+            cluster=config.CLUSTER_NAME[0]
         )
 
         testflow.teardown("Drop custom property to default value")
@@ -94,33 +94,33 @@ def setup_module(request):
     assert vms.createVm(
         positive=True,
         vmName=config.HOOKS_VM_NAME,
-        cluster=config.clusters_names[0],
+        cluster=config.CLUSTER_NAME[0],
         display_type=config.display_type_vnc,
-        template=config.templates_names[0]
+        template=config.TEMPLATE_NAME[0]
     )
 
     testflow.setup("Starting %s VM.", config.HOOKS_VM_NAME)
     assert vms.startVm(
         positive=True,
         vm=config.HOOKS_VM_NAME,
-        wait_for_status=config.vm_state_up,
+        wait_for_status=config.VM_UP,
         wait_for_ip=True,
-        placement_host=config.hosts[0]
+        placement_host=config.HOSTS[0]
     )
 
     testflow.setup(
         "Adding a %s VNIC profile to %s network in %s cluster with custom "
         "properties %s.",
         PROFILE_A,
-        config.mgmt_bridge,
-        config.clusters_names[0],
+        config.MGMT_BRIDGE,
+        config.CLUSTER_NAME[0],
         CUSTOM_PROPERTIES_A
     )
     assert networks.add_vnic_profile(
         positive=True,
         name=PROFILE_A,
-        cluster=config.clusters_names[0],
-        network=config.mgmt_bridge,
+        cluster=config.CLUSTER_NAME[0],
+        network=config.MGMT_BRIDGE,
         custom_properties=CUSTOM_PROPERTIES_A
     )
 
@@ -128,15 +128,15 @@ def setup_module(request):
         "Adding a %s VNIC profile to %s network in %s cluster with custom "
         "properties %s.",
         PROFILE_B,
-        config.mgmt_bridge,
-        config.clusters_names[0],
+        config.MGMT_BRIDGE,
+        config.CLUSTER_NAME[0],
         CUSTOM_PROPERTIES_B
     )
     assert networks.add_vnic_profile(
         positive=True,
         name=PROFILE_B,
-        cluster=config.clusters_names[0],
-        network=config.mgmt_bridge,
+        cluster=config.CLUSTER_NAME[0],
+        network=config.MGMT_BRIDGE,
         custom_properties=CUSTOM_PROPERTIES_B
     )
 
@@ -144,15 +144,15 @@ def setup_module(request):
         "Checking if it's not possible to add a %s VNIC profile to %s network "
         "in %s cluster with custom properties %s.",
         PROFILE_BAD_A,
-        config.mgmt_bridge,
-        config.clusters_names[0],
+        config.MGMT_BRIDGE,
+        config.CLUSTER_NAME[0],
         "test=250"
     )
     assert networks.add_vnic_profile(
         positive=False,
         name=PROFILE_BAD_A,
-        cluster=config.clusters_names[0],
-        network=config.mgmt_bridge,
+        cluster=config.CLUSTER_NAME[0],
+        network=config.MGMT_BRIDGE,
         custom_properties="test=250"
     )
 
@@ -160,15 +160,15 @@ def setup_module(request):
         "Checking if it's not possible to add a %s VNIC profile to %s network "
         "in %s cluster with custom properties %s.",
         PROFILE_BAD_B,
-        config.mgmt_bridge,
-        config.clusters_names[0],
+        config.MGMT_BRIDGE,
+        config.CLUSTER_NAME[0],
         "speed=abc"
     )
     assert networks.add_vnic_profile(
         positive=False,
         name=PROFILE_BAD_B,
-        cluster=config.clusters_names[0],
-        network=config.mgmt_bridge,
+        cluster=config.CLUSTER_NAME[0],
+        network=config.MGMT_BRIDGE,
         custom_properties="speed=abc"
     )
 
@@ -181,7 +181,7 @@ def setup_module(request):
         positive=True,
         vm=config.HOOKS_VM_NAME,
         name=UPDATE_NIC,
-        network=config.mgmt_bridge,
+        network=config.MGMT_BRIDGE,
         vnic_profile=PROFILE_A,
         linked=True
     )
@@ -196,7 +196,7 @@ def setup_module(request):
         positive=True,
         vm=config.HOOKS_VM_NAME,
         name=HOTUNPLUG_NIC,
-        network=config.mgmt_bridge,
+        network=config.MGMT_BRIDGE,
         vnic_profile=PROFILE_A
     )
 
@@ -212,7 +212,7 @@ class CaseVnic(TestCase):
         script_name = "{0}.{1}".format(name, SCRIPT_TYPES["python"])
 
         hooks.create_python_script_to_verify_custom_hook(
-            host=config.hooks_host,
+            host=config.VDS_HOSTS[0],
             script_name=script_name,
             custom_hook=cls.CUSTOM_HOOK,
             target=path.join(HOOK_PATH, name),
@@ -225,7 +225,7 @@ class CaseVnic(TestCase):
         script_name = "{0}.{1}".format(name, SCRIPT_TYPES["shell"])
 
         hooks.create_one_line_shell_script(
-            host=config.hooks_host,
+            host=config.VDS_HOSTS[0],
             script_name=script_name,
             command="touch",
             arguments=path.join(TMP, my_hook),
@@ -244,7 +244,7 @@ class CaseVnic(TestCase):
                     _hook_name,
                     _hook_type
                 )
-                assert config.hooks_host.fs.remove(
+                assert config.VDS_HOSTS[0].fs.remove(
                     path.join(HOOK_PATH, _hook_name)
                 )
 
@@ -270,7 +270,7 @@ class CaseVnic(TestCase):
 
             assert hooks.check_for_file_existence_and_content(
                 positive=True,
-                host=config.hooks_host,
+                host=config.VDS_HOSTS[0],
                 filename=path.join(TMP, my_hook),
                 content=(
                     SPEED if hook_type == SCRIPT_TYPES["python"] else None
@@ -305,9 +305,9 @@ class TestCaseAfterBeforeNicHotplug(CaseVnic):
             assert vms.startVm(
                 positive=True,
                 vm=config.HOOKS_VM_NAME,
-                wait_for_status=config.vm_state_up,
+                wait_for_status=config.VM_UP,
                 wait_for_ip=True,
-                placement_host=config.hosts[0]
+                placement_host=config.HOSTS[0]
             )
 
         request.addfinalizer(finalize)
@@ -325,7 +325,7 @@ class TestCaseAfterBeforeNicHotplug(CaseVnic):
             positive=True,
             vm=config.HOOKS_VM_NAME,
             name=cls.NIC_NAME,
-            network=config.mgmt_bridge,
+            network=config.MGMT_BRIDGE,
             vnic_profile=PROFILE_A
         )
 
@@ -409,7 +409,7 @@ class TestCaseAfterBeforeUpdateDevice(CaseVnic):
             vm=config.HOOKS_VM_NAME,
             nic=UPDATE_NIC,
             linked=False,
-            network=config.mgmt_bridge,
+            network=config.MGMT_BRIDGE,
             vnic_profile=PROFILE_A
         )
 
@@ -441,8 +441,8 @@ class TestCaseAfterUpdateDeviceFail(CaseVnic):
             'grep alias | grep -oP "(?<=<alias name=\').*?(?=\'/>)"'
         )
 
-        testflow.setup("Running a command on %s host.", config.hosts_ips[0])
-        fail_nic = config.hooks_host.run_command(
+        testflow.setup("Running a command on %s host.", config.HOSTS_IP[0])
+        fail_nic = config.VDS_HOSTS[0].run_command(
             split(cmd_nic.format(config.HOOKS_VM_NAME))
         )[1][:-2].split()[0]
 
@@ -463,7 +463,7 @@ class TestCaseAfterUpdateDeviceFail(CaseVnic):
         testflow.setup("Get host VM is running on.")
         host = VDS(
             hosts.get_host_vm_run_on(config.HOOKS_VM_NAME),
-            config.vdc_root_password
+            config.VDC_ROOT_PASSWORD
         )
 
         testflow.setup("Checking if the command above failed.")

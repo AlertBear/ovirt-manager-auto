@@ -63,7 +63,7 @@ def copy_config_file(configuration):
     Args:
         configuration (str): Configuration name.
     """
-    assert config.engine.host.fs.put(
+    assert config.ENGINE.host.fs.put(
         path.join(configs_dir, ".".join([configuration, "conf"])),
         helper[configuration]
     )
@@ -77,7 +77,7 @@ def copy_ovirt_notifier_config_file(source_path):
         source_path (str): Path of configuration file in ART sources.
     """
     configuration = config.CONFIGURATIONS[config.NOTIFIER_CONFIG]
-    assert config.engine.host.fs.put(
+    assert config.ENGINE.host.fs.put(
         source_path,
         helper[configuration]
     )
@@ -101,7 +101,7 @@ def start_service(service_name):
     Args:
         service_name (str): name of the service to stop.
     """
-    assert config.engine.host.service(
+    assert config.ENGINE.host.service(
         service_name
     ).start(), "There was an error while starting a service."
 
@@ -123,7 +123,7 @@ def stop_service(service_name):
     Args:
         service_name (str): Name of the service to stop.
     """
-    assert config.engine.host.service(
+    assert config.ENGINE.host.service(
         service_name
     ).stop(), "There was an error while stopping a service."
 
@@ -145,7 +145,7 @@ def purge_config(configuration):
     Args:
         configuration (str): Configuration to get rid of.
     """
-    return config.engine.host.fs.remove(helper[configuration])
+    return config.ENGINE.host.fs.remove(helper[configuration])
 
 
 def purge_configs(configurations):
@@ -165,7 +165,7 @@ def install_snmp_packages():
         Installs net-snmp-utils package and logs to testflow
     """
     for package in config.SNMP_PACKAGES:
-        config.engine.host.package_manager.install(package)
+        config.ENGINE.host.package_manager.install(package)
 
 
 def remove_snmp_packages():
@@ -174,7 +174,7 @@ def remove_snmp_packages():
         Removes net-snmp-utils package and logs to testflow
     """
     for package in config.SNMP_PACKAGES:
-        config.engine.host.package_manager.remove(package)
+        config.ENGINE.host.package_manager.remove(package)
 
 
 def start_ovirt_notifier_service():
@@ -182,7 +182,7 @@ def start_ovirt_notifier_service():
     Description:
         Starts ovirt-engine-notifier service.
     """
-    assert config.engine.host.service(
+    assert config.ENGINE.host.service(
         config.SERVICES[config.NOTIFIER_SERVICE]
     ).start(), "There was en error while starting service."
 
@@ -192,7 +192,7 @@ def stop_ovirt_notifier_service():
     Description:
         Stops ovirt-engine-notifier service.
     """
-    assert config.engine.host.service(
+    assert config.ENGINE.host.service(
         config.SERVICES[config.NOTIFIER_SERVICE]
     ).stop(), "There was en error while stopping service."
 
@@ -203,10 +203,10 @@ def flush_logs():
         Flushes snmpd.log and notifier.log files on engine host.
     """
     for log in config.LOGS_LIST:
-        assert config.engine.host.fs.flush_file(
+        assert config.ENGINE.host.fs.flush_file(
             log
         ), "There was an error while flushing a log file."
-    config.engine.host.fs.chown(
+    config.ENGINE.host.fs.chown(
         config.NOTIFIER_LOG, config.OVIRT_USER, config.OVIRT_GROUP
     )
 
@@ -223,8 +223,8 @@ def generate_events():
         return vms.createVm(
             positive=True,
             vmName=vm_name,
-            cluster=config.clusters_names[0],
-            template=config.templates_names[0],
+            cluster=config.CLUSTER_NAME[0],
+            template=config.TEMPLATE_NAME[0],
             provisioned_size=config.GB,
         )
 
@@ -234,10 +234,10 @@ def generate_events():
         return vms.startVm(
             positive=True,
             vm=vm_name,
-            wait_for_status=config.vm_state_up,
+            wait_for_status=config.VM_UP,
             wait_for_ip=False,
-            placement_host=config.hosts[
-                randint(0, len(config.hosts) - 1)
+            placement_host=config.HOSTS[
+                randint(0, len(config.HOSTS) - 1)
             ],
         )
 
@@ -252,7 +252,7 @@ def generate_events():
             try:
                 vms.wait_for_vm_states(
                     vm_name=vm_name,
-                    states=[config.vm_state_down]
+                    states=[config.VM_DOWN]
                 )
                 return not res
             except APITimeout:
@@ -307,10 +307,10 @@ def get_snmp_result():
     # notifier and traps
     sleep(10)
 
-    notifier_log = config.engine.host.fs.read_file(
+    notifier_log = config.ENGINE.host.fs.read_file(
         config.NOTIFIER_LOG
     ).lower()
-    snmpd_log = config.engine.host.fs.read_file(
+    snmpd_log = config.ENGINE.host.fs.read_file(
         config.SNMPD_LOG
     ).lower()
 
@@ -356,7 +356,7 @@ def setup_class_helper():
 
     # As by default ovirt-notifier-service is not enabled
     # on engine hosts it has to be enabled.
-    assert config.engine.host.service(
+    assert config.ENGINE.host.service(
         config.SERVICES[config.NOTIFIER_SERVICE]
     ).enable(), "There was an error while enabling a service."
 
@@ -387,7 +387,7 @@ def setup_class_helper():
 def finalize_class_helper():
     # First, it needs to disable service ovirt-engine-notifier
     # as it will not be using anymore
-    config.engine.host.service(
+    config.ENGINE.host.service(
         config.SERVICES[config.NOTIFIER_SERVICE]
     ).disable()
 
@@ -405,4 +405,4 @@ def restore_selinux_context():
     In case the log file was created or flushed manually, we need to
     restore selinux context on it
     """
-    config.engine.host.run_command(['restorecon', '-R', config.SNMPD_LOG])
+    config.ENGINE.host.run_command(['restorecon', '-R', config.SNMPD_LOG])
