@@ -97,15 +97,15 @@ IMPORT_DATA = {
 # Configuration to compare imported VM to
 # nic_mac_address is taken from the environment during test execution
 BASE_CONFIG = {
-        "memory": TWO_GB,
-        "sockets": 2,
-        "cores": 1,
-        "threads": 1,
-        "disk_size": global_helper.get_gb(8),
-        'nic_mac_address': {
-            'start': '',
-            'end': ''
-        }
+    "memory": TWO_GB,
+    "sockets": 2,
+    "cores": 1,
+    "threads": 1,
+    "disk_size": global_helper.get_gb(8),
+    'nic_mac_address': {
+        'start': '',
+        'end': ''
+    }
 }
 KVM_RHEL_7_CONFIG = {}
 KVM_RHEL_7_CONFIG.update(BASE_CONFIG)

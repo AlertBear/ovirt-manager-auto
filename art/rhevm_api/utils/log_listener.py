@@ -8,6 +8,8 @@ from rrmngmnt.host import Host as HostResource
 from rrmngmnt.user import User
 import argparse
 
+DEFAULT_TIMEOUT = 240
+
 logger = logging.getLogger("art.utils.log_listener")
 
 
@@ -20,7 +22,9 @@ class LogListener:
     on your local machine or on a remote machine
     """
 
-    def __init__(self, ip_for_files, username, password, time_out=None):
+    def __init__(
+        self, ip_for_files, username, password, time_out=DEFAULT_TIMEOUT
+    ):
         self.ssh = None
         self.channel = None
         self.executor = None

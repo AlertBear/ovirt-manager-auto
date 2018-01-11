@@ -54,7 +54,7 @@ from fixtures import (
 logger = logging.getLogger(__name__)
 
 DISK_RESIZE_TIMEOUT = 1200
-WATCH_TIMOUT = 480
+WATCH_LOGS_TIMEOUT = 180
 
 
 class BasicResize(BaseTestCase):
@@ -148,7 +148,7 @@ class BasicResize(BaseTestCase):
         self.block_cmd = self.block_cmd % storage_domain_ip
 
         t = Thread(target=watch_logs, args=(
-            config.VDSM_LOG, "lvextend", self.block_cmd, None,
+            config.VDSM_LOG, "lvextend", self.block_cmd, WATCH_LOGS_TIMEOUT,
             self.host_ip, config.HOSTS_USER, config.HOSTS_PW))
         t.start()
         time.sleep(5)
@@ -635,8 +635,9 @@ class TestCase5071(BasicResize):
         self.host = ll_hosts.get_spm_host(config.HOSTS)
         host_ip = ll_hosts.get_host_ip(self.host)
         t = Thread(target=watch_logs, args=(
-            config.VDSM_LOG, self.look_for_regex, self.stop_libvirt, None,
-            host_ip, config.HOSTS_USER, config.HOSTS_PW))
+            config.VDSM_LOG, self.look_for_regex, self.stop_libvirt,
+            WATCH_LOGS_TIMEOUT, host_ip, config.HOSTS_USER, config.HOSTS_PW
+        ))
         t.start()
 
         time.sleep(5)
