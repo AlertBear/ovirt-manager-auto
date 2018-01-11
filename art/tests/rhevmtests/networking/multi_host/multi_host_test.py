@@ -583,10 +583,14 @@ class TestMultiHostNetworkProperties(NetworkTest):
             pytest.param(
                 *remove_vlan_from_network, marks=(polarion("RHEVM3-19371"))
             ),
-            pytest.param(*net_mtu_9000, marks=(polarion("RHEVM3-4080"))),
+            pytest.param(
+                *net_mtu_9000, marks=(
+                    (polarion("RHEVM3-4080"), bz({"1533067": {}}))
+                )
+            ),
             pytest.param(
                 *net_mtu_1500, marks=(
-                    (polarion("RHEVM3-19364"), bz({"1460687": {}}))
+                    (polarion("RHEVM3-19364"), bz({"1533067": {}}))
                 )
             ),
             pytest.param(
@@ -595,7 +599,9 @@ class TestMultiHostNetworkProperties(NetworkTest):
 
             # Tests on networks attached to running VM
             pytest.param(
-                *net_mtu_on_running_vm, marks=(polarion("RHEVM3-4074"))
+                *net_mtu_on_running_vm, marks=(
+                    (polarion("RHEVM3-4074"), bz({"1533067": {}}))
+                )
             ),
             pytest.param(
                 *net_vlan_on_running_vm, marks=(polarion("RHEVM3-19369"))
@@ -608,7 +614,9 @@ class TestMultiHostNetworkProperties(NetworkTest):
 
             # Tests on networks attached to non-running VM
             pytest.param(
-                *net_mtu_on_non_running_vm, marks=(polarion("RHEVM3-19361"))
+                *net_mtu_on_non_running_vm, marks=(
+                    (polarion("RHEVM3-19361"), bz({"1533067": {}}))
+                )
             ),
             pytest.param(
                 *net_vlan_on_non_running_vm, marks=(polarion("RHEVM3-19370"))
@@ -631,7 +639,9 @@ class TestMultiHostNetworkProperties(NetworkTest):
                 )
             ),
             pytest.param(
-                *net_used_by_template_mtu, marks=(polarion("RHEVM3-19359"))
+                *net_used_by_template_mtu, marks=(
+                    (polarion("RHEVM3-19359"), bz({"1533067": {}}))
+                )
             ),
             pytest.param(
                 *net_used_by_template_vlan, marks=(polarion("RHEVM3-19360"))
@@ -643,12 +653,12 @@ class TestMultiHostNetworkProperties(NetworkTest):
             # # Tests on networks attached to multiple hosts
             pytest.param(
                 *net_used_by_hosts_mtu_and_vlan, marks=(
-                    polarion("RHEVM3-4078")
+                    (polarion("RHEVM3-4078"), bz({"1533067": {}}))
                 )
             ),
             pytest.param(
                 *net_used_by_hosts_mtu_vlan_diff_cl, marks=(
-                    polarion("RHEVM3-4077")
+                    (polarion("RHEVM3-4077"), bz({"1533067": {}}))
                 )
             ),
 
@@ -657,10 +667,14 @@ class TestMultiHostNetworkProperties(NetworkTest):
             pytest.param(*vm_net_on_bond, marks=(polarion("RHEVM3-19363"))),
             pytest.param(*vlan_9_on_bond, marks=(polarion("RHEVM3-4069"))),
             pytest.param(*vlan_10_on_bond, marks=(polarion("RHEVM3-19357"))),
-            pytest.param(*mtu_9000_on_bond, marks=(polarion("RHEVM3-4068"))),
+            pytest.param(
+                *mtu_9000_on_bond, marks=(
+                    (polarion("RHEVM3-4068"), bz({"1533067": {}}))
+                )
+            ),
             pytest.param(
                 *mtu_1500_on_bond, marks=(
-                    (polarion("RHEVM3-19356"), bz({"1460687": {}})))
+                    (polarion("RHEVM3-19356"), bz({"1533067": {}})))
             ),
             pytest.param(
                 *remove_vlan_from_bond, marks=(polarion("RHEVM3-19358"))

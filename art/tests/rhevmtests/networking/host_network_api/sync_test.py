@@ -12,7 +12,7 @@ import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
 import config as net_api_conf
 import helper
 import rhevmtests.helpers as global_helper
-from art.test_handler.tools import polarion
+from art.test_handler.tools import polarion, bz
 from art.unittest_lib import (
     tier2,
 )
@@ -352,23 +352,55 @@ class TestHostNetworkApiSync01(NetworkTest):
             pytest.param(vlan_to_vlan_nic, marks=(polarion("RHEVM3-13977"))),
             pytest.param(vlan_to_none_nic, marks=(polarion("RHEVM3-13979"))),
             pytest.param(none_to_vlan_nic, marks=(polarion("RHEVM3-13980"))),
-            pytest.param(mtu_to_mtu_nic, marks=(polarion("RHEVM3-13987"))),
-            pytest.param(mtu_to_none_nic, marks=(polarion("RHEVM3-13988"))),
-            pytest.param(none_to_mtu_nic, marks=(polarion("RHEVM3-13989"))),
+            pytest.param(
+                mtu_to_mtu_nic, marks=(
+                    (polarion("RHEVM3-13987"), bz({"1533067": {}}))
+                )
+            ),
+            pytest.param(
+                mtu_to_none_nic, marks=(
+                    (polarion("RHEVM3-13988"), bz({"1533067": {}}))
+                )
+            ),
+            pytest.param(
+                none_to_mtu_nic, marks=(
+                    (polarion("RHEVM3-13989"), bz({"1533067": {}}))
+                )
+            ),
             pytest.param(vm_to_non_vm_nic, marks=(polarion("RHEVM3-13993"))),
             pytest.param(non_vm_to_vm_nic, marks=(polarion("RHEVM3-13994"))),
-            pytest.param(vlan_mtu_vm_nic, marks=(polarion("RHEVM3-13997"))),
+            pytest.param(
+                vlan_mtu_vm_nic, marks=(
+                    (polarion("RHEVM3-13997"), bz({"1533067": {}}))
+                )
+            ),
 
             # Sync over BOND
             pytest.param(vlan_to_vlan_bond, marks=(polarion("RHEVM3-13981"))),
             pytest.param(vlan_to_none_bond, marks=(polarion("RHEVM3-13982"))),
             pytest.param(none_to_vlan_bond, marks=(polarion("RHEVM3-13985"))),
-            pytest.param(mtu_to_mtu_bond, marks=(polarion("RHEVM3-13990"))),
-            pytest.param(mtu_to_none_bond, marks=(polarion("RHEVM3-13991"))),
-            pytest.param(none_to_mtu_bond, marks=(polarion("RHEVM3-13992"))),
+            pytest.param(
+                mtu_to_mtu_bond, marks=(
+                    (polarion("RHEVM3-13990"), bz({"1533067": {}}))
+                )
+            ),
+            pytest.param(
+                mtu_to_none_bond, marks=(
+                    (polarion("RHEVM3-13991"), bz({"1533067": {}}))
+                )
+            ),
+            pytest.param(
+                none_to_mtu_bond, marks=(
+                    (polarion("RHEVM3-13992"), bz({"1533067": {}}))
+                )
+            ),
             pytest.param(vm_to_non_vm_bond, marks=(polarion("RHEVM3-13995"))),
             pytest.param(non_vm_to_vm_bond, marks=(polarion("RHEVM3-13996"))),
-            pytest.param(vlan_mtu_vm_bond, marks=(polarion("RHEVM3-13998"))),
+            pytest.param(
+                vlan_mtu_vm_bond, marks=(
+                    (polarion("RHEVM3-13998"), bz({"1533067": {}}))
+                )
+            ),
         ],
         ids=[
             # Sync over NIC
