@@ -11,7 +11,7 @@ import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import config as rx_tx_conf
 import helper
 import rhevmtests.networking.config as conf
-from art.test_handler.tools import polarion
+from art.test_handler.tools import polarion, bz
 from art.unittest_lib import (
     tier2,
 )
@@ -104,7 +104,7 @@ class TestCumulativeNetworkUsageVmStatisticsCase01(NetworkTest):
             ),
             pytest.param(
                 rx_tx_conf.UPDATE_NIC.get("case_vm_4"), marks=(
-                    polarion("RHEVM3-13512")
+                    (polarion("RHEVM3-13512"), bz({"1533762": {}}))
                 )
             ),
         ],
