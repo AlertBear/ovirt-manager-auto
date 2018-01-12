@@ -4,8 +4,6 @@
 """
 Fixtures for sanity
 """
-import re
-import shlex
 
 import pytest
 
@@ -23,7 +21,6 @@ from art.rhevm_api.tests_lib.low_level import (
 import config as sanity_conf
 import rhevmtests.networking.config as conf
 import rhevmtests.helpers as global_helper
-from rhevmtests.networking.acquire_network_manager_connections import helper
 from rhevmtests.networking.mac_pool_range_per_cluster import (
     helper as mac_pool_helper
 )
@@ -279,48 +276,6 @@ def prepare_setup_for_register_domain(request):
     testflow.setup("Attach storage domain to data center %s", dc)
     assert ll_storage.attachStorageDomain(
         positive=True, datacenter=dc, storagedomain=storage_name
-    )
-
-
-@pytest.fixture(scope="class")
-def nmcli_create_networks(request):
-    """
-    Create networks on host via nmcli (NetworkManager)
-    """
-    nic_type = request.node.cls.flat_type
-    network = request.node.cls.flat_connection
-    vlan_id = None
-    host_nics = [conf.HOST_0_NICS[1]]
-
-    def fin():
-        """
-        Clean all NetworkManager networks from the host
-        """
-        all_connections = "nmcli connection show"
-        delete_cmd = "nmcli connection delete {uuid}"
-        rc, out, _ = conf.VDS_0_HOST.run_command(
-            command=shlex.split(all_connections)
-        )
-        assert not rc
-
-        for match in re.findall(r'\w+-\w+-\w+-\w+-\w+', out):
-            testflow.teardown(
-                "Remove connection %s from NetworkManager", match
-            )
-            conf.VDS_0_HOST.run_command(
-                command=shlex.split(delete_cmd.format(uuid=match))
-            )
-    request.addfinalizer(fin)
-
-    testflow.setup("Remove existing NetworkManager connections")
-    helper.remove_nm_controlled(nics=host_nics)
-    testflow.setup("Reload NetworkManager")
-    helper.reload_nm()
-
-    testflow.setup("Create connection via NetworkManager")
-    helper.create_eth_connection(
-        nic_type=nic_type, nics=host_nics, vlan_id=vlan_id,
-        connection=network
     )
 
 

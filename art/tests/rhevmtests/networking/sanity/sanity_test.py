@@ -14,7 +14,6 @@ from fixtures import (
     add_vnic_profile,
     create_cluster,
     create_vnics_on_vm,
-    nmcli_create_networks,
     prepare_setup_for_register_domain,
     remove_qos,
     update_vnic_profile,
@@ -78,6 +77,9 @@ from rhevmtests.networking.sr_iov.fixtures import (  # noqa: F401
 )
 from rhevmtests.networking.external_network_provider.fixtures import (
     configure_ovn
+)
+from rhevmtests.networking.acquire_nm_connections.fixtures import (
+    nmcli_create_networks
 )
 
 
@@ -1395,7 +1397,6 @@ class TestSanity18(NetworkTest):
     hosts_nets_nic_dict = conf.CLEAN_HOSTS_DICT
 
     # NetworkManager flat network params
-    flat_connection = "flat_nm_net"
     flat_type = "nic"
     flat_rhv_network = sanity_conf.NETS[18][0]
 
@@ -1412,7 +1413,6 @@ class TestSanity18(NetworkTest):
     remove_dcs_networks = [dc]
 
     @tier1
-    @bz({"1426225": {}})
     @polarion("RHEVM-19392")
     def test_acquire_nm_connetion(self):
         """

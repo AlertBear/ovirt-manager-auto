@@ -722,3 +722,51 @@ def create_bond(
 
         return host_resource.network.if_up(nic=bond)
     return True
+
+
+@ll_general.generate_logs(step=True)
+def create_interface(host_resource, interface, vlan_id, via="ifcfg"):
+    """
+    Create interface on host
+
+    Args:
+        host_resource (Host): Host resource
+        interface (str): Physical interface name for the VLAN
+        vlan_id (str): VLAN ID
+        via (str): Create BOND via IFCFG files (ifcfg) or NetworkManager (nm)
+
+    Returns:
+        bool: True if VLAN created, False otherwise
+    """
+    interface_name = (
+        interface[0] if not vlan_id else "{interface}.{vlan_id}".format(
+            interface=interface[0], vlan_id=vlan_id
+        )
+    )
+    interface_params = {
+        "DEVICE": interface_name,
+        "BOOTPROTO": "none",
+    }
+    if vlan_id:
+        interface_params["VLAN"] = "yes"
+
+    if via == "ifcfg":
+        interface_params["NM_CONTROLLED"] = "no"
+
+    host_resource.network.create_ifcfg_file(
+        nic=interface_name, params=interface_params
+    )
+    if via == "nm":
+        if host_resource.run_command(
+            command=shlex.split(NM_CONNECTION_REALOD_CMD)
+        )[0]:
+            return False
+    else:
+        if host_resource.run_command(
+            command=shlex.split(IF_UP_CMD.format(interface=interface_name))
+        )[0]:
+            return False
+
+        if not host_resource.network.if_up(nic=interface_name):
+            return False
+    return True
