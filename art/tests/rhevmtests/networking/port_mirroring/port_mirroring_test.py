@@ -218,6 +218,7 @@ class TestPortMirroringCase04(Base):
     net1_ip3 = pm_conf.NET1_IPS[3]
 
     @tier2
+    @bz({"1533778": {}})
     @polarion("RHEVM3-4015")
     def test_a1_check_pm_two_machines_diff_networks(self):
         """
