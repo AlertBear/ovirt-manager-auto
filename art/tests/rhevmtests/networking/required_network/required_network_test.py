@@ -148,7 +148,7 @@ class TestRequiredNetwork03(NetworkTest):
     # General params
     dc = conf.DC_0
     net = required_conf.NETS[3][0]
-    bond = "bond4"
+    bond = "bond40"
 
     # setup_networks_fixture params
     hosts_nets_nic_dict = {

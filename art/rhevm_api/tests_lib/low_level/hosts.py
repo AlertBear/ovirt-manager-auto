@@ -190,7 +190,7 @@ def is_host_up(positive, host):
 
 def wait_for_hosts_states(
     positive, names, states='up', timeout=HOST_STATE_TIMEOUT,
-    stop_states=[ENUMS['host_state_install_failed']]
+    stop_states=[ENUMS['host_state_install_failed']], sleep_=10
 ):
     """
     Wait until all of the hosts identified by names exist and have the desired
@@ -202,6 +202,7 @@ def wait_for_hosts_states(
         stop_states (str): Host state that the function will exit on.
         names (str): A comma separated names of the hosts.
         states (str): A state of the hosts to wait for.
+        sleep_ (int): Time to sleep between host status queries.
 
     Returns:
         bool: True if hosts are in states, False otherwise.
@@ -214,7 +215,7 @@ def wait_for_hosts_states(
     [get_host_object(host_name=host) for host in list_names]
     number_of_hosts = len(list_names)
 
-    sampler = TimeoutingSampler(timeout, 10, HOST_API.get, abs_link=False)
+    sampler = TimeoutingSampler(timeout, sleep_, HOST_API.get, abs_link=False)
 
     try:
         for sample in sampler:
@@ -238,6 +239,9 @@ def wait_for_hosts_states(
 
                     if ok == number_of_hosts:
                         return True
+
+                    else:
+                        logger.warning("Host status is: %s", host.get_status())
 
     except APITimeout:
         logger.error(

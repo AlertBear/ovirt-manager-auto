@@ -55,9 +55,7 @@ def set_nics_and_wait_for_host_status(nics, nic_status, host_status="up"):
         if not func(nic=nic):
             return False
 
-    if not ll_hosts.wait_for_hosts_states(
-        positive=True, names=conf.HOST_0_NAME, timeout=300, states=host_status
-    ):
-        return False
-
-    return True
+    return ll_hosts.wait_for_hosts_states(
+        positive=True, names=conf.HOST_0_NAME, timeout=300, states=host_status,
+        sleep_=1
+    )
