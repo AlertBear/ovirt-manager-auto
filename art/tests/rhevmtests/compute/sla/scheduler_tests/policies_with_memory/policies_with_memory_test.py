@@ -45,6 +45,11 @@ class TestPSBalanceModuleUnderMemoryAndCPULoad2(BasePSWithMemory):
     Host_1 CPU under utilized and memory normal utilized
     VM from the Host_0 must migrate on the Host_1
     """
+    cluster_to_update_params = {
+        conf.CLUSTER_SCH_POLICY: conf.POLICY_CUSTOM_PS_MEMORY,
+        conf.CLUSTER_SCH_POLICY_PROPERTIES: conf.DEFAULT_PS_PARAMS,
+        conf.CLUSTER_OVERCOMMITMENT: conf.CLUSTER_OVERCOMMITMENT_NONE
+    }
     vms_to_run = conf.MEMORY_LOAD_VMS_TO_RUN_1
 
     @polarion("RHEVM3-11390")
@@ -90,6 +95,11 @@ class TestPSBalanceModuleUnderMemoryAndCPULoad4(BasePSWithMemory):
     """
     hosts_cpu_load = conf.HOST_CPU_LOAD_0
     vms_to_run = conf.MEMORY_LOAD_VMS_TO_RUN_1
+    cluster_to_update_params = {
+        conf.CLUSTER_SCH_POLICY: conf.POLICY_CUSTOM_PS_MEMORY,
+        conf.CLUSTER_SCH_POLICY_PROPERTIES: conf.DEFAULT_PS_PARAMS,
+        conf.CLUSTER_OVERCOMMITMENT: conf.CLUSTER_OVERCOMMITMENT_NONE
+    }
 
     @polarion("RHEVM3-11393")
     def test_vm_migration(self):
