@@ -1,35 +1,37 @@
 ---
+version: 1
 formatters:
   fileFormatter:
     format: "%(asctime)s - %(threadName)s - %(name)s - %(levelname)s - %(message)s"
   flow:
-    class: art.test_handler.logger_utils.ColoredFormatter
-    format: "%(asctime)s %(levelname)s %(message)s"
+    '()': art.test_handler.logger_utils.ColoredFormatter
+    fmt: "%(asctime)s %(levelname)s %(message)s"
+    datefmt: null
 handlers:
   consoleHandler:
-    class: StreamHandler
+    class: logging.StreamHandler
     level: INFO
     formatter: flow
     stream: ext://sys.stdout
   devnull:
-    class: art.test_handler.logger_utils.NullHandler
+    class: logging.NullHandler
     level: DEBUG
   duplicateFileHandlerDebug:
-    class: art.test_handler.logger_utils.DuplicateFileHandler
+    '()': art.test_handler.logger_utils.DuplicateFileHandler
     level: DEBUG
     formatter: fileFormatter
-    1filename: "%(logfile)s.debug"
-    2mode: w
-    3maxBytes: 31457280
-    4backupCount: 100
+    filename: {{ logfile }}.debug
+    mode: w
+    maxBytes: 31457280
+    backupCount: 100
   duplicateFileHandler:
-    class: art.test_handler.logger_utils.DuplicateFileHandler
+    '()': art.test_handler.logger_utils.DuplicateFileHandler
     level: INFO
     formatter: fileFormatter
-    1filename: "%(logfile)s"
-    2mode: w
-    3maxBytes: 31457280
-    4backupCount: 100
+    filename: {{ logfile }}
+    mode: w
+    maxBytes: 31457280
+    backupCount: 100
 loggers:
   requests:
     level: DEBUG
@@ -37,15 +39,15 @@ loggers:
       - devnull
     qualname: requests.packages.urllib3.connectionpool
     propagate: 0
-  flow:
+  art.flow:
     level: INFO
     handlers:
       - consoleHandler
       - duplicateFileHandler
-    qualname: art.flow
     propagate: 0
-  root:
-    level: DEBUG
-    handlers:
-      - duplicateFileHandler
-      - duplicateFileHandlerDebug
+root:
+  level: DEBUG
+  handlers:
+    - duplicateFileHandler
+    - duplicateFileHandlerDebug
+disable_existing_loggers: False

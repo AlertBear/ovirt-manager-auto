@@ -6,16 +6,8 @@ import logging.config
 import logging.handlers
 import os
 import re
-import sys
 import yaml
-from ConfigParser import ConfigParser
-if sys.version_info < (2, 7):
-    # There is no NullHandler < py2.7
-    class NullHandler(logging.Handler):
-        def emit(self, *args, **kwargs):
-            pass
-else:
-    from logging import NullHandler  # flake8: noqa
+from jinja2 import Environment, FileSystemLoader
 
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -23,113 +15,6 @@ LOGGER_UTILS_CONF = 'logger_utils.conf'
 DEFAULT_CONF_FILE = os.path.join(BASE_DIR, LOGGER_UTILS_CONF)
 DEFAULT_LOG_FILE = '/var/tmp/test.log'
 TEMP_CONFIG_FILE = '/tmp/transformed_log_config.conf'
-
-
-def fileConfig(fname, defaults=None, disable_existing_loggers=True):
-    """
-    We would like to use logging.config.dictConfig, but it is new in 2.7
-    and we still needs to support 2.6. This function transforms yaml to ini.
-
-    :param fname: ini / yaml logger config
-    :type fname: str
-    """
-    if fname.endswith('.yaml') or fname.endswith('.yml'):
-        # Load yaml config for dictConfig
-        y2i = Yaml2IniConfig(defaults=defaults)
-        with open(fname) as fh:
-            y2i.read(fh)
-        # Write ini config for fileConfig
-        with open(TEMP_CONFIG_FILE, 'w') as fh:
-            y2i.write(fh)
-        fname = TEMP_CONFIG_FILE
-
-    # Configure logger
-    logging.config.fileConfig(fname, defaults, disable_existing_loggers)
-
-
-class Yaml2IniConfig(object):
-    """
-    Translate YAML logger config to INI logger config.
-    """
-    elements = (
-        ('formatter', 'formatters'),
-        ('logger', 'loggers'),
-        ('handler', 'handlers'),
-    )
-    reserved_keys = {
-        'formatter': set(['format', 'datefmt']),
-        'logger': set(),
-        'handler': set(['formatter', 'level']),
-    }
-
-    def __init__(self, defaults=None):
-        super(Yaml2IniConfig, self).__init__()
-        self._ini = ConfigParser(defaults=defaults)
-        self._yml = None
-
-    def _translate_section(self, element, collection):
-        elements = []
-        for fn, fv in self._yml.get(collection, {}).iteritems():
-            if fv is None:
-                continue
-            elements.append(fn)
-            in_ = "%s_%s" % (element, fn)
-            self._ini.add_section(in_)
-            if '()' in fv or 'class' in fv:  # Custom
-                self._ini.set(
-                    in_, 'class', fv.pop('()', fv.pop('class', None))
-                )
-                # Put reserved keys first
-                for reserved in self.reserved_keys[element]:
-                    if reserved in fv:
-                        self._ini.set(in_, reserved, fv.pop(reserved))
-                # Compose arguments for constructor from remaining
-                args = [
-                    arg[1] for arg in sorted(
-                        fv.items(), cmp=lambda x, y: cmp(x[0], y[0])
-                    )
-                ]
-                self._ini.set(in_, 'args', self._create_args(args))
-            else:
-                for key, value in fv.iteritems():
-                    if isinstance(value, (list, tuple)):
-                        value = ','.join(value)
-                    self._ini.set(in_, key, value)
-        # Update list of elements
-        if not self._ini.has_section(collection):
-            self._ini.add_section(collection)
-            self._ini.set(collection, 'keys', ','.join(elements))
-        else:
-            keys = self._ini.get(collection, 'keys')
-            new_keys = ','.join(elements)
-            if keys and new_keys:
-                keys = keys + ',' + new_keys
-            else:
-                keys = keys + new_keys
-            self._ini.set(collection, 'keys', keys)
-
-    def _create_args(self, args):
-        value = "("
-        for a in args:
-            if isinstance(a, basestring):
-                if a.startswith('ext://'):
-                    value = "%s%s," % (value, a[6:])
-                else:
-                    value = "%s'%s', " % (value, a)
-            else:
-                value = "%s%s," % (value, a)
-        return value + ")"
-
-    def _translate(self):
-        for e, c in self.elements:
-            self._translate_section(e, c)
-
-    def read(self, fd):
-        self._yml = yaml.load(fd)
-        self._translate()
-
-    def write(self, fd):
-        self._ini.write(fd)
 
 
 class ColoredFormatter(logging.Formatter):
@@ -229,10 +114,11 @@ def initialize_logger(conf_file=DEFAULT_CONF_FILE, log_file=DEFAULT_LOG_FILE):
     :param log_file: full path to log file
     :type log_file: str
     """
-    fileConfig(
-        conf_file, disable_existing_loggers=False,
-        defaults={'logfile': log_file},
-    )
+    env = Environment(loader=FileSystemLoader('/'))
+    template = env.get_template(conf_file)
+    rendered_data = template.render(logfile=log_file)
+    config = yaml.load(rendered_data)
+    logging.config.dictConfig(config)
 
 
 class DuplicateFileHandler(logging.handlers.RotatingFileHandler):
