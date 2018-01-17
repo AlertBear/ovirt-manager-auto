@@ -122,10 +122,6 @@ class TestNegativeNetworkPermissions231915(NetworkingNegative):
     def setup_class(cls, request):
         super(TestNegativeNetworkPermissions231915, cls).setup_class(request)
 
-        testflow.setup(
-            "Adding network %s to datacenter %s.",
-            config.NETWORK_NAMES[0], config.DC_NAME[0]
-        )
         assert networks.add_network(
             True,
             name=config.NETWORK_NAMES[0],
@@ -149,9 +145,6 @@ class TestNegativeNetworkPermissions231915(NetworkingNegative):
         common.login_as_user()
 
         for net in config.NETWORK_NAMES[:2]:
-            testflow.step(
-                "Adding network %s to datacenter %s.", net, config.DC_NAME[0]
-            )
             assert networks.add_network(
                 False,
                 name=net,
@@ -165,10 +158,6 @@ class TestNegativeNetworkPermissions231916(NetworkingNegative):
     def setup_class(cls, request):
         super(TestNegativeNetworkPermissions231916, cls).setup_class(request)
 
-        testflow.setup(
-            "Adding network %s to datacenter %s.",
-            config.NETWORK_NAMES[0], config.DC_NAME[0]
-        )
         assert networks.add_network(
             True,
             name=config.NETWORK_NAMES[0],
@@ -195,10 +184,6 @@ class TestNegativeNetworkPermissions231916(NetworkingNegative):
         testflow.step("Log in as user.")
         common.login_as_user(filter_=False)
 
-        testflow.step(
-            "Updating network %s MTU in datacenter %s to %s.",
-            config.NETWORK_NAMES[0], config.DC_NAME[0], MTU
-        )
         assert networks.update_network(
             False,
             network=config.NETWORK_NAMES[0],
@@ -206,10 +191,6 @@ class TestNegativeNetworkPermissions231916(NetworkingNegative):
             mtu=MTU
         )
 
-        testflow.step(
-            "Updating network %s vlan id in datacenter %s to %s.",
-            config.NETWORK_NAMES[0], config.DC_NAME[0], VLAN_ID
-        )
         assert networks.update_network(
             False,
             network=config.NETWORK_NAMES[0],
@@ -218,10 +199,6 @@ class TestNegativeNetworkPermissions231916(NetworkingNegative):
         )
 
         for usages in USAGES:
-            testflow.step(
-                "Updating network %s usages in datacenter %s to %s.",
-                config.NETWORK_NAMES[0], config.DC_NAME[0], usages
-            )
             assert networks.update_network(
                 False,
                 network=config.NETWORK_NAMES[0],
@@ -237,10 +214,6 @@ class TestNegativeNetworkPermissions231917(NetworkingNegative):
         super(TestNegativeNetworkPermissions231917, cls).setup_class(request)
 
         for network_name in config.NETWORK_NAMES[:2]:
-            testflow.setup(
-                "Adding network %s to datacenter %s.",
-                network_name, config.DC_NAME[0]
-            )
             assert networks.add_network(
                 True,
                 name=network_name,
@@ -349,9 +322,6 @@ class TestNegativeNetworkPermissions231918(NetworkingNegative):
         )
 
         for net in config.NETWORK_NAMES[:2]:
-            testflow.setup(
-                "Adding network %s to datacenter %s.", net, config.DC_NAME[0]
-            )
             assert networks.add_network(
                 True,
                 name=net,
@@ -597,20 +567,12 @@ class TestNegativeNetworkPermissions236686(NetworkingNegative):
             network=config.MGMT_BRIDGE
         )
 
-        testflow.setup(
-            "Adding network %s to datacenter %s.",
-            config.NETWORK_NAMES[0], config.DC_NAME[0]
-        )
         assert networks.add_network(
             True,
             name=config.NETWORK_NAMES[0],
             data_center=config.DC_NAME[0]
         )
 
-        testflow.setup(
-            "Adding network %s to datacenter %s.",
-            config.NETWORK_NAMES[1], config.DC_NAME[0]
-        )
         assert networks.add_network(
             True,
             name=config.NETWORK_NAMES[1],
@@ -717,10 +679,6 @@ class TestNegativeNetworkPermissions236736(NetworkingNegative):
         )
 
         for network in config.NETWORK_NAMES:
-            testflow.setup(
-                "Adding network %s to datacenter %s.",
-                network, config.DC_NAME[0]
-            )
             assert networks.add_network(
                 True,
                 name=network,

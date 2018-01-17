@@ -62,6 +62,22 @@ def add_ovn_provider(request):
     assert enp_conf.OVN_PROVIDER.add()
 
 
+@pytest.fixture(scope="class")
+def remove_unmanaged_provider(request):
+    """
+    Remove unmanaged external network provider
+    """
+    provider_name_to_remove = request.node.cls.remove_provider_name
+
+    def fin():
+        """
+        Remove unmanaged external network provider
+        """
+        if provider_name_to_remove:
+            assert enp_conf.UNMANAGED_PROVIDER.remove(provider_name_to_remove)
+    request.addfinalizer(fin)
+
+
 @pytest.fixture()
 def configure_provider_plugin(request):
     """

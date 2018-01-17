@@ -124,10 +124,6 @@ class TestPositiveNetworkPermissions231821(NetworkingPositive):
             testflow.step("Log in as user.")
             common.login_as_user(user_name=user_name, filter_=False)
 
-            testflow.step(
-                "Adding network %s to datacenter %s.",
-                config.NETWORK_NAMES[0], config.DC_NAME[0]
-            )
             assert networks.add_network(
                 True,
                 name=config.NETWORK_NAMES[0],
@@ -157,10 +153,6 @@ class TestPositiveNetworkPermissions231822(NetworkingPositive):
     def setup_class(cls, request):
         super(TestPositiveNetworkPermissions231822, cls).setup_class(request)
 
-        testflow.setup(
-            "Adding network %s to datacenter %s.",
-            config.NETWORK_NAMES[0], config.DC_NAME[0]
-        )
         assert networks.add_network(
             True,
             name=config.NETWORK_NAMES[0],
@@ -204,12 +196,6 @@ class TestPositiveNetworkPermissions231822(NetworkingPositive):
             )
             common.login_as_user(user_name=user_name, filter_=False)
 
-            testflow.step(
-                "Updating network %s "
-                "MTU and STP to %s and %s in datacenter %s.",
-                config.NETWORK_NAMES[0], self.MTU,
-                self.STP, config.DC_NAME[0]
-            )
             assert networks.update_network(
                 True,
                 config.NETWORK_NAMES[0],
@@ -227,10 +213,6 @@ class TestPositiveNetworkPermissions231823(NetworkingPositive):
     def setup_class(cls, request):
         super(TestPositiveNetworkPermissions231823, cls).setup_class(request)
 
-        testflow.setup(
-            "Adding network %s to datacenter %s.",
-            config.NETWORK_NAMES[0], config.DC_NAME[0]
-        )
         assert networks.add_network(
             True,
             name=config.NETWORK_NAMES[0],
@@ -314,10 +296,6 @@ class TestSwitching(NetworkingPositive):
     def setup_class(cls, request):
         super(TestSwitching, cls).setup_class(request)
 
-        testflow.setup(
-            "Adding network %s to datacenter %s.",
-            config.NETWORK_NAMES[0], config.DC_NAME[0]
-        )
         assert networks.add_network(
             True,
             name=config.NETWORK_NAMES[0],
@@ -459,10 +437,6 @@ class TestPositiveNetworkPermissions231826(NetworkingPositive):
             config.VM_NAME
         )
 
-        testflow.setup(
-            "Adding network %s to datacenter %s.",
-            config.NETWORK_NAMES[0], config.DC_NAME[0]
-        )
         assert networks.add_network(
             True,
             name=config.NETWORK_NAMES[0],
@@ -530,9 +504,6 @@ class TestPositiveNetworkPermissions231827(NetworkingPositive):
 
         # Not possible to create public vnicprofile, just add Everyone perms
         for net in config.NETWORK_NAMES:
-            testflow.setup(
-                "Adding network %s to datacenter %s.", net, config.DC_NAME[0]
-            )
             assert networks.add_network(
                 True,
                 name=net,
@@ -641,20 +612,12 @@ class TestPositiveNetworkPermissions231830(NetworkingPositive):
     def setup_class(cls, request):
         super(TestPositiveNetworkPermissions231830, cls).setup_class(request)
 
-        testflow.setup(
-            "Adding network %s to datacenter %s.",
-            config.NETWORK_NAMES[0], config.DC_NAME[0]
-        )
         assert networks.add_network(
             True,
             name=config.NETWORK_NAMES[0],
             data_center=config.DC_NAME[0]
         )
 
-        testflow.setup(
-            "Adding network %s to datacenter %s.",
-            config.NETWORK_NAMES[1], config.DC_NAME[0]
-        )
         assert networks.add_network(
             True,
             name=config.NETWORK_NAMES[1],
@@ -923,20 +886,12 @@ class TestPositiveNetworkPermissions231832(NetworkingPositive):
     def setup_class(cls, request):
         super(TestPositiveNetworkPermissions231832, cls).setup_class(request)
 
-        testflow.setup(
-            "Adding network %s to datacenter %s.",
-            config.NETWORK_NAMES[0], config.DC_NAME[0]
-        )
         assert networks.add_network(
             True,
             name=config.NETWORK_NAMES[0],
             data_center=config.DC_NAME[0]
         )
 
-        testflow.setup(
-            "Adding network %s to datacenter %s.",
-            config.NETWORK_NAMES[1], config.DC_NAME[0]
-        )
         assert networks.add_network(
             True,
             name=config.NETWORK_NAMES[1],
@@ -1065,10 +1020,6 @@ class TestPositiveNetworkPermissions236367(NetworkingPositive):
             network=config.MGMT_BRIDGE
         )
 
-        testflow.setup(
-            "Adding network %s to datacenter %s.",
-            config.NETWORK_NAMES[0], config.DC_NAME[0]
-        )
         assert networks.add_network(
             True,
             name=config.NETWORK_NAMES[0],
@@ -1173,10 +1124,6 @@ class TestPositiveNetworkPermissions236406(NetworkingPositive):
             network=config.MGMT_BRIDGE
         )
 
-        testflow.setup(
-            "Adding network %s to datacenter %s.",
-            config.NETWORK_NAMES[0], config.DC_NAME[0]
-        )
         assert networks.add_network(
             True,
             name=config.NETWORK_NAMES[0],
@@ -1282,10 +1229,6 @@ class TestPositiveNetworkPermissions236408(NetworkingPositive):
             network=config.MGMT_BRIDGE
         )
 
-        testflow.setup(
-            "Adding network %s to datacenter %s.",
-            config.NETWORK_NAMES[0], config.DC_NAME[0]
-        )
         assert networks.add_network(
             True,
             name=config.NETWORK_NAMES[0],
@@ -1416,10 +1359,6 @@ class TestPositiveNetworkPermissions236409(NetworkingPositive):
     def setup_class(cls, request):
         super(TestPositiveNetworkPermissions236409, cls).setup_class(request)
 
-        testflow.setup(
-            "Adding network %s to datacenter %s.",
-            config.NETWORK_NAMES[0], config.DC_NAME[0]
-        )
         assert networks.add_network(
             True,
             name=config.NETWORK_NAMES[0],
@@ -1610,10 +1549,6 @@ class TestPositiveNetworkPermissions236577(NetworkingPositive):
         testflow.step("Log in as user.")
         common.login_as_user(filter_=False)
 
-        testflow.step(
-            "Adding network %s to datacenter %s.",
-            config.NETWORK_NAMES[0], config.DC_NAME[0]
-        )
         assert networks.add_network(
             True,
             name=config.NETWORK_NAMES[0],
@@ -1708,21 +1643,12 @@ class TestPositiveNetworkPermissions236664(NetworkingPositive):
         testflow.step("Log in as user.")
         common.login_as_user(filter_=False)
 
-        testflow.step(
-            "Adding network %s to datacenter %s.",
-            config.NETWORK_NAMES[0], config.DC_NAME[0]
-        )
         assert networks.add_network(
             True,
             name=config.NETWORK_NAMES[0],
             data_center=config.DC_NAME[0]
         )
 
-        testflow.step(
-            "Updating network %s MTU in datacenter %s to %s.",
-            config.NETWORK_NAMES[0],
-            config.DC_NAME[0], MTU
-        )
         assert networks.update_network(
             True,
             config.NETWORK_NAMES[0],
@@ -1870,10 +1796,6 @@ class TestPositiveNetworkPermissions320610(NetworkingPositive):
     def setup_class(cls, request):
         super(TestPositiveNetworkPermissions320610, cls).setup_class(request)
 
-        testflow.setup(
-            "Adding network %s to datacenter %s.",
-            config.NETWORK_NAMES[0], config.DC_NAME[0]
-        )
         networks.add_network(
             True,
             name=config.NETWORK_NAMES[0],
@@ -1987,10 +1909,6 @@ class TestPositiveNetworkPermissions317270(NetworkingPositive):
     def setup_class(cls, request):
         super(TestPositiveNetworkPermissions317270, cls).setup_class(request)
 
-        testflow.setup(
-            "Adding network %s to datacenter %s.",
-            config.NETWORK_NAMES[0], config.DC_NAME[0]
-        )
         assert networks.add_network(
             True,
             name=config.NETWORK_NAMES[0],
@@ -2031,10 +1949,6 @@ class TestPositiveNetworkPermissions317270(NetworkingPositive):
             role=config.role.UserRole
         )
 
-        testflow.step(
-            "Updating network %s in datacenter %s.",
-            config.NETWORK_NAMES[0], config.DC_NAME[0]
-        )
         assert networks.update_network(
             True,
             network=config.NETWORK_NAMES[0],

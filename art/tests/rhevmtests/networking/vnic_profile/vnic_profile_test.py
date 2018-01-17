@@ -182,7 +182,6 @@ class TestVNICProfileCase02(NetworkTest):
         2.  Check that both vNIC profiles of the network were removed as a
             result of changing the state of the network to non-VM
         """
-        testflow.step('Update VM network to non-VM network')
         assert ll_networks.update_network(
             positive=True, network=self.net_3, usages=""
         )

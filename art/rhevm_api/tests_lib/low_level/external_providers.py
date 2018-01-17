@@ -157,7 +157,7 @@ class OpenStackProvider(object):
         """
         return self._api.get(abs_link=False)
 
-    @ll_general.generate_logs()
+    @ll_general.generate_logs(step=True)
     def remove(self, openstack_ep, key="name"):
         """
         Remove openstack_ep object from engine by key

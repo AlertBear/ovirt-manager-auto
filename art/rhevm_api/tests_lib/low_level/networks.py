@@ -35,6 +35,9 @@ VNIC_PROFILE_API = test_utils.get_api('vnic_profile', 'vnicprofiles')
 LABEL_API = test_utils.get_api('network_label', 'network_labels')
 HOST_NICS_API = test_utils.get_api('host_nic', 'host_nics')
 NF_API = test_utils.get_api("networkfilter", "networkfilters")
+OPENSTACK_NETWORK_PROVIDER_API = test_utils.get_api(
+    "openstack_network_provider", "openstacknetworkproviders"
+)
 PROC_NET_DIR = "/proc/net"
 ETHTOOL_OFFLOAD = ("tcp-segmentation-offload", "udp-fragmentation-offload")
 ETHTOOL_CMD = "ethtool"
@@ -58,6 +61,8 @@ def _prepare_network_object(**kwargs):
         profile_required (str): Set if vNIC profile is required
         qos_dict (dict): QoS for the network
         dns (list): List of DNS servers
+        external_network_provider_name (str): Name of the external network
+            provider to create the network in
 
     Returns:
         Network: Network object
@@ -73,6 +78,7 @@ def _prepare_network_object(**kwargs):
     profile_required = kwargs.get("profile_required")
     qos_dict = kwargs.get("qos_dict")
     dns = kwargs.get("dns")
+    external_network_provider_name = kwargs.get("external_provider_name")
 
     if name:
         net.set_name(name)
@@ -109,13 +115,19 @@ def _prepare_network_object(**kwargs):
         dns_obj = prepare_network_dns_object(dns_servers=dns)
         net.set_dns_resolver_configuration(dns_obj)
 
+    if external_network_provider_name:
+        enp = OPENSTACK_NETWORK_PROVIDER_API.find(
+            external_network_provider_name
+        )
+        net.set_external_provider(external_provider=enp)
+
     return net
 
 
-@general.generate_logs()
+@general.generate_logs(step=True)
 def add_network(positive, **kwargs):
     """
-    Add network to a data center
+    Add network to data center with kwargs
 
     Args:
         positive (bool): True if action should succeed, False otherwise.
@@ -132,6 +144,8 @@ def add_network(positive, **kwargs):
         profile_required (str): Set if vNIC profile is required
         qos_dict (dict): QoS for the network
         dns (list): List of DNS servers
+        external_network_provider_name (str): Name of the external network
+            provider to create the network in
 
     Returns:
         bool: True if create network succeeded, False otherwise.
@@ -140,10 +154,10 @@ def add_network(positive, **kwargs):
     return NET_API.create(entity=net_obj, positive=positive)[1]
 
 
-@general.generate_logs()
+@general.generate_logs(step=True)
 def update_network(positive, network, **kwargs):
     """
-    Update network
+    Update network with kwargs
 
     Args:
         positive (bool): True if test is positive, False if negative

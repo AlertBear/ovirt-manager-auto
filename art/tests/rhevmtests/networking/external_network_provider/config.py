@@ -273,3 +273,6 @@ OVN_CMD_TEST_HTTP_RESPONSE = "curl -k {url}"
 
 # Index list of hosts to be reinstalled
 OVN_HOSTS_TO_REINSTALL = [0, 1]
+
+# Unmanaged provider
+UNMANAGED_PROVIDER = None
