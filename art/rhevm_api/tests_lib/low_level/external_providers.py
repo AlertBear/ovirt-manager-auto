@@ -491,7 +491,8 @@ class ExternalNetworkProvider(OpenStackProvider):
         requires_authentication=True, username=None, password=None,
         authentication_url=None, tenant_name=None, read_only=True,
         api_url=None, keystone_url=None, keystone_username=None,
-        keystone_password=None, verify_ssl=True
+        keystone_password=None, verify_ssl=True, unmanaged=False,
+        plugin_type="OVIRT_PROVIDER_OVN"
     ):
         """
         ExternalNetworkProvider class
@@ -514,6 +515,8 @@ class ExternalNetworkProvider(OpenStackProvider):
             keystone_username (str): Keystone username
             keystone_password (str): Keystone password
             verify_ssl (bool): Verify SSL certificate on provider connections
+            unmanaged (bool): Set provider as unmanaged provider
+            plugin_type (str): Network plugin to use
 
         """
         if provider_api_element_name:
@@ -530,6 +533,8 @@ class ExternalNetworkProvider(OpenStackProvider):
             username=username, password=password,
             authentication_url=authentication_url, tenant_name=tenant_name
         )
+        self._unmanaged = unmanaged
+        self._plugin_type = plugin_type
         self._read_only = read_only
         self._keystone_username = keystone_username
         self._keystone_password = keystone_password
@@ -553,6 +558,9 @@ class ExternalNetworkProvider(OpenStackProvider):
     def read_only(self):
         """
         Get external provider read_only property
+
+        Returns:
+            bool: True if provider in read_only, False otherwise
         """
         return self._read_only
 
@@ -567,10 +575,52 @@ class ExternalNetworkProvider(OpenStackProvider):
         """
         self._read_only = read_only
 
+    @property
+    def unmanaged(self):
+        """
+        Get external provider unmanaged property
+
+        Returns:
+            bool: True if provider in unmanaged, False otherwise
+        """
+        return self._unmanaged
+
+    @unmanaged.setter
+    def unmanaged(self, unmanaged):
+        """
+        Set external provider unmanaged property
+
+        Args:
+            unmanaged (bool): True to set unmanaged-only property
+        """
+        self._unmanaged = unmanaged
+
+    @property
+    def plugin_type(self):
+        """
+        Get external provider unmanaged property
+
+        Returns:
+            str: Plugin type of the provider
+        """
+        return self._plugin_type
+
+    @plugin_type.setter
+    def plugin_type(self, plugin_type):
+        """
+        Set external provider unmanaged property
+
+        Args:
+            plugin_type (str): Set provider plugin type
+        """
+        self._plugin_type = plugin_type
+
     def _init(self):
         super(ExternalNetworkProvider, self)._init()
         self.osp_obj.set_type("external")
         self.osp_obj.set_read_only(self.read_only)
+        self.osp_obj.set_unmanaged(self.unmanaged)
+        self.osp_obj.set_external_plugin_type(self.plugin_type)
 
     def get_all_networks(self):
         """
@@ -1090,6 +1140,6 @@ class OpenStackNetworkProvider(ExternalNetworkProvider):
         super(OpenStackNetworkProvider, self)._init()
         self.osp_obj.set_type("neutron")
         self._prepare_agent_configuration()
-        self.osp_obj.set_plugin_type(self._plugin_type)
         self.osp_obj.set_agent_configuration(self.agent_configuration)
+        self.osp_obj.set_plugin_type(self._plugin_type)
         self.osp_obj.set_read_only(self.read_only)
