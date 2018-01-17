@@ -645,11 +645,14 @@ class TestCase6253Block(BasicEnvironment):
             self.vm_name
         )
         ll_sd.update_ovf_store(self.storage_domain)
-        for disk in [self.disk_name, self.direct_lun_name]:
-            self.validate_ovf_contents(
-                disk_name=disk, vm_name=self.vm_name,
-                storage_domain=self.storage_domain, positive=False
-            )
+        self.validate_ovf_contents(
+            disk_name=self.disk_name, vm_name=self.vm_name,
+            storage_domain=self.storage_domain, positive=False
+        )
+        self.validate_ovf_contents(
+            disk_name=self.direct_lun_name, vm_name=self.vm_name,
+            storage_domain=self.storage_domain, positive=True
+        )
 
 
 class TestCase6254(BasicEnvironment):
