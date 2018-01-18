@@ -355,3 +355,24 @@ def benchmark_file_transfer(request):
     )
     # Reset collection values
     enp_conf.COLLECT_PERFORMANCE_FLAGS = [True, True]
+
+
+@pytest.fixture(scope="class")
+def skip_10g_env(request):
+    """
+    Skip test if 10GBE interface exists on one of the first two hosts in
+        the env
+    """
+    for host in net_config.VDS_HOSTS_LIST[:2]:
+        mgmt_iface = host.network.find_int_by_bridge("ovirtmgmt")
+        iface_speed = host.network.get_interface_speed(interface=mgmt_iface)
+        assert iface_speed, (
+            "Failed to get interface: %s speed on host: %s"
+            % (mgmt_iface, host.fqdn)
+        )
+        if int(iface_speed) >= 10000:
+            pytest.skip(
+                "NIC: %s on host: %s is unsupported on this test, we have "
+                "bandwidth performance issue with 10GBE for now."
+                % (mgmt_iface, host.fqdn)
+            )

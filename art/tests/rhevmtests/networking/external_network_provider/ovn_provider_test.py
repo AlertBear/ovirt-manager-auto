@@ -35,7 +35,8 @@ from fixtures import (
     get_default_ovn_provider,
     setup_vms_ovn_interface,
     benchmark_file_transfer,
-    save_vm_resources
+    save_vm_resources,
+    skip_10g_env
 )
 from rhevmtests import helpers
 from rhevmtests.fixtures import start_vm
@@ -803,6 +804,7 @@ class TestOVNComponent(NetworkTest):
 
 
 @pytest.mark.usefixtures(
+    skip_10g_env.__name__,
     set_cluster_external_network_provider.__name__,
     reinstall_hosts.__name__,
     get_default_ovn_provider.__name__,
