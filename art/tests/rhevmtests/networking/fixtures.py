@@ -51,7 +51,7 @@ class NetworkFixtures(object):
         conf.HOST_1_IP = conf.VDS_1_HOST.ip
         conf.HOST_0_NICS = conf.VDS_0_HOST.nics
         conf.HOST_1_NICS = conf.VDS_1_HOST.nics
-        conf.HOST_2_NICS = conf.VDS_2_HOST.nics
+        conf.HOST_2_NICS = conf.VDS_2_HOST.nics if conf.VDS_2_HOST else None
         self.vds_0_host = conf.VDS_0_HOST
         self.vds_1_host = conf.VDS_1_HOST
         self.vds_2_host = conf.VDS_2_HOST
