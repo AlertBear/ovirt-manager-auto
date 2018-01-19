@@ -8,6 +8,7 @@ from rhevmtests.storage import helpers as storage_helpers
 from rhevmtests.storage import config
 from art.test_handler.tools import polarion
 from art.unittest_lib import (
+    tier1,
     tier2,
     tier3,
 )
@@ -168,7 +169,7 @@ class TestCase18863(BasicEnvironmentSetUp):
         )
 
     @polarion("RHEVM-18863")
-    @tier2
+    @tier1
     def test_live_snapshot(self):
         """
         Create a snapshot while VM is running
