@@ -79,7 +79,7 @@ def search_for_recent_event(
 
     Examples:
         search_for_recent_event(
-            true, win_start_query='DataCenterRest1 type=950',
+            True, win_start_query='DataCenterRest1 type=950',
             query='DatacenterRest2 type=950',expected_count=1
         )
 
@@ -101,6 +101,43 @@ def search_for_recent_event(
             "win_start_query=%s", win_start_query
         )
         return False
+
+    # Query for events matching `query`, with id bigger than window start one.
+    found_ev = util.query(query, event_id=str(win_start_event_id))
+    util.logger.info('Searching for events with id > %s,', win_start_event_id)
+    status = compareCollectionSize(found_ev, expected_count, util.logger)
+
+    return positive == status
+
+
+def search_for_recent_event_from_event_id(
+    positive, win_start_event_id, query, expected_count=1
+):
+    """
+    Checks the count of events specified by query from win_start_event_id.
+
+    Expected count is the count of such events on the listing page, that have
+    their id greater that specified by win_start_event_id.
+
+    Args:
+        positive (bool): Expected result
+        win_start_event_id (str): Event ID to start from
+        query (str): Event text and type to query
+        expected_count (int): Expected events to find
+
+    Examples:
+        search_for_recent_event_from_event_id(
+            True, win_start_event_id=event_id,
+            query='Started to check for available updates',expected_count=1
+        )
+
+        this will expect one occurrence of event with description
+        containing string "Started to check for available updates".
+
+    Returns:
+        bool: True if expected_count == number of found events, False otherwise
+    """
+    expected_count = int(expected_count)
 
     # Query for events matching `query`, with id bigger than window start one.
     found_ev = util.query(query, event_id=str(win_start_event_id))
