@@ -196,9 +196,6 @@ class TestUpgradeRHEL764bGATest(RHEL7GATest):
     @polarion('RHEVM3-7404')
     def test_upgrade_guest_agent(self):
         """ RHEL7_1_64b upgrade_guest_agent """
-        if not config.UPSTREAM:
-            self.upgrade_guest_agent(config.OLD_GA_NAME)
-        else:
-            self.upgrade_guest_agent(config.GA_NAME)
+        self.upgrade_guest_agent(config.GA_NAME)
         self.services(config.AGENT_SERVICE_NAME)
         self.agent_data(self.application_list, self.list_app)

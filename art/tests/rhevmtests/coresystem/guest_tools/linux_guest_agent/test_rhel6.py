@@ -2,7 +2,7 @@
 Sanity test of guest agent of rhel 6 32/64b
 """
 import pytest
-from art.test_handler.tools import polarion, bz
+from art.test_handler.tools import polarion
 from art.unittest_lib import tier2
 from art.unittest_lib import testflow
 from art.rhevm_api.tests_lib.low_level import vms
@@ -24,15 +24,15 @@ def setup_vms(request):
     common.prepare_vms([DISKx64_NAME, DISKx86_NAME])
 
 
-@bz({"1525549": {}})
 class RHEL6GATest(common.GABaseTestCase):
     """
     Cover basic testing of GA of rhel 6
     """
     list_app = ['rpm -qa']
-    application_list = ['kernel', 'rhevm-guest-agent-common']
-    cmd_chkconf = ['chkconfig', '--list', '|', 'grep',
-                   'ovirt', '|', 'egrep', '3:on']
+    application_list = ['kernel', 'ovirt-guest-agent-common']
+    cmd_chkconf = [
+        'chkconfig', '--list', '|', 'grep', 'ovirt', '|', 'egrep', '3:on'
+    ]
 
     @classmethod
     @pytest.fixture(scope="class")
@@ -89,7 +89,7 @@ class TestRHEL664bGATest(RHEL6GATest):
     @polarion("RHEVM3-7422")
     def test_aa_install_guest_agent(self):
         """ RHEL6_64b install_guest_agent """
-        self.install_guest_agent(config.GA_NAME)
+        self.install_guest_agent(config.OLD_PACKAGE_NAME)
 
     @polarion("RHEVM3-7437")
     def test_post_install(self):
@@ -180,7 +180,7 @@ class TestRHEL632bGATest(RHEL6GATest):
     @polarion("RHEVM3-7420")
     def test_aa_install_guest_agent(self):
         """ RHEL6_32b install_guest_agent """
-        self.install_guest_agent(config.GA_NAME)
+        self.install_guest_agent(config.OLD_PACKAGE_NAME)
 
     @polarion("RHEVM3-7410")
     def test_post_install(self):
@@ -271,10 +271,7 @@ class TestUpgradeRHEL664bGATest(RHEL6GATest):
     @polarion('RHEVM3-7436')
     def test_upgrade_guest_agent(self):
         """ RHEL6_64b upgrade_guest_agent """
-        if not config.UPSTREAM:
-            self.upgrade_guest_agent(config.OLD_GA_NAME)
-        else:
-            self.upgrade_guest_agent(config.GA_NAME)
+        self.upgrade_guest_agent(config.OLD_PACKAGE_NAME)
         self.services(config.AGENT_SERVICE_NAME)
         self.agent_data(self.application_list, self.list_app)
 
@@ -300,9 +297,6 @@ class TestUpgradeRHEL632bGATest(RHEL6GATest):
     @polarion('RHEVM3-7421')
     def test_upgrade_guest_agent(self):
         """ RHEL6_32b upgrade_guest_agent """
-        if not config.UPSTREAM:
-            self.upgrade_guest_agent(config.OLD_GA_NAME)
-        else:
-            self.upgrade_guest_agent(config.GA_NAME)
+        self.upgrade_guest_agent(config.OLD_PACKAGE_NAME)
         self.services(config.AGENT_SERVICE_NAME)
         self.agent_data(self.application_list, self.list_app)

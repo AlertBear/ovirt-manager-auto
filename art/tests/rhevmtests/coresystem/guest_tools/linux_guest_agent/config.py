@@ -47,7 +47,7 @@ AGENT_SERVICE_NAME = 'ovirt-guest-agent'
 UPSTREAM = 'ovirt' in PRODUCT_NAME.lower()
 
 GA_NAME = 'ovirt-guest-agent'
-OLD_GA_NAME = 'rhevm-guest-agent'
+OLD_PACKAGE_NAME = 'ovirt-guest-agent-common'
 
 # GA repositories
 UBUNTU_REPOSITORY = 'http://download.opensuse.org/repositories/home:/evilissimo:/ubuntu:/16.04/xUbuntu_16.04/'
@@ -78,7 +78,7 @@ yum_repos:
         enabled: true
         gpgcheck: false
 packages:
-    ovirt-guest-agent
+    ovirt-guest-agent-common
 runcmd:
     - [ service, ovirt-guest-agent, restart ]
 """
