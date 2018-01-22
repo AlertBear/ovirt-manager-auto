@@ -612,22 +612,21 @@ def do_disk_action(
 ):
     """
     Executes an action (copy/move) on the disk
-    __author__ = 'cmestreg'
 
-    :param disk_name: name of disk
-    :type disk_name: str
-    :param disk_id: id of the disk
-    :type disk_id: str
-    :param target_domain: name of the domain
-    :type target_domain: str
-    :param wait: wait for disk to be status 'ok' before returning
-    :type wait: bool
-    :param timeout: how long to wait for disk status (if wait=True)
-    :type timeout: int
-    :param sleep: how long to wait between checks when waiting for disk status
-    :type sleep: int
-    :return: True on success/False on failure
-    :rtype: bool
+    Args:
+        action (str): Which action to perform on the disk (copy/move)
+        disk_name (str): Disk name to copy or move
+        target_domain (str): Destination storage domain
+        disk_id (str): Disk ID to copy or move
+        wait (bool): True for wait for disk to be in status OK, False otherwise
+        timeout (int): Disk status polling frequency in seconds
+        sleep (int): How long to wait between check when waiting for disk
+            status
+        positive (bool): True for action should succeed, False otherwise
+        new_disk_alias (str): New disk name
+
+    Returns:
+        bool: True on success, False on failure
     """
     sd = STORAGE_DOMAIN_API.find(target_domain)
     if disk_id:
@@ -649,9 +648,8 @@ def do_disk_action(
         updated_disk_alias = Disk(alias=new_disk_alias)
 
     if not DISKS_API.syncAction(
-            disk, action, storage_domain=sd, positive=positive,
-            disk=updated_disk_alias
-
+        disk, action, storage_domain=sd, positive=positive,
+        disk=updated_disk_alias
     ):
         return False
 
@@ -661,10 +659,15 @@ def do_disk_action(
                 timeout, sleep, getStorageDomainDisks, target_domain, False
         ):
             for target_disk in sample:
-                if disk.get_id() == target_disk.get_id() and (
+                if action == 'move':
+                    if disk.get_id() == target_disk.get_id() and (
                         target_disk.get_status() == ENUMS['disk_state_ok']
-                ):
-                    return True
+                    ):
+                        return True
+                else:
+                    if target_disk.get_status() == ENUMS['disk_state_ok']:
+                        return True
+            return False
     return True
 
 
