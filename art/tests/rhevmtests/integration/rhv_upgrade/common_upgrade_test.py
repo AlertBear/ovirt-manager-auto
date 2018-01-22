@@ -52,9 +52,9 @@ from art.unittest_lib import (
     testflow, UpgradeTest, order_upgrade, order_upgrade_hosts,
     order_upgrade_cluster, order_upgrade_dc,
 )
-from utilities.ansible_runner import (
+from art.qe_tools.ansible.ansible_runner import (
     run_ansible_playbook,
-    prepare_env_group_vars
+    prepare_env_group_vars,
 )
 
 import config
