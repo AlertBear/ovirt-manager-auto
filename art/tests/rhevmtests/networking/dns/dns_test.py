@@ -16,9 +16,8 @@ import art.rhevm_api.tests_lib.high_level.host_network as hl_host_network
 import config as dns_conf
 from rhevmtests.networking import (
     config as conf,
-    helper as network_helper
 )
-from art.test_handler.tools import polarion
+from art.test_handler.tools import polarion, bz
 from art.core_api import apis_utils
 from art.unittest_lib import NetworkTest, testflow, tier2
 from fixtures import (  # noqa: F401
@@ -63,7 +62,9 @@ class TestDns01(NetworkTest):
                 *add_dns_network, marks=(polarion("RHEVM3-16940"))
             ),
             pytest.param(
-                *remove_dns_network, marks=(polarion("RHEVM3-17095"))
+                *remove_dns_network, marks=(
+                    (polarion("RHEVM3-17095"), bz({"1537095": {}}))
+                )
             ),
 
             # via network attachment
@@ -101,13 +102,9 @@ class TestDns01(NetworkTest):
         host = dns_conf.WORKING_HOST
 
         if via == "network":
-            content = "{network} on host {host}".format(
-                network=self.network, host=host
-            )
-            network_helper.call_function_and_wait_for_sn(
-                func=ll_networks.update_network, content=content,
+            assert ll_networks.update_network(
                 positive=True, network=self.network, data_center=self.dc,
-                dns=dns, matches=1
+                dns=dns
             )
 
         if via == "attachment":
@@ -125,7 +122,7 @@ class TestDns01(NetworkTest):
             )
 
         sample = apis_utils.TimeoutingSampler(
-            timeout=30, sleep=1,
+            timeout=300, sleep=1,
             func=lambda: helper.get_host_dns_servers(host=host) == dns
 
         )
