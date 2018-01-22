@@ -847,8 +847,8 @@ def define_hugepages_on_hosts(request):
             )
             if not vds_host.fs.exists(hugepage_file):
                 pytest.skip(
-                    "%s: does not support hugepages of size %s",
-                    vds_host, hugepage_size
+                    "%s: does not support hugepages of size %s" %
+                    (vds_host, hugepage_size)
                 )
             hugepages_nr = total_size / (int(hugepage_size) * 1024)
             u_libs.testflow.setup(
