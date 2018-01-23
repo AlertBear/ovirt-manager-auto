@@ -18,9 +18,10 @@ from art.rhevm_api.utils import test_utils as utils
 from art.test_handler import exceptions
 from art.test_handler.tools import polarion, bz
 from art.unittest_lib import (
+    tier1,
     tier2,
     tier3,
-    tier4,
+    tier4
 )
 from art.unittest_lib import StorageTest as TestCase, testflow
 from rhevmtests import helpers as rhevm_helpers
@@ -214,7 +215,7 @@ class TestCase6183(BaseTestCase):
 
     @bz({'1526815': {}})
     @polarion("RHEVM3-6183")
-    @tier2
+    @tier1
     def test_temporary_snapshot_is_created_after_backup_vm_starts(self):
         """
         Make sure that before starting backup vm, /var/lib/vdsm/transient/
