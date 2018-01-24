@@ -45,3 +45,18 @@ def prepare_env(request):
         config.SD_LIST.append(config.HE_STORAGE_DOMAIN)
 
     helpers.storage_cleanup()
+
+
+@pytest.fixture(autouse=True)
+def append_captured_log_to_item_stdout(request, caplog):
+    """
+    This fixture will add captured report sections for each item,
+    which will be parsed by the junitxml pytest plugin, to produce
+    the xml file.
+    """
+    yield
+    for when in ('setup', 'call', 'teardown'):
+        records = caplog.get_records(when)
+        for record in records:
+            request.node.add_report_section(
+                when, 'stdout', record.message + '\n')

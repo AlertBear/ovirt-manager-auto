@@ -104,7 +104,7 @@ echo "export PYTHONPATH=$ART_PATH:$ART_PATH/pytest_customization:$RHEVM_QE_UTILS
 
 source ./.art/bin/activate
 # update pip and its dependencies
-pip install pip -IU
+pip install pip setuptools -IU
 # install ART's requirements
 pip install -IU -rrequirements.txt
 # install RHEVM_QE_UTILS's requirements
