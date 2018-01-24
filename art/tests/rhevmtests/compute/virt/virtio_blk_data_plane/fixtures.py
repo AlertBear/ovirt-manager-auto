@@ -16,6 +16,8 @@ from art.unittest_lib import testflow
 def virtio_data_plane_setup(request):
     """
     Create VM's for IO threads test
+    Also it creates disk on each of the available storage types, check inline
+    comments [1] and [2]
     """
     def fin():
         """
@@ -25,6 +27,9 @@ def virtio_data_plane_setup(request):
         assert ll_vms.safely_remove_vms(vms=config.VMS_IOTHREADS_NAMES.keys())
 
     request.addfinalizer(fin)
+
+    # [1] Get all unique storage domain names
+    storage_domains = [sd for sd in config.STORAGE_NAME if '0' in sd]
 
     disks = []
     for vm_name, vm_disks in config.VMS_IOTHREADS_NAMES.iteritems():
@@ -37,13 +42,21 @@ def virtio_data_plane_setup(request):
         )
         for disk_interface, num_of_disks in vm_disks.iteritems():
             for i in range(num_of_disks):
+                # [2] Iterate over storage_domains stopping at the last one
+                # For instance, if we have 4 disks and 2 unique domains
+                # [nfs0, iscsi0] first disk is going to be created on nfs0,
+                # second and all others on iscsi0
+                try:
+                    sd_name = storage_domains.pop()
+                except IndexError:
+                    pass
                 disk_alias = "{0}_{1}_{2}".format(vm_name, "disk", i)
                 assert ll_vms.addDisk(
                     positive=True,
                     wait=False,
                     vm=vm_name,
                     provisioned_size=config.GB,
-                    storagedomain=config.STORAGE_NAME[0],
+                    storagedomain=sd_name,
                     interface=disk_interface,
                     format=config.DISK_FORMAT_COW,
                     alias=disk_alias,

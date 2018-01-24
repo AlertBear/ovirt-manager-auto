@@ -10,7 +10,7 @@ import pytest
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import config
 import helpers
-from art.test_handler.tools import polarion
+from art.test_handler.tools import polarion, bz
 from art.unittest_lib import (
     VirtTest,
     testflow,
@@ -25,13 +25,8 @@ from fixtures import (
 )
 
 
-@pytest.mark.usefixtures(
-    virtio_data_plane_setup.__name__,
-    update_vm_io_threads.__name__,
-    reactivate_vm_disks.__name__,
-    start_vm.__name__
-)
-class TestBasicVirtioDataPlane(VirtTest):
+@bz({'1535961': {}})
+class TestVirtioDataPlane(VirtTest):
     """
     Virtio data plane test
     """
@@ -62,25 +57,18 @@ class TestBasicVirtioDataPlane(VirtTest):
             "Number_of_iothreads_greater_than_number_of_disks_Mixed"
         ]
     )
+    @pytest.mark.usefixtures(
+        virtio_data_plane_setup.__name__,
+        update_vm_io_threads.__name__,
+        reactivate_vm_disks.__name__,
+        start_vm.__name__
+    )
     def test_iothreads(self, iothreads, vm_name):
         """
         Check iothreads allocation to disks
         """
         helpers.check_iothreads(vm_name=vm_name, number_of_iothreads=iothreads)
 
-
-@pytest.mark.usefixtures(
-    virtio_data_plane_setup.__name__,
-    update_vm_io_threads.__name__,
-    remove_disk_from_vm.__name__,
-    start_vm.__name__,
-)
-class TestHotplugVirtioDataPlane(VirtTest):
-    """
-    Verify IO threads for test cases with disk hotplug
-    """
-
-    @tier2
     @pytest.mark.parametrize(
         ("iothreads", "vm_name"),
         [
@@ -91,6 +79,12 @@ class TestHotplugVirtioDataPlane(VirtTest):
             "Hotplug_new_disk_when_number_of_iothreads_greater_Virtio",
             "Hotplug_new_disk_when_number_of_iothreads_lesser_Virtio"
         ]
+    )
+    @pytest.mark.usefixtures(
+        virtio_data_plane_setup.__name__,
+        update_vm_io_threads.__name__,
+        remove_disk_from_vm.__name__,
+        start_vm.__name__,
     )
     def test_iothreads_with_disk_hotplug(self, iothreads, vm_name):
         """
@@ -109,19 +103,6 @@ class TestHotplugVirtioDataPlane(VirtTest):
         )
         helpers.check_iothreads(vm_name=vm_name, number_of_iothreads=iothreads)
 
-
-@pytest.mark.usefixtures(
-    virtio_data_plane_setup.__name__,
-    update_vm_io_threads.__name__,
-    reactivate_vm_disks.__name__,
-    start_vm.__name__
-)
-class TestMigrationVirtioDataPlane(VirtTest):
-    """
-    Verify that migration preserve on VM IO threads
-    """
-
-    @tier2
     @pytest.mark.parametrize(
         ("iothreads", "vm_name"),
         [
@@ -132,6 +113,12 @@ class TestMigrationVirtioDataPlane(VirtTest):
             "Migrate_VM_with_iothreads_Virtio",
             "Migrate_VM_with_iothreads_SCSI_Virtio"
         ]
+    )
+    @pytest.mark.usefixtures(
+        virtio_data_plane_setup.__name__,
+        update_vm_io_threads.__name__,
+        reactivate_vm_disks.__name__,
+        start_vm.__name__
     )
     def test_iothreads_with_migration(self, iothreads, vm_name):
         """
