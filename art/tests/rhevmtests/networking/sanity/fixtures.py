@@ -21,6 +21,7 @@ from art.rhevm_api.tests_lib.low_level import (
 import config as sanity_conf
 import rhevmtests.networking.config as conf
 import rhevmtests.helpers as global_helper
+import rhevmtests.networking.external_network_provider.helper as enp_helper
 from rhevmtests.networking.mac_pool_range_per_cluster import (
     helper as mac_pool_helper
 )
@@ -281,7 +282,7 @@ def prepare_setup_for_register_domain(request):
 @pytest.fixture(scope="class")
 def remove_ovn_networks(request):
     """
-    Remove OVN networks from provider and engine
+    Remove OVN networks from provider and wait for auto-sync
     """
     networks_and_subnets = getattr(
         request.cls, "remove_ovn_networks_params", {}
@@ -297,19 +298,13 @@ def remove_ovn_networks(request):
 
     def fin2():
         """
-        Remove OVN networks from engine
+        Wait for auto-sync to remove OVN networks from engine
         """
-        for net in [
-            net for net in networks_and_subnets.keys()
-            if ll_networks.find_network(net)
-        ]:
-            testflow.teardown("Removing network: %s from engine", net)
-            results_list.append(
-                (
-                    ll_networks.remove_network(positive=True, network=net),
-                    "Failed to remove network: %s from engine" % net
-                )
-            )
+        nets = networks_and_subnets.keys()
+        res = enp_helper.wait_for_auto_sync(networks=nets)
+        results_list.append(
+            (res, "Failed to wait for networks: %s to be auto-syned" % nets)
+        )
     request.addfinalizer(fin2)
 
     def fin1():

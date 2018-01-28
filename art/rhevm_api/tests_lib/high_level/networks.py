@@ -774,3 +774,13 @@ def create_interface(host_resource, interface, vlan_id, via="ifcfg"):
         if not host_resource.network.if_up(nic=interface_name):
             return False
     return True
+
+
+def get_network_names():
+    """
+    Get list of network names from engine
+
+    Returns:
+        list: List of network names
+    """
+    return [net.get_name() for net in ll_networks.get_all_networks()]

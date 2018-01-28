@@ -9,7 +9,6 @@ import shlex
 
 import pytest
 
-import art.core_api.apis_exceptions as api_exceptions
 import config as enp_conf
 import helper
 import rhevmtests.config as global_config
@@ -17,7 +16,6 @@ import rhevmtests.helpers as global_helper
 import rhevmtests.networking.config as net_config
 import rhevmtests.networking.helper as network_helper
 from art.rhevm_api.tests_lib.low_level import (
-    networks as ll_networks,
     clusters as ll_clusters,
     hosts as ll_hosts,
     external_providers
@@ -142,19 +140,27 @@ def configure_provider_plugin(request):
 @pytest.fixture(scope="class")
 def create_ovn_networks_on_provider(request):
     """
-    Create OVN network(s) and subnet(s) on provider
+    Create OVN network(s) and subnet(s) on provider and wait for auto-sync
+        changes
     """
     add_networks = getattr(request.cls, "add_ovn_networks_to_provider", {})
     remove_networks = getattr(
         request.cls, "remove_ovn_networks_from_provider", {}
     )
+    networks_and_subnets = remove_networks or add_networks
 
-    def fin():
+    def fin2():
+        """
+        Wait for auto-sync changes
+        """
+        assert helper.wait_for_auto_sync(networks=networks_and_subnets.keys())
+    request.addfinalizer(fin2)
+
+    def fin1():
         """
         Remove OVN networks and associated subnets
         """
         result_list = []
-        networks_and_subnets = remove_networks or add_networks
 
         for net, subnet in networks_and_subnets.items():
             if subnet:
@@ -172,8 +178,9 @@ def create_ovn_networks_on_provider(request):
             result_list.append(
                 enp_conf.OVN_PROVIDER.remove_network(network_name=net)
             )
+
         assert all(result_list)
-    request.addfinalizer(fin)
+    request.addfinalizer(fin1)
 
     for net, subnet in add_networks.items():
         txt = " with subnet: %s" % subnet.get("name") if subnet else ""
@@ -182,45 +189,48 @@ def create_ovn_networks_on_provider(request):
             network_name=net, subnet_dict=subnet
         )
 
-
-@pytest.fixture(scope="class")
-def import_ovn_networks(request):
-    """
-    Import OVN network(s)
-    """
-    import_networks = getattr(request.cls, "import_ovn_networks_to_engine", [])
-    remove_networks = getattr(
-        request.cls, "remove_ovn_networks_from_engine", []
+    assert helper.wait_for_auto_sync(
+        networks=add_networks.keys(), removal=False
     )
-    dc = request.node.cls.dc
-    cluster = request.node.cls.cl
+
+
+@pytest.fixture(scope="module")
+def set_auto_sync_time(request):
+    """
+    Set auto-sync sync cycle rate
+    """
+    sync_rate_key = "ExternalNetworkProviderSynchronizationRate"
+    auto_sync_rate = "%s={rate}" % sync_rate_key
+    save_rate = ""
 
     def fin():
         """
-        Remove OVN network(s)
+        Restore auto-sync rate on engine
         """
-        results_list = []
-        networks = remove_networks or import_networks
-
-        for net in networks:
-            try:
-                res = ll_networks.remove_network(positive=True, network=net)
-                testflow.teardown("Removing network: %s from engine", net)
-                results_list.append(res)
-            except api_exceptions.EntityNotFound:
-                pass
-
-        assert all(results_list)
+        testflow.teardown(
+            "Restoring auto-sync cycle rate value to %s", save_rate
+        )
+        assert net_config.ENGINE.engine_config(
+            action="set",
+            param=auto_sync_rate.format(rate=save_rate), restart=True
+        ).get("results")
     request.addfinalizer(fin)
 
-    for net in import_networks:
-        testflow.setup(
-            "Importing network: %s from OVN network provider to DC: %s "
-            "Cluster: %s", net, dc, cluster
-        )
-        assert enp_conf.OVN_PROVIDER.import_network(
-            network=net, datacenter=dc, cluster=cluster
-        )
+    testflow.setup("Getting current auto-sync cycle rate value")
+    results = net_config.ENGINE.engine_config(
+        action="get", param=sync_rate_key, restart=False
+    ).get("results")
+    assert results
+    save_rate = results.get(sync_rate_key, {}).get("value", None)
+    assert save_rate
+
+    testflow.setup(
+        "Setting auto-sync cycle rate value to %s", enp_conf.AUTO_SYNC_RATE
+    )
+    assert net_config.ENGINE.engine_config(
+        action="set",
+        param=auto_sync_rate.format(rate=enp_conf.AUTO_SYNC_RATE), restart=True
+    ).get("results")
 
 
 @pytest.fixture(scope="class")

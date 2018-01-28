@@ -276,3 +276,8 @@ OVN_HOSTS_TO_REINSTALL = [0, 1]
 
 # Unmanaged provider
 UNMANAGED_PROVIDER = None
+
+# Auto-sync rate time
+AUTO_SYNC_RATE = 3
+# Wait time for auto-sync
+AUTO_SYNC_WAIT = 30

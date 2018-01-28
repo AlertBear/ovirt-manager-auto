@@ -17,9 +17,13 @@ import rhevmtests.helpers as global_helper
 import rhevmtests.networking.config as net_conf
 import rhevmtests.networking.helper as net_helper
 from art.core_api.apis_utils import TimeoutingSampler
-from art.rhevm_api.tests_lib.high_level import vms as hl_vms
+from art.rhevm_api.tests_lib.high_level import (
+    vms as hl_vms,
+    networks as hl_networks
+)
 from art.rhevm_api.tests_lib.low_level import (
-    vms as ll_vms, external_providers
+    vms as ll_vms, external_providers,
+    general as ll_general
 )
 from art.test_handler import exceptions
 from art.unittest_lib import testflow
@@ -603,3 +607,32 @@ def check_ldap_availability(server, ports):
         if is_tcp_port_open(host=server, port=ldap_port, timeout=3):
             return True
     return False
+
+
+@ll_general.generate_logs(step=True)
+def wait_for_auto_sync(
+    networks, removal=True, timeout=ovn_conf.AUTO_SYNC_WAIT
+):
+    """
+    Wait for networks changes to be synced by auto-sync
+
+    Args:
+        networks (list): List of network names to expect
+        removal (bool): True to wait for removal of networks, False for
+            creation of networks
+        timeout (int): Timeout in seconds for auto-sync
+
+    Returns:
+        bool: True if operation was successful, False otherwise
+    """
+    sample = TimeoutingSampler(
+        timeout=timeout, sleep=1,
+        func=lambda:
+            all(
+                n not in hl_networks.get_network_names()
+                if removal else
+                n in hl_networks.get_network_names()
+                for n in networks
+            )
+    )
+    return sample.waitForFuncStatus(result=True)

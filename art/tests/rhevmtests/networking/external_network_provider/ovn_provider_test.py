@@ -29,14 +29,14 @@ from fixtures import (
     reinstall_hosts,
     configure_provider_plugin,
     create_ovn_networks_on_provider,
-    import_ovn_networks,
     remove_ifcfg_from_vms,
     add_ovn_provider,
     get_default_ovn_provider,
     setup_vms_ovn_interface,
     benchmark_file_transfer,
     save_vm_resources,
-    skip_10g_env
+    skip_10g_env,
+    set_auto_sync_time
 )
 from rhevmtests import helpers
 from rhevmtests.fixtures import start_vm
@@ -227,10 +227,10 @@ class TestOVNAuthorization(NetworkTest):
 @pytest.mark.incremental
 @pytest.mark.usefixtures(
     set_cluster_external_network_provider.__name__,
+    set_auto_sync_time.__name__,
     reinstall_hosts.__name__,
     get_default_ovn_provider.__name__,
     create_ovn_networks_on_provider.__name__,
-    import_ovn_networks.__name__,
     remove_vnic_profiles.__name__,
     remove_vnics_from_vms.__name__,
     add_vnics_to_vms.__name__,
@@ -268,10 +268,6 @@ class TestOVNComponent(NetworkTest):
         ovn_conf.OVN_NETS, **ovn_conf.OVN_LONG_NETS
     )
     remove_ovn_networks_from_provider = add_ovn_networks_to_provider
-
-    # import_ovn_networks fixture parameters
-    import_ovn_networks_to_engine = ovn_conf.OVN_NETS
-    remove_ovn_networks_from_engine = remove_ovn_networks_from_provider.keys()
 
     # add_vnics_to_vms fixture parameters
     add_vnics_vms_params = {
@@ -442,7 +438,9 @@ class TestOVNComponent(NetworkTest):
         # Remove vNIC profile during teardown
         self.remove_vnic_profile_params["1"] = {
             "name": ovn_conf.OVN_VNIC_PROFILE,
-            "network": ovn_conf.OVN_NET_NO_SUB_1
+            "network": ovn_conf.OVN_NET_NO_SUB_1,
+            "cluster": self.cl,
+            "data_center": self.dc
         }
 
         testflow.step(
@@ -738,17 +736,10 @@ class TestOVNComponent(NetworkTest):
     @polarion("RHEVM-22212")
     def test_14_long_network_names(self):
         """
-        1. Import network with long name to engine
-        2. Attach network to OVN vNIC on VM-0 and VM-1
-        3. Get DHCP IP on OVN vNIC on VM-0 and VM-1
-        4. Test ping from VM-0 to VM-1 over OVN IP
+        1. Attach long network network name to OVN vNIC on VM-0 and VM-1
+        2. Get DHCP IP on OVN vNIC on VM-0 and VM-1
+        3. Test ping from VM-0 to VM-1 over OVN IP
         """
-        for net_name in ovn_conf.OVN_LONG_NETS.keys():
-            testflow.step("Importing network: %s to engine", net_name)
-            assert ovn_conf.OVN_PROVIDER.import_network(
-                network=net_name, datacenter=self.dc, cluster=self.cl
-            )
-
         ip = ""
         for vm in (net_conf.VM_0, net_conf.VM_1):
             testflow.step(
@@ -806,10 +797,10 @@ class TestOVNComponent(NetworkTest):
 @pytest.mark.usefixtures(
     skip_10g_env.__name__,
     set_cluster_external_network_provider.__name__,
+    set_auto_sync_time.__name__,
     reinstall_hosts.__name__,
     get_default_ovn_provider.__name__,
     create_ovn_networks_on_provider.__name__,
-    import_ovn_networks.__name__,
     remove_vnics_from_vms.__name__,
     add_vnics_to_vms.__name__,
     start_vm.__name__,
@@ -828,9 +819,6 @@ class TestOVNPerformance(NetworkTest):
 
     # create_ovn_networks_on_provider fixture parameters
     add_ovn_networks_to_provider = ovn_conf.OVN_NETS_PERF
-
-    # import_ovn_networks fixture parameters
-    import_ovn_networks_to_engine = ovn_conf.OVN_NETS_PERF.keys()
 
     # add_vnics_to_vms fixture parameters
     add_vnics_vms_params = {

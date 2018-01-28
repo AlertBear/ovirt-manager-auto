@@ -77,7 +77,8 @@ from rhevmtests.networking.sr_iov.fixtures import (  # noqa: F401
 )
 from rhevmtests.networking.external_network_provider.fixtures import (
     set_cluster_external_network_provider,
-    reinstall_hosts
+    reinstall_hosts,
+    set_auto_sync_time
 )
 from rhevmtests.networking.acquire_nm_connections.fixtures import (
     nmcli_create_networks
@@ -1435,6 +1436,7 @@ class TestSanity18(NetworkTest):
 @pytest.mark.incremental
 @pytest.mark.usefixtures(
     set_cluster_external_network_provider.__name__,
+    set_auto_sync_time.__name__,
     reinstall_hosts.__name__,
     remove_ovn_networks.__name__,
     remove_vnics_from_vms.__name__,
@@ -1520,18 +1522,13 @@ class TestSanity19(NetworkTest):
 
     @tier1
     @polarion("RHEVM3-17046")
-    def test_04_import_networks_from_ovn_provider(self):
+    def test_04_wait_for_auto_sync_networks(self):
         """
-        Import networks from OVN provider
+        Wait for auto-sync to sync networks from OVN provider
         """
-        for net_name in sanity_conf.OVN_NETS.keys():
-            testflow.step(
-                "Importing network: %s from OVN network provider to DC: %s "
-                "Cluster: %s", net_name, self.dc, self.cl
-            )
-            assert sanity_conf.OVN_PROVIDER.import_network(
-                network=net_name, datacenter=self.dc, cluster=self.cl
-            )
+        assert ovn_helper.wait_for_auto_sync(
+            networks=sanity_conf.OVN_NETS.keys(), removal=False
+        )
 
     @tier1
     @polarion("RHEVM3-17439")
