@@ -713,6 +713,11 @@ def create_bond(
                 if cmd == down_cmd:
                     continue
                 return False
+
+        for nic in host_nics:
+            nic_up_cmd = "nmcli connection up System\ {nic}".format(nic=nic)
+            host_resource.run_command(command=shlex.split(nic_up_cmd))
+
     else:
         if host_resource.run_command(
             command=shlex.split(IF_UP_CMD.format(interface=bond))
