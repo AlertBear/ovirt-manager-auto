@@ -1484,9 +1484,6 @@ def prepare_vnic_profile_mappings_object(network_mappings):
             )
             network_mapping["target_vnic_profile"] = vnic_profile_object
 
-        elif target_vnic_profile is None:
-            network_mapping["target_vnic_profile"] = getDS("VnicProfile")()
-
         vnic_profile_mappings = getDS("VnicProfileMappings")()
         vnic_profile_mapping = getDS("VnicProfileMapping")
         vnic_profile_mappings.add_vnic_profile_mapping(

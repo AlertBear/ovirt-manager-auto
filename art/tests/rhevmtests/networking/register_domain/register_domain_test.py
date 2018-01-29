@@ -306,7 +306,7 @@ class TestRegisterDomain08(NetworkTest):
     }]
 
     @tier2
-    @bz({"1522799": {}})
+    @bz({"1539388": {}})
     @polarion("RHEVM-17164")
     def test_network_in_dc_force_empty_vnic(self):
         """
@@ -370,7 +370,7 @@ class TestRegisterDomain09(NetworkTest):
             pytest.param(*test_3_params, marks=(polarion("RHEVM-24353"))),
             pytest.param(
                 *test_4_params, marks=(
-                        polarion("RHEVM-24354"), bz({"1522799": {}}))
+                        polarion("RHEVM-24354"), bz({"1539388": {}}))
             ),
         ],
         ids=[
