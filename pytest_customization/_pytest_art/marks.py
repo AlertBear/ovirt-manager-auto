@@ -263,7 +263,7 @@ class JunitExtension(object):
 
     def pytest_artconf_ready(self, config):
         self.global_properties['polarion-custom-plannedin'] = (
-            'RHV_' +
+            config.ART_CONFIG['PARAMETERS']['polarion_project_prefix'] + '_' +
             config.ART_CONFIG['DEFAULT']['VERSION'].replace(".", "_")
         )
         self.global_properties['polarion-custom-arch'] = (
@@ -290,7 +290,8 @@ class JunitExtension(object):
             tiers = "_".join(tier_list)
 
         self.polarion_importer_properties['polarion-testrun-id'] = (
-            "RHV_{0}_{1}_{2}".format(
+            "{0}_{1}_{2}_{3}".format(
+                config.ART_CONFIG['PARAMETERS']['polarion_project_prefix'],
                 config.ART_CONFIG['DEFAULT']['VERSION'],
                 tiers,
                 config.ART_CONFIG['PARAMETERS']['arch']

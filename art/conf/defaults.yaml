@@ -63,6 +63,7 @@ PARAMETERS:
     pm_type_ipmilan: ipmilan
     pm_user: root
     polarion_project: RHEVM3
+    polarion_project_prefix: RHV
     polarion_response_myproduct: rhvm
     polarion_user: ci-user
     product_name: Red Hat Virtualization Manager
