@@ -17,7 +17,7 @@ PyYAML
 winremote
 # FIXME when 3.4 gets released
 # pytest
-git+git://github.com/rhevm-qe-automation/pytest-dev.git@features
+git+git://github.com/pytest-dev/pytest.git@features
 pytest-xdist
 pytest-ordering
 # pytest-marker-bugzilla
