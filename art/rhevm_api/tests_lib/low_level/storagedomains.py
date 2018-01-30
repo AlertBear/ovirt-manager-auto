@@ -1200,6 +1200,7 @@ def register_object(obj, cluster, **kwargs):
         bool: True on success, False otherwise
     """
     cluster_obj = Cluster(name=cluster)
+    registration_configuration = getDS("RegistrationConfiguration")()
     reassign_bad_macs = kwargs.get("reassign_bad_macs", True)
     network_mappings = kwargs.get("network_mappings")
     partial_import = kwargs.get("partial_import")
@@ -1208,11 +1209,14 @@ def register_object(obj, cluster, **kwargs):
         vnic_profile_mappings = prepare_vnic_profile_mappings_object(
             network_mappings=network_mappings
         )
+        registration_configuration.set_vnic_profile_mappings(
+            vnic_profile_mappings
+        )
     return bool(
         util.syncAction(
             entity=obj, action='register', positive=True, cluster=cluster_obj,
             reassign_bad_macs=reassign_bad_macs,
-            vnic_profile_mappings=vnic_profile_mappings,
+            registration_configuration=registration_configuration,
             allow_partial_import=partial_import
         )
     )

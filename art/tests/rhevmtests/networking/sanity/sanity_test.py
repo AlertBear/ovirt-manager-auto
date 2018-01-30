@@ -1265,10 +1265,12 @@ class TestSanity16(NetworkTest):
     # import_vm_from_data_domain params
     data_domain_name = sanity_conf.EXTRA_SD_NAME
     network_mappings = [{
-        "source_network_profile_name": src_net,
-        "source_network_name": src_net,
+        "from": {
+            "name": src_net,
+            "network": src_net
+        },
+        "to": dst_net,
         "target_network": dst_net,
-        "target_vnic_profile": dst_net
     }]
 
     # create_and_attach_networks params

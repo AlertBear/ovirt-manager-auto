@@ -1456,40 +1456,58 @@ def prepare_vnic_profile_mappings_object(network_mappings):
             existing network on cluster (list of dicts)
 
     Returns:
-        VnicProfileMappings: VnicProfileMappings object
+        RegistrationVnicProfileMappings: RegistrationVnicProfileMappings object
 
     Examples:
-        vnic_profile_mapping = network_mappings = [{
-            "source_network_profile_name": "src_profile_name",
-            "source_network_name": "src_network_name",
+        network_mappings = [{
+            "from": {
+                "name": src_profile_name,
+                "network": src_network_name,
+            },
+            "to": target_profile_name,
             "target_network": "target_network_name",
-            "target_vnic_profile": "target_profile_name",
             "cluster": "cluster_name_for_target_vnic_profile",
             "datacenter": "datacenter_name_for_target_vnic_profile"
-            }]
-        prepare_vnic_profile_mappings_object(
-            network_mappings=vnic_profile_mapping
-            )
+        }]
     """
-    vnic_profile_mappings = None
+    vnic_profile_ds = getDS("VnicProfile")
+    register_vnic_profile_mappings = None
     for network_mapping in network_mappings:
-        target_vnic_profile = network_mapping.get("target_vnic_profile")
-        target_network = network_mapping.pop("target_network", None)
-        cluster = network_mapping.pop("cluster", None)
-        datacenter = network_mapping.pop("datacenter", None)
+        target_vnic_profile = network_mapping.get("to")
+        target_network = network_mapping.get("target_network")
+        cluster = network_mapping.get("cluster")
+        datacenter = network_mapping.get("datacenter")
         if target_vnic_profile:
             vnic_profile_object = get_vnic_profile_obj(
                 name=target_vnic_profile, network=target_network,
                 cluster=cluster, data_center=datacenter
             )
-            network_mapping["target_vnic_profile"] = vnic_profile_object
+            network_mapping["to"] = vnic_profile_object
 
-        vnic_profile_mappings = getDS("VnicProfileMappings")()
-        vnic_profile_mapping = getDS("VnicProfileMapping")
-        vnic_profile_mappings.add_vnic_profile_mapping(
-            vnic_profile_mapping(**network_mapping)
+        register_vnic_profile_mappings = getDS(
+            "RegistrationVnicProfileMappings"
+        )()
+        register_vnic_profile_mapping = getDS(
+            "RegistrationVnicProfileMapping"
+        )()
+        from__ = network_mapping.get("from")
+        to = network_mapping.get("to")
+        if from__:
+            vnic_name = from__.get("name")
+            network_name = from__.get("network")
+            network_object = getDS("Network")(name=network_name)
+            from_vnic_profile = vnic_profile_ds(
+                name=vnic_name, network=network_object
+            )
+            register_vnic_profile_mapping.set_from(from_vnic_profile)
+
+        if to:
+            register_vnic_profile_mapping.set_to(vnic_profile_ds(id=to.id))
+
+        register_vnic_profile_mappings.add_registration_vnic_profile_mapping(
+            register_vnic_profile_mapping
         )
-    return vnic_profile_mappings
+    return register_vnic_profile_mappings
 
 
 @general.generate_logs()

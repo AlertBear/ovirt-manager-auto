@@ -16,7 +16,7 @@ import config as register_domain_conf
 import helper
 from rhevmtests import helpers
 import rhevmtests.networking.config as conf
-from art.test_handler.tools import polarion, bz
+from art.test_handler.tools import polarion
 from fixtures import (  # noqa: F401
     prepare_setup,
     import_vm_from_data_domain,
@@ -86,10 +86,12 @@ class TestRegisterDomain02(NetworkTest):
     src_net = register_domain_conf.NETS[2][0]
     dst_net = register_domain_conf.NETS[2][1]
     network_mappings = [{
-        "source_network_profile_name": src_net,
-        "source_network_name": src_net,
+        "from": {
+            "name": src_net,
+            "network": src_net
+        },
+        "to": dst_net,
         "target_network": dst_net,
-        "target_vnic_profile": dst_net
     }]
 
     @tier2
@@ -299,14 +301,13 @@ class TestRegisterDomain08(NetworkTest):
     reassessing_mac = False
     net = register_domain_conf.NETS[8][0]
     network_mappings = [{
-        "source_network_profile_name": net,
-        "source_network_name": net,
-        "target_network": None,
-        "target_vnic_profile": None
+        "from": {
+            "name": net,
+            "network": net
+        },
     }]
 
     @tier2
-    @bz({"1539388": {}})
     @polarion("RHEVM-17164")
     def test_network_in_dc_force_empty_vnic(self):
         """
@@ -344,20 +345,22 @@ class TestRegisterDomain09(NetworkTest):
     with_map_src_net = register_domain_conf.NETS[3][0]
     with_map_dst_net = register_domain_conf.NETS[2][1]
     test_3_mapping = [{
-        "source_network_profile_name": with_map_src_net,
-        "source_network_name": with_map_src_net,
+        "from": {
+            "name": with_map_src_net,
+            "network": with_map_src_net
+        },
+        "to": with_map_dst_net,
         "target_network": with_map_dst_net,
-        "target_vnic_profile": with_map_dst_net
     }]
     test_3_params = [templates[2], with_map_dst_net, test_3_mapping]
 
     # Import-template-with-mapping-to-empty-vNIC-profile
-    empty_map_src_net = register_domain_conf.NETS[2][0]
+    empty_map_src_net = register_domain_conf.NETS[4][0]
     test_4_mapping = [{
-        "source_network_profile_name": empty_map_src_net,
-        "source_network_name": empty_map_src_net,
-        "target_network": None,
-        "target_vnic_profile": None
+        "from": {
+            "name": empty_map_src_net,
+            "network": empty_map_src_net
+        }
     }]
     test_4_params = [templates[3], None, test_4_mapping]
 
@@ -368,16 +371,13 @@ class TestRegisterDomain09(NetworkTest):
             pytest.param(*test_1_params, marks=(polarion("RHEVM-24355"))),
             pytest.param(*test_2_params, marks=(polarion("RHEVM-24352"))),
             pytest.param(*test_3_params, marks=(polarion("RHEVM-24353"))),
-            pytest.param(
-                *test_4_params, marks=(
-                        polarion("RHEVM-24354"), bz({"1539388": {}}))
-            ),
+            pytest.param(*test_4_params, marks=(polarion("RHEVM-24354"))),
         ],
         ids=[
-            "Import-template-without-network-mapping",
-            "Import-template-when-network-is-missing-on-dc",
-            "Import-template-with-network-mapping",
-            "Import-template-with-network-mapping-to-empty-vNIC-profile"
+            "Import_template_without_network_mapping",
+            "Import_template_when_network_is_missing_on_dc",
+            "Import_template_with_network_mapping",
+            "Import_template_with_network_mapping_to_empty_vNIC_profile"
         ]
     )
     def test_import_template_from_domain(self, template, vnic, mappings):
