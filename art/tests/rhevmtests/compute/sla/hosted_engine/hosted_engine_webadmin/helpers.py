@@ -240,6 +240,7 @@ def get_hosts_he_attrs(hosts_names, he_attr):
 def wait_for_hosts_he_attributes(
     hosts_names,
     expected_values,
+    testflow_func,
     timeout=conf.UPDATE_HE_STATS_TIMEOUT,
     sleep=conf.SAMPLER_SLEEP
 ):
@@ -251,6 +252,7 @@ def wait_for_hosts_he_attributes(
         hosts_names (list): Host names
         expected_values (dict): Expected values
             {he_attr_name: he_attr_expected_values, ...}
+        testflow_func (func): Testflow function(step, setup, teardown)
         timeout (int): Sampler timeout in seconds
         sleep (int): Sampler sleep interval in seconds
 
@@ -259,7 +261,7 @@ def wait_for_hosts_he_attributes(
             to expected values, otherwise False
     """
     for he_attr, expected_value in expected_values.iteritems():
-        u_libs.testflow.step(
+        testflow_func(
             "Wait until the HE attribute %s of hosts %s will be equal to %s",
             he_attr, hosts_names, expected_value
         )

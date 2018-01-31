@@ -1,15 +1,20 @@
 """
 HE webadmin fixtures
 """
-import pytest
+import time
 
-import art.rhevm_api.tests_lib.high_level.host_network as hl_host_network
-import art.rhevm_api.tests_lib.high_level.networks as hl_networks
-import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
-import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import art.unittest_lib as test_libs
 import config as conf
 import helpers
+import pytest
+from art.rhevm_api.tests_lib.high_level import (
+    host_network as hl_host_network,
+    networks as hl_networks,
+)
+from art.rhevm_api.tests_lib.low_level import (
+    hosts as ll_hosts,
+    vms as ll_vms
+)
 
 
 @pytest.fixture(scope="module")
@@ -26,8 +31,8 @@ def initialize_ge_constants():
     conf.EXPECTED_CPUS = 2 * conf.INIT_HE_VM_CPUS
 
 
-@pytest.fixture(scope="module")
-def init_he_webadmin(request):
+@pytest.fixture(scope="class")
+def enable_global_maintenance(request):
     """
     Enable global maintenance
     """
@@ -37,12 +42,28 @@ def init_he_webadmin(request):
             resource=conf.VDS_HOSTS[0],
             command=["--set-maintenance", "--mode=%s" % conf.MAINTENANCE_NONE]
         )
+        helpers.wait_for_hosts_he_attributes(
+            hosts_names=conf.HOSTS[:1],
+            expected_values={
+                conf.PARAMS_HE_GLOBAL_MAINTENANCE: False,
+                conf.PARAMS_HE_SCORE: 3400
+            },
+            testflow_func=test_libs.testflow.teardown
+        )
     request.addfinalizer(fin)
 
     test_libs.testflow.setup("Enable 'GlobalMaintenance'")
     helpers.run_hosted_engine_cli_command(
         resource=conf.VDS_HOSTS[0],
         command=["--set-maintenance", "--mode=%s" % conf.MAINTENANCE_GLOBAL]
+    )
+    assert helpers.wait_for_hosts_he_attributes(
+        hosts_names=conf.HOSTS[:1],
+        expected_values={
+            conf.PARAMS_HE_GLOBAL_MAINTENANCE: True,
+            conf.PARAMS_HE_SCORE: 3400
+        },
+        testflow_func=test_libs.testflow.setup
     )
 
 
@@ -64,6 +85,12 @@ def restart_he_vm():
     """
     1) Wait for the OVF update and restart the HE VM
     """
+    test_libs.testflow.setup(
+        "Give %ss to make sure that the engine updates OVF",
+        conf.SLEEP_OVF_UPDATE
+    )
+    time.sleep(conf.SLEEP_OVF_UPDATE)
+
     test_libs.testflow.setup("Apply new parameters on the HE VM")
     assert helpers.apply_new_parameters_on_he_vm()
 
@@ -73,7 +100,7 @@ def update_he_vm_cpus():
     """
     Update the HE VM number of CPU's
     """
-    test_libs.testflow.teardown(
+    test_libs.testflow.setup(
         "Update the HE VM CPU's to %s", conf.EXPECTED_CPUS
     )
     assert ll_vms.updateVm(
@@ -82,7 +109,7 @@ def update_he_vm_cpus():
         cpu_socket=conf.EXPECTED_CPUS,
         cpu_cores=1
     )
-    test_libs.testflow.teardown("Apply new parameters on the HE VM")
+    test_libs.testflow.setup("Apply new parameters on the HE VM")
     assert helpers.apply_new_parameters_on_he_vm()
 
 

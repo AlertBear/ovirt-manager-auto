@@ -3,18 +3,22 @@ Test HE behaviour via the engine
 """
 import pytest
 
-import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
-import art.rhevm_api.tests_lib.low_level.storagedomains as ll_sds
-import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 import art.unittest_lib as u_libs
+import time
 import config as conf
 import helpers
+from art.rhevm_api.tests_lib.low_level import (
+    datacenters as ll_datacenters,
+    hosts as ll_hosts,
+    storagedomains as ll_sds,
+    vms as ll_vms
+)
 from art.test_handler.tools import polarion, bz
 from fixtures import (
     add_nic_to_he_vm,
     create_network,
     initialize_ge_constants,
-    init_he_webadmin,
+    enable_global_maintenance,
     not_enough_cpus_skip_test,
     undeploy_he_host,
     update_he_vm,
@@ -22,7 +26,12 @@ from fixtures import (
     update_he_vm_cpus_back,
     restart_he_vm
 )
-from rhevmtests.compute.sla.fixtures import migrate_he_vm
+from rhevmtests.compute.sla.fixtures import (
+    activate_hosts,
+    create_quota,
+    migrate_he_vm,
+    update_datacenter
+)
 
 he_dst_host = 0
 
@@ -30,7 +39,7 @@ he_dst_host = 0
 @pytest.mark.usefixtures(
     initialize_ge_constants.__name__,
     migrate_he_vm.__name__,
-    init_he_webadmin.__name__,
+    enable_global_maintenance.__name__,
     update_he_vm.__name__,
     restart_he_vm.__name__
 )
@@ -63,7 +72,7 @@ class TestUpdateHeVmMemory(u_libs.SlaTest):
 @pytest.mark.usefixtures(
     initialize_ge_constants.__name__,
     migrate_he_vm.__name__,
-    init_he_webadmin.__name__,
+    enable_global_maintenance.__name__,
     not_enough_cpus_skip_test.__name__,
     update_he_vm.__name__,
     update_he_vm_cpus_back.__name__
@@ -114,7 +123,7 @@ class TestHotPlugAndUnplugCpus(u_libs.SlaTest):
 @pytest.mark.usefixtures(
     initialize_ge_constants.__name__,
     migrate_he_vm.__name__,
-    init_he_webadmin.__name__,
+    enable_global_maintenance.__name__,
     update_he_vm_cpus.__name__,
     restart_he_vm.__name__,
     update_he_vm_cpus_back.__name__,
@@ -143,7 +152,7 @@ class TestUpdateHeVmCpus(u_libs.SlaTest):
 @pytest.mark.usefixtures(
     initialize_ge_constants.__name__,
     migrate_he_vm.__name__,
-    init_he_webadmin.__name__
+    enable_global_maintenance.__name__
 )
 class TestAddNicToHeVmWithManagementNetwork(u_libs.SlaTest):
     """
@@ -170,7 +179,7 @@ class TestAddNicToHeVmWithManagementNetwork(u_libs.SlaTest):
 @pytest.mark.usefixtures(
     initialize_ge_constants.__name__,
     migrate_he_vm.__name__,
-    init_he_webadmin.__name__,
+    enable_global_maintenance.__name__,
     restart_he_vm.__name__,
     create_network.__name__,
     add_nic_to_he_vm.__name__
@@ -178,10 +187,10 @@ class TestAddNicToHeVmWithManagementNetwork(u_libs.SlaTest):
 class TestAddNicToHeVmWithoutManagementNetwork(u_libs.SlaTest):
     """
     Add NIC to HE VM without management network and
-    check if NIC appear under HE VM
+    check if NIC appears under HE VM
     """
 
-    @bz({"1469538": {}})
+    @bz({"1539356": {}})
     @u_libs.tier2
     @polarion("RHEVM-15026")
     def test_he_vm_nic(self):
@@ -208,7 +217,6 @@ class TestAddNicToHeVmWithoutManagementNetwork(u_libs.SlaTest):
 @pytest.mark.usefixtures(
     initialize_ge_constants.__name__,
     migrate_he_vm.__name__,
-    init_he_webadmin.__name__,
     undeploy_he_host.__name__
 )
 class TestAddHostAndDeployHostedEngine(u_libs.SlaTest):
@@ -230,6 +238,7 @@ class TestAddHostAndDeployHostedEngine(u_libs.SlaTest):
             address=conf.VDS_HOSTS[1].fqdn,
             root_password=conf.HOSTS_PW,
             cluster=conf.CLUSTER_NAME[0],
+            comment=conf.VDS_HOSTS[1].ip,
             deploy_hosted_engine=True
         )
 
@@ -239,16 +248,23 @@ class TestAddHostAndDeployHostedEngine(u_libs.SlaTest):
         assert helpers.wait_until_host_will_deploy_he(host_name=conf.HOSTS[1])
         assert helpers.deploy_hosted_engine_on_host(deploy=False)
         assert helpers.deploy_hosted_engine_on_host(deploy=True)
+        u_libs.testflow.step(
+            "Give %ss for sanlock lease update", conf.SLEEP_SANLOCK_UPDATE
+        )
+        time.sleep(conf.SLEEP_SANLOCK_UPDATE)
 
 
-@pytest.mark.usefixtures(initialize_ge_constants.__name__)
+@pytest.mark.usefixtures(
+    initialize_ge_constants.__name__,
+    activate_hosts.__name__
+)
 class TestPutHostWithHAVmToMaintenance(u_libs.SlaTest):
     """
     Test that the HE agent has correct information
     when the user put the HE host to the maintenance via webadmin
     """
+    hosts_to_activate_indexes = range(3)
 
-    @bz({"1409509": {}})
     @u_libs.tier2
     @polarion("RHEVM-21316")
     def test_put_to_local_maintenance(self):
@@ -262,15 +278,15 @@ class TestPutHostWithHAVmToMaintenance(u_libs.SlaTest):
         he_vm_host = ll_vms.get_vm_host(vm_name=conf.HE_VM)
 
         assert ll_hosts.deactivate_host(positive=True, host=he_vm_host)
-        assert helpers.wait_for_hosts_he_attributes(
-            hosts_names=[he_vm_host],
-            expected_values={"local_maintenance": True, "score": 0}
-        )
 
         assert ll_hosts.activate_host(positive=True, host=he_vm_host)
         assert helpers.wait_for_hosts_he_attributes(
             hosts_names=[he_vm_host],
-            expected_values={"local_maintenance": False, "score": 3400}
+            expected_values={
+                conf.PARAMS_HE_LOCAL_MAINTENANCE: False,
+                conf.PARAMS_HE_SCORE: 3400
+            },
+            testflow_func=u_libs.testflow.step
         )
 
 
@@ -296,7 +312,11 @@ class TestPutEnvironmentToGlobalMaintenance(u_libs.SlaTest):
             )
             assert helpers.wait_for_hosts_he_attributes(
                 hosts_names=conf.HOSTS,
-                expected_values={"global_maintenance": enabled, "score": 3400}
+                expected_values={
+                    conf.PARAMS_HE_GLOBAL_MAINTENANCE: enabled,
+                    conf.PARAMS_HE_SCORE: 3400
+                },
+                testflow_func=u_libs.testflow.step
             )
 
 
@@ -403,4 +423,42 @@ class TestNegativeHeStorageDomain(u_libs.SlaTest):
             positive=True,
             datacenter=conf.DC_NAME[0],
             storagedomain=conf.HE_STORAGE_DOMAIN
+        )
+
+
+@pytest.mark.usefixtures(
+    initialize_ge_constants.__name__,
+    update_datacenter.__name__,
+    create_quota.__name__
+)
+class TestNegativeHeQuota(u_libs.SlaTest):
+    """
+    Try to update HE VM quota and description when the datacenter
+    has "Enforced" quota mode
+    """
+    dcs_to_update = {
+        conf.DC_NAME[0]: {
+            conf.DC_QUOTA_MODE: conf.QUOTA_MODES[conf.QUOTA_ENFORCED_MODE]
+        }
+    }
+    quota_params = {
+        conf.QUOTA_PARAMS_DC_NAME: conf.DC_NAME[0],
+        conf.QUOTA_PARAMS_NAME: conf.TEST_PARAMS_QUOTA_NAME
+    }
+
+    @u_libs.tier1
+    @polarion("RHEVM-25129")
+    def test_update_he_vm(self):
+        """
+        Update HE VM quota and description
+        """
+        quota_id = ll_datacenters.get_quota_id_by_name(
+            dc_name=conf.DC_NAME[0],
+            quota_name=conf.TEST_PARAMS_QUOTA_NAME
+        )
+        assert not ll_vms.updateVm(
+            positive=True, vm=conf.HE_VM, quota=quota_id
+        )
+        assert ll_vms.updateVm(
+            positive=True, vm=conf.HE_VM, description="Hosted-Engine VM"
         )

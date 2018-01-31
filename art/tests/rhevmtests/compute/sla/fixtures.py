@@ -988,3 +988,24 @@ def update_vms_parametrizied(request):
     for vm_name, vm_params in vms_to_params.iteritems():
         assert ll_vms.updateVm(positive=True, vm=vm_name, **vm_params)
         ll_jobs.wait_for_jobs([sla_config.JOB_UPDATE_VM])
+
+
+@pytest.fixture("class")
+def create_quota(request):
+    """
+    Create quota
+    """
+    quota_params = request.node.cls.quota_params
+    quota_name = quota_params.get(sla_config.QUOTA_PARAMS_NAME)
+    dc_name = quota_params.get(sla_config.QUOTA_PARAMS_DC_NAME)
+
+    def fin():
+        """
+        Remove quota
+        """
+        assert ll_datacenters.delete_dc_quota(
+            dc_name=dc_name, quota_name=quota_name
+        )
+    request.addfinalizer(fin)
+
+    assert ll_datacenters.create_dc_quota(**quota_params)

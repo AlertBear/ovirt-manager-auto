@@ -597,36 +597,32 @@ def get_quota_id_by_name(dc_name, quota_name):
     return quota_obj.get_id()
 
 
+@ll_general.generate_logs(step=True)
 def create_dc_quota(dc_name, quota_name, **kwargs):
     """
-    Create datacenter quota
+    Create new datacenter quota
 
-    :param dc_name: datacenter name
-    :type dc_name: str
-    :param quota_name: create quota with name
-    :type quota_name: str
-    :param kwargs: description: type=str
-                   cluster_soft_limit_pct: type=int
-                   cluster_hard_limit_pct: type=int
-                   storage_soft_limit_pct: type=int
-                   storage_hard_limit_pct: type=int
-    :return: True, if creation succeed, otherwise False
-    :rtype: bool
+    Args:
+        dc_name (str): Datacenter name
+        quota_name (str): Quota name
+
+    Keyword Args:
+        description (str): Quota description
+        cluster_soft_limit_pct (int): Quota cluster soft limit
+        cluster_hard_limit_pct (int): Quota cluster hard limit
+        storage_soft_limit_pct (int): Quota storage soft limit
+        storage_hard_limit_pct (int): Quota cluster hard limit
+
+    Returns:
+        bool: True, if create action succeeded, otherwise False
     """
     quotas_href = get_quotas_href(dc_name)
     quota_obj = __prepare_quota_obj(name=quota_name, **kwargs)
     if not quota_obj:
         return False
-    logger.info("Create quota %s under datacenter %s", quota_name, dc_name)
-    if not QUOTA_API.create(
+    return QUOTA_API.create(
         entity=quota_obj, positive=True, collection=quotas_href
-    )[1]:
-        logger.error(
-            "Failed to create quota %s under datacenter %s",
-            quota_name, dc_name
-        )
-        return False
-    return True
+    )[1]
 
 
 def update_dc_quota(dc_name, quota_name, **kwargs):
