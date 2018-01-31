@@ -58,24 +58,24 @@ def unblock_storage_on_host_of_running_vm(
     )
 
 
-def get_storage_domain_ip(vm_name):
+def get_storage_domain_ips(vm_name):
     """
-    Get storage IP address
+    Get storage IP addresses.
 
     Args:
         vm_name (str): VM name
 
     Returns:
-        str: Storage Domain IP
+        list: Storage Domain IPs list for the domain type
     """
     storage_domain_name = (
         ll_vms.get_vms_disks_storage_domain_name(vm_name=vm_name)
     )
-    storage_domain_ip = ll_sd.getDomainAddress(
+    storage_domain_ips = ll_sd.getDomainAddress(
         positive=True, storage_domain=storage_domain_name
     )[1][conf.DESTINATION_IP]
 
-    return storage_domain_ip[0]
+    return storage_domain_ips
 
 
 def check_vm_status(vm_name, vm_state, resume_behavior):
@@ -133,13 +133,12 @@ def block_unblock_storage_for_threadpool(sleep_after_io_error, vm):
         AssertionError: if one of the function steps (block, wait for IO pause,
             unblock) fails
     """
-    storage_domain_ip = get_storage_domain_ip(vm_name=vm)
-
-    testflow.setup("Block the Storage %s", storage_domain_ip)
-    assert block_storage_on_host_of_running_vm(
-        vm_name=vm, storage_domain_ip=storage_domain_ip
-    )
-
+    storage_domain_ips = get_storage_domain_ips(vm_name=vm)
+    for ip in storage_domain_ips:
+        testflow.setup("Block the Storage %s", ip)
+        assert block_storage_on_host_of_running_vm(
+            vm_name=vm, storage_domain_ip=ip
+        )
     testflow.setup(
         "Wait until VM %s have state Paused because of I/O Error", vm
     )
@@ -149,12 +148,13 @@ def block_unblock_storage_for_threadpool(sleep_after_io_error, vm):
         timeout=conf.SAMPLER_TIMEOUT
     )
 
-    testflow.setup("Unblock the Storage %s", storage_domain_ip)
-    assert unblock_storage_on_host_of_running_vm(
-        vm_name=vm,
-        time_to_sleep_after_io_error=sleep_after_io_error,
-        storage_domain_ip=storage_domain_ip
-    ), "Didn't succeed to unblock the storage on host for running vm %s" % vm
+    for ip in storage_domain_ips:
+        testflow.setup("Unblock the Storage %s", ip)
+        assert unblock_storage_on_host_of_running_vm(
+            vm_name=vm,
+            time_to_sleep_after_io_error=sleep_after_io_error,
+            storage_domain_ip=ip
+        ), "Failed to unblock the storage on host for running vm %s" % vm
 
 
 def check_vm_status_thread_pool(vm_state_after_io_error, resume_behavior):
