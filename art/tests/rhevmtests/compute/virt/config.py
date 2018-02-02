@@ -140,6 +140,7 @@ RNG_DEVICE = 'rng_device'
 URANDOM_RNG = 'urandom'
 HW_RNG = 'hwrng'
 DEST_HWRNG = "/dev/hwrng"
+VERIFY_RNG_DEVICE_ACTIVE = 'dd if=/dev/hwrng of=test bs=1K count=1'
 
 DEFAULT_VM_PARAMETERS = {
     VM_MEMORY: GB,

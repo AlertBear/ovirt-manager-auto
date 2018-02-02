@@ -5,6 +5,7 @@ import pytest
 import rhevmtests.compute.virt.config as config
 import rhevmtests.helpers as helpers
 from art.rhevm_api.tests_lib.low_level import clusters as ll_clusters
+from art.rhevm_api.tests_lib.low_level import hosts as ll_hosts
 from art.unittest_lib import testflow
 
 
@@ -33,28 +34,24 @@ def enable_hwrng_source_on_cluster(request):
 
 
 @pytest.fixture(scope='class')
-def add_symbolic_link_on_host(request):
+def set_hwrng_device():
     """
-    Add sym link on cluster.
+    Verify if hwrng device exists and is operational, if not operational -
+    remove it and replace with /dev/zero, if not exist assign it to /dev/zero.
     """
-    vm_name = request.node.cls.vm_name
-    hwrng_exists = True
 
-    def fin():
-        """
-        Remove hwrng if created in setup
-        """
-        if not hwrng_exists:
-            testflow.teardown("remove soft link %s", config.HW_RNG)
-            assert host_resource.fs.remove(config.DEST_HWRNG), (
-                "Failed to remove %s" % config.DEST_HWRNG
+    for host_name in config.HOSTS:
+        host_ip = ll_hosts.get_host_ip(host_name)
+        host = helpers.get_host_resource(host_ip, config.VDC_ROOT_PASSWORD)
+        if host.fs.exists(config.DEST_HWRNG):
+            if host.run_command(shlex.split(config.VERIFY_RNG_DEVICE_ACTIVE)):
+                return
+            else:
+                host.run_command(shlex.split("rm -f /dev/hwrng"))
+        if not host.fs.exists(config.DEST_HWRNG):
+            cmd = "ln -s /dev/zero {device}".format(device=config.DEST_HWRNG)
+            testflow.setup(
+                "Create soft link for {device}".format(device=config.HW_RNG)
             )
-    request.addfinalizer(fin)
-
-    host_resource = helpers.get_host_resource_of_running_vm(vm_name)
-    if not host_resource.fs.exists(config.DEST_HWRNG):
-        hwrng_exists = False
-        cmd = "ln -s /dev/zero %s" % config.DEST_HWRNG
-        testflow.setup("Create soft link for %s", config.HW_RNG)
-        rc, _, _ = host_resource.run_command(shlex.split(cmd))
-        assert not rc, "failed to run %s on host %s" % (cmd, host_resource.ip)
+            rc, _, _ = host.run_command(shlex.split(cmd))
+            assert not rc, "failed to run %s on host %s" % (cmd, host.ip)

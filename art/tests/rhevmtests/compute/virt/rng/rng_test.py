@@ -64,8 +64,8 @@ class TestHwrng(common.VirtTest):
     @pytest.mark.usefixtures(
         hwrng_fixtures.enable_hwrng_source_on_cluster.__name__,
         update_vm.__name__,
+        hwrng_fixtures.set_hwrng_device.__name__,
         start_vms.__name__,
-        hwrng_fixtures.add_symbolic_link_on_host.__name__,
         update_vm_to_default_parameters.__name__
     )
     def test_hwrng(self):
