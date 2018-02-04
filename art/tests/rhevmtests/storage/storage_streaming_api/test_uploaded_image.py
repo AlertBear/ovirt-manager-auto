@@ -34,6 +34,7 @@ from art.rhevm_api.tests_lib.high_level import (
 )
 
 
+@pytest.mark.skipif(config.PPC_ARCH, reason=config.PPC_SKIP_MESSAGE)
 @pytest.mark.usefixtures(
     initialize_variables.__name__,
     delete_disks.__name__,

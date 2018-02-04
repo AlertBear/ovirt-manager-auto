@@ -35,6 +35,7 @@ from art.rhevm_api.tests_lib.high_level import (
 )
 
 
+@pytest.mark.skipif(config.PPC_ARCH, reason=config.PPC_SKIP_MESSAGE)
 @pytest.mark.usefixtures(
     initialize_variables.__name__,
     delete_disks.__name__,
@@ -48,7 +49,6 @@ class BaseTestCase(TestCase):
     download used as part of the tests
     """
     @bz({'1497511': {'storage': ['glusterfs']}})
-    @bz({'1532537': {}})
     def basic_disk_download_flow(
         self, storage, snapshot=False, extend=False, pause=False,
         interrupt=False, positive=True
