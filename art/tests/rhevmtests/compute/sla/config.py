@@ -389,3 +389,7 @@ NUMA_NODE_PARAMS_PIN_LIST = "pin_list"
 # Block storage params
 INPUT_CHAIN = "INPUT"
 RULE_DROP = "DROP"
+
+# Timeout for function wait_for_vm_state for situation when storage is master.
+# It requires more time since the Host in this case turns to be non-responsive.
+VM_STATE_AFTER_STORAGE_ERROR_TIMEOUT = 900

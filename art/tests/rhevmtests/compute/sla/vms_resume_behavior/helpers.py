@@ -105,12 +105,12 @@ def check_vm_status(vm_name, vm_state, resume_behavior):
         "unblocking. Fails after timeout=%s.",
         vm_name,
         vm_state,
-        conf.SAMPLER_TIMEOUT
+        conf.VM_STATE_AFTER_STORAGE_ERROR_TIMEOUT
     )
     ll_vms.wait_for_vm_states(
         vm_name=vm_name,
         states=[vm_state],
-        timeout=conf.SAMPLER_TIMEOUT
+        timeout=conf.VM_STATE_AFTER_STORAGE_ERROR_TIMEOUT
     )
 
 
