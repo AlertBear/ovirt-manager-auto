@@ -2,7 +2,7 @@
 Test power saving and even distribution scheduler policy
 under different CPU and memory conditions
 """
-from art.test_handler.tools import polarion
+from art.test_handler.tools import polarion, bz
 from base_class import *  # flake8: noqa
 from rhevmtests.compute.sla.fixtures import stop_vms
 
@@ -52,6 +52,7 @@ class TestPSBalanceModuleUnderMemoryAndCPULoad2(BasePSWithMemory):
     }
     vms_to_run = conf.MEMORY_LOAD_VMS_TO_RUN_1
 
+    @bz({"1541777": {}})
     @polarion("RHEVM3-11390")
     def test_vm_migration(self):
         """
@@ -101,6 +102,7 @@ class TestPSBalanceModuleUnderMemoryAndCPULoad4(BasePSWithMemory):
         conf.CLUSTER_OVERCOMMITMENT: conf.CLUSTER_OVERCOMMITMENT_NONE
     }
 
+    @bz({"1541777": {}})
     @polarion("RHEVM3-11393")
     def test_vm_migration(self):
         """
