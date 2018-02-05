@@ -367,6 +367,14 @@ def create_and_start_windows_vm(template_names, vms_names, start_vm=True):
             bootable=True,
             interface=config.INTERFACE_IDE
         )
+        if not ll_vms.get_vm_nics_obj(vm_name):
+            testflow.setup("Add nic to VM %s", vm_name)
+            assert ll_vms.addNic(
+                positive=True,
+                vm=vm_name,
+                name=config.NIC_NAME[0],
+                network=config.MGMT_BRIDGE
+            )
         if start_vm:
             testflow.setup("Start VM: %s", vm_name)
             assert ll_vms.startVm(positive=True, vm=vm_name)
