@@ -1,0 +1,5 @@
+---
+- src: https://github.com/oVirt/ovirt-ansible-cluster-upgrade.git
+  version: master
+  name: oVirt.cluster-upgrade
+
