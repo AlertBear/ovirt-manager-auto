@@ -205,9 +205,11 @@ class SerialConsoleClass(VirtTest):
             positive=True,
             vm=sc_conf.SERIAL_CONSOLE_VM,
             wait_for_status=sc_conf.VM_UP,
-            wait_for_ip=True,
-            timeout=900
+            timeout=1500
         ), 'Was not able to start VM after suspension.'
+        assert ll_vms.wait_for_vm_ip(sc_conf.SERIAL_CONSOLE_VM), (
+            "VM failed to obtain IP."
+        )
         testflow.step('Connect to VM via SC using proper command.')
         child = helper.sc_ssh_connector(cmd, authorize=False)
         child.logfile = open('/tmp/sc_after_suspension.log', 'w')
