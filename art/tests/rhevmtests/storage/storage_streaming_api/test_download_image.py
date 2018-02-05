@@ -21,8 +21,9 @@ from rhevmtests.storage.fixtures import (
     delete_disks, create_vm, create_disks_with_fs, poweroff_vm, start_vm,
     create_snapshot,
 )
-from rhevmtests.storage.storage_streaming_api.fixtures import (  # noqa
-    create_certificate_for_test  # noqa
+from fixtures import (  # noqa
+    create_certificate_for_test,  # noqa
+    prepare_images_for_download  # noqa
 )  # noqa
 from rhevmtests.storage.fixtures import remove_vm  # noqa
 
@@ -37,6 +38,7 @@ from art.rhevm_api.tests_lib.high_level import (
 
 @pytest.mark.skipif(config.PPC_ARCH, reason=config.PPC_SKIP_MESSAGE)
 @pytest.mark.usefixtures(
+    test_delete_downloaded_files.__name__,
     initialize_variables.__name__,
     delete_disks.__name__,
     create_vm.__name__,
@@ -107,12 +109,9 @@ class BaseTestCase(TestCase):
                 md5sums_before[index], output=output_path[index]
             )
 
-        self.files_to_remove.append(output_path)
-
 
 @pytest.mark.usefixtures(
     test_detach_disks.__name__,
-    test_delete_downloaded_files.__name__,
 )
 class TestCase18258(BaseTestCase):
     """
@@ -164,7 +163,6 @@ class TestCase18259(BaseTestCase):
 
 @pytest.mark.usefixtures(
     create_snapshot.__name__,
-    test_delete_downloaded_files.__name__,
 )
 class TestCase18829(BaseTestCase):
     """
@@ -187,7 +185,6 @@ class TestCase18829(BaseTestCase):
 @pytest.mark.usefixtures(
     extend_disks_for_test.__name__,
     test_detach_disks.__name__,
-    test_delete_downloaded_files.__name__,
 )
 class TestCase18268(BaseTestCase):
     """
@@ -209,7 +206,6 @@ class TestCase18268(BaseTestCase):
 
 @pytest.mark.usefixtures(
     test_detach_disks.__name__,
-    test_delete_downloaded_files.__name__,
 )
 class TestCase18275(BaseTestCase):
     """
@@ -231,7 +227,6 @@ class TestCase18275(BaseTestCase):
 
 @pytest.mark.usefixtures(
     test_detach_disks.__name__,
-    test_delete_downloaded_files.__name__,
 )
 class TestCase19265(BaseTestCase):
     """

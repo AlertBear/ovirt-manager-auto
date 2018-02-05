@@ -1,6 +1,6 @@
 import config
 import pytest
-import shlex
+import shutil
 from art.rhevm_api.tests_lib.low_level import (
     datacenters as ll_dc,
     hosts as ll_hosts,
@@ -16,6 +16,7 @@ from rhevmtests.storage.config import *  # flake8: noqa
 import pexpect
 from _pytest_art.ssl import configure
 import os
+from glob import glob
 
 logger = logging.getLogger(__name__)
 
@@ -33,6 +34,11 @@ def create_certificate_for_test(request):
     Create ssl certificate needed for upload/download image and move it to a
     non shares location
     """
+    def finalizer():
+        testflow.teardown("Remove ssl certificate %s", config.CA_FILE_NEW)
+        os.remove(config.CA_FILE_NEW)
+    request.addfinalizer(finalizer)
+
     testflow.setup("Create ssl certificate %s", config.CA_FILE_ORIG)
     configure()
     testflow.setup(
@@ -41,13 +47,23 @@ def create_certificate_for_test(request):
     # Moving the certificate location to a non shared location as flow node
     # certificate is created on the same location for all runs and therefor
     # overridden by parallel jenkins runs will cause test failures in https
-    cmd = shlex.split(
-        config.COPY_CERT_CMD % (config.CA_FILE_ORIG, config.CA_FILE_NEW)
+    shutil.move(config.CA_FILE_ORIG, config.CA_FILE_NEW)
+
+
+@pytest.fixture(scope='module', autouse=True)
+def prepare_images_for_download(request):
+    """
+    1) Create directory for download images on localhost if it does not exist
+    2) Delete pre-existing files in that folder
+    """
+    testflow.setup(
+        "Create a directory for upload images on the localhost only if it "
+        "doesn't already exist"
     )
-    output, err = Popen(cmd, stdout=PIPE, stderr=PIPE).communicate()
-    assert not err, (
-        "Error %s occurred when trying to execute command %s" % (err, cmd)
-    )
+    if not os.path.isdir(os.path.expanduser(config.DOWNLOAD_DIR_PATH)):
+        os.mkdir(os.path.expanduser(config.DOWNLOAD_DIR_PATH))
+    testflow.setup("Clean download directory before tests begin")
+    [os.remove(file) for file in glob(config.FILE_PATH + '*')]
 
 
 @pytest.fixture(scope='module', autouse=True)
@@ -168,28 +184,11 @@ def test_delete_downloaded_files(request, storage):
 
     self = request.node.cls
 
-    self.files_to_remove = list()
-
     def finalizer():
-        if self.files_to_remove:
-            testflow.teardown(
-                "Deleting downloaded files %s", self.files_to_remove[0]
-            )
-            cmd = "rm %s" % " ".join(self.files_to_remove[0])
-            out, err = Popen(
-                shlex.split(cmd),
-                stdout=PIPE, stderr=PIPE
-            ).communicate()
-            assert not err, (
-                "Error (%s) occurred when trying to execute the command %s" % (
-                    err, cmd
-                )
-            )
-        else:
-            testflow.teardown(
-                "Downloaded files was not removed as they were not found ,"
-                "probably due to a failed step in the test"
-            )
+        testflow.teardown(
+            "Cleaning downloaded directory %s after test", config.FILE_PATH
+        )
+        [os.remove(file) for file in glob(config.FILE_PATH + '*')]
     request.addfinalizer(finalizer)
 
 

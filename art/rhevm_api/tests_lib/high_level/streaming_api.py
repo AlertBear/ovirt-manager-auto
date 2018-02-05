@@ -26,7 +26,8 @@ from concurrent.futures import ThreadPoolExecutor
 import logging
 import os
 logger = logging.getLogger("art.hl_lib.streaming_api")
-FILE_PATH = os.path.expanduser('~')
+DOWNLOAD_DIR_PATH = '~/download/'
+FILE_PATH = os.path.expanduser(DOWNLOAD_DIR_PATH)
 UPLOAD_DIR_PATH = '~/upload/'
 UPLOAD_FILES_LOCALHOST = [
     os.path.expanduser(
