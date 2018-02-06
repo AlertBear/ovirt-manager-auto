@@ -49,7 +49,7 @@ PARAMETERS:
     export_domain_path:
     floppy_image: win2k3.vfd
     foreman_password: qum5net
-    foreman_url: http://jenkins-foreman.qa.lab.tlv.redhat.com
+    foreman_url: http://jenkins-foreman.lab.eng.tlv2.redhat.com
     foreman_user: automation_user
     host_nics: p1p1, p1p2
     image_up_conf_file: /etc/ovirt-engine/imageuploader.conf
@@ -68,10 +68,10 @@ PARAMETERS:
     polarion_user: ci-user
     product_name: Red Hat Virtualization Manager
     # product_name: oVirt Engine # name for US
-    shared_iso_domain_address: vserver-production.qa.lab.tlv.redhat.com
+    shared_iso_domain_address: mantis-nfs-lif1.lab.eng.tlv2.redhat.com
     shared_iso_domain_path: /iso_domain
     storage_type:
-    tests_iso_domain_address: vserver-production.qa.lab.tlv.redhat.com
+    tests_iso_domain_address: mantis-nfs-lif1.lab.eng.tlv2.redhat.com
     tests_iso_domain_path: /iso_domain
     upgrade_version: 4.3
     vdc_root_password: qum5net

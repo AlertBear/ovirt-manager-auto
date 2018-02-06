@@ -103,7 +103,7 @@ Installing from yum
 -------------------------------------------
 
 Download ART rpm compatible with your OS (currently RHEL and Fedora are
-supported): http://art-build-srv.qa.lab.tlv.redhat.com/art/
+supported): http://art-build-srv.lab.eng.tlv2.redhat.com/art/
 
 Install the rpm::
 

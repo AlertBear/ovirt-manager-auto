@@ -590,7 +590,7 @@ WORKSPACE_PATH = 'jenkins/qe/conf/infra/storageManagerWrapper.conf'
 STORAGE_CONFIG = os.path.join(WORKSPACE_ENV, WORKSPACE_PATH)
 STORAGE_SERVER = {
     'xtremio-xms': 'xtremio',
-    'vserver-san01-iscsi01.qa.lab.tlv.redhat.com': 'netapp'
+    'mantis-iscsi-lif2.lab.eng.tlv2.redhat.com': 'netapp'
 }
 
 DATA_CENTER_NAME = DC_NAME[0]
