@@ -169,15 +169,32 @@ class TestHaVmStartOnHostAboveMaxLevel(SlaTest):
         )
 
 
-@pytest.mark.usefixtures(deactivate_hosts.__name__)
-class TestPutHostToMaintenance(BaseEvenVmCountDistribution):
+@pytest.mark.usefixtures(
+    migrate_he_vm.__name__,
+    choose_specific_host_as_spm.__name__,
+    update_vms.__name__,
+    run_once_vms.__name__,
+    update_cluster.__name__,
+    deactivate_hosts.__name__,
+)
+class TestPutHostToMaintenance(SlaTest):
     """
     Positive: Start VM's under vm_evenly_distributed cluster policy,
     when the host_1(SPM) has two VM's and the host_2 has three VM's
     put host_2 to the maintenance and as result all VM's from
     the host_2 must migrate to the host_3
     """
+    cluster_to_update_params = {
+        conf.CLUSTER_SCH_POLICY: conf.POLICY_EVEN_VM_DISTRIBUTION,
+        conf.CLUSTER_SCH_POLICY_PROPERTIES: conf.DEFAULT_EVCD_PARAMS
+    }
     vms_to_run = conf.DEFAULT_VMS_TO_RUN
+    vms_to_params = dict(
+        (
+            vm, {conf.VM_PLACEMENT_AFFINITY: conf.VM_USER_MIGRATABLE}
+        )
+        for vm in conf.VM_NAME[:2]
+    )
     hosts_to_maintenance = [1]
 
     @tier2
