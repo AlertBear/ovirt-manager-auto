@@ -39,6 +39,7 @@ ACTIONS = ('enabled', 'running', 'is-faultless')
 # Python2 leaks the loop control variable
 # { 'service_name': 'bug_id'}
 BUGGED_SERVICES = {
+    'vdsmd':'1542466'
 }
 
 DISABLED_SERVICES = [
