@@ -47,6 +47,7 @@ class SparsifySanityBase(VirtTest):
 
 
 @bz({"1516689": {}})
+@bz({"1447300": {"ppc": config.PPC_ARCH}})
 @storages((config.STORAGE_TYPE_ISCSI,))
 class TestSparsifySanityBlockDevice(SparsifySanityBase):
     """
@@ -96,6 +97,7 @@ class TestSparsifySanityBlockDevice(SparsifySanityBase):
     )
 )
 @bz({"1516689": {}})
+@bz({"1447300": {"ppc": config.PPC_ARCH}})
 class TestSparsifySanityFileDevice(SparsifySanityBase):
     """
     Sparsify sanity file device: NFS, Gluster

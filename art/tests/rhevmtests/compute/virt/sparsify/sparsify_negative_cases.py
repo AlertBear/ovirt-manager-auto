@@ -25,6 +25,7 @@ from sparsify_sanity_test import SparsifySanityBase
 
 
 @bz({"1516689": {}})
+@bz({"1447300": {"ppc": config.PPC_ARCH}})
 class TestSparsifyNegativeCasesWithFileStorageDomain(SparsifySanityBase):
     """
     Sparsify negative tests with storage type file (NFS)
