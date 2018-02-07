@@ -213,7 +213,9 @@ def prepare_dummies(host_resource, num_dummy=2):
     """
     host_name = ll_hosts.get_host_name_from_engine(host_resource)
     assert hl_networks.create_dummy_interfaces(
-        host=host_resource, num_dummy=num_dummy
+        host=host_resource, num_dummy=num_dummy, ifcfg_params={
+            "NM_CONTROLLED": "no"
+        }
     )
     last_event = events.get_max_event_id()
     assert ll_hosts.refresh_host_capabilities(
