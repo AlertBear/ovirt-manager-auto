@@ -24,7 +24,7 @@ from rhevmtests.networking.mac_pool_range_per_cluster import (
     helper as mac_pool_helper
 )
 from rhevmtests.networking.external_network_provider import (
-    config as ovn_config,
+    config as enp_conf,
     helper as ovn_helper
 )
 from art.rhevm_api.tests_lib.high_level import (
@@ -78,7 +78,8 @@ from rhevmtests.networking.sr_iov.fixtures import (  # noqa: F401
 from rhevmtests.networking.external_network_provider.fixtures import (
     set_cluster_external_network_provider,
     reinstall_hosts,
-    set_auto_sync_time
+    set_auto_sync_time,
+    get_provider_connection
 )
 from rhevmtests.networking.acquire_nm_connections.fixtures import (
     nmcli_create_networks
@@ -1440,6 +1441,7 @@ class TestSanity18(NetworkTest):
     set_cluster_external_network_provider.__name__,
     set_auto_sync_time.__name__,
     reinstall_hosts.__name__,
+    get_provider_connection.__name__,
     remove_ovn_networks.__name__,
     remove_vnics_from_vms.__name__,
     start_vm.__name__
@@ -1455,7 +1457,7 @@ class TestSanity19(NetworkTest):
     5. Start VM with OVN network and wait for IP address
     """
     # Common settings
-    provider_name = ovn_config.OVN_PROVIDER_NAME
+    provider_name = enp_conf.OVN_PROVIDER_NAME
     dc = conf.DC_0
     cl = conf.CL_0
 
@@ -1495,14 +1497,18 @@ class TestSanity19(NetworkTest):
         """
         Create networks on OVN provider
         """
-        for net_name, subnet in sanity_conf.OVN_NETS.items():
+        for network, subnet in sanity_conf.OVN_NETS.items():
             txt = " with subnet: %s" % subnet.get("name") if subnet else ""
             testflow.step(
-                "Creating network: %s%s on OVN provider", net_name, txt
+                "Creating network: %s%s on OVN provider", network, txt
             )
-            assert sanity_conf.OVN_PROVIDER.add_network(
-                network_name=net_name, subnet_dict=subnet
+            assert enp_conf.PROVIDER_CLS.add_network(
+                network={"name": network}
             )
+            if subnet:
+                assert enp_conf.PROVIDER_CLS.add_subnet(
+                    subnet=subnet, network=network
+                )
 
     @tier1
     @polarion("RHEVM-24246")
@@ -1511,15 +1517,8 @@ class TestSanity19(NetworkTest):
         1. Create OVN subnet
         2. Attach subnet to OVN network
         """
-        net_id = sanity_conf.OVN_PROVIDER.get_network_id(
-            network_name=sanity_conf.OVN_NET_1
-        )
-        assert net_id, (
-            "Unable to get network ID of network: %s" % sanity_conf.OVN_NET_1
-        )
-        sanity_conf.OVN_SUBNET_1["network_id"] = net_id
-        assert sanity_conf.OVN_PROVIDER.create_subnet(
-            subnet=sanity_conf.OVN_SUBNET_1
+        assert enp_conf.PROVIDER_CLS.add_subnet(
+            subnet=sanity_conf.OVN_SUBNET_1, network=sanity_conf.OVN_NET_1
         )
 
     @tier1

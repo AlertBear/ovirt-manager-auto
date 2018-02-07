@@ -52,7 +52,7 @@ class TestOVNCluster(NetworkTest):
         Check cluster external network provider name
         """
         names = hl_clusters.get_external_network_provider_names(
-            cluster_name=self.ovn_cluster
+            cluster=self.ovn_cluster
         )
         assert names and len(names) == 1
         assert names[0] == self.provider_name

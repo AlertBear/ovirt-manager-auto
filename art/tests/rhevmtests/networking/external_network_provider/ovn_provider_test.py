@@ -13,17 +13,19 @@ import shlex
 
 import netaddr
 import pytest
+from neutronclient.common.exceptions import BadRequest
 
-import config as ovn_conf
+import config as enp_conf
 import helper
 import rhevmtests.networking.config as net_conf
 from art.core_api.apis_utils import TimeoutingSampler
 from art.rhevm_api.tests_lib.low_level import (
-    networks as ll_networks, vms as ll_vms
+    networks as ll_networks,
+    vms as ll_vms
 )
 from art.test_handler.tools import bz, polarion
 from art.unittest_lib import NetworkTest, testflow, tier2, tier3
-from fixtures import (
+from fixtures import (  # flake8: noqa
     check_ldap_availability,
     set_cluster_external_network_provider,
     reinstall_hosts,
@@ -36,12 +38,16 @@ from fixtures import (
     benchmark_file_transfer,
     save_vm_resources,
     skip_10g_env,
-    set_auto_sync_time
+    set_auto_sync_time,
+    disable_provider_on_default_cluster,
+    get_provider_connection
 )
 from rhevmtests import helpers
 from rhevmtests.fixtures import start_vm
 from rhevmtests.networking.fixtures import (
-    remove_vnic_profiles, add_vnics_to_vms, remove_vnics_from_vms,
+    remove_vnic_profiles,
+    add_vnics_to_vms,
+    remove_vnics_from_vms,
     setup_ldap_integration
 )
 
@@ -104,8 +110,8 @@ class TestOVNDeployment(NetworkTest):
         4. Test connection to OVN southbound port
         """
         http_services = [
-            ("provider", ovn_conf.OVN_EXTERNAL_PROVIDER_PARAMS["api_url"]),
-            ("keystone", ovn_conf.OVN_EXTERNAL_PROVIDER_PARAMS["keystone_url"])
+            ("provider", enp_conf.OVN_EXTERNAL_PROVIDER_PARAMS["api_url"]),
+            ("keystone", enp_conf.OVN_EXTERNAL_PROVIDER_PARAMS["keystone_url"])
         ]
         for service, url in http_services:
             testflow.step(
@@ -113,11 +119,11 @@ class TestOVNDeployment(NetworkTest):
             )
             assert not net_conf.ENGINE_HOST.run_command(
                 shlex.split(
-                    ovn_conf.OVN_CMD_TEST_HTTP_RESPONSE.format(url=url)
+                    enp_conf.OVN_CMD_TEST_HTTP_RESPONSE.format(url=url)
                 )
             )[0]
 
-        for service, tcp_port in ovn_conf.OVN_NETWORK_SERVICE_PORTS:
+        for service, tcp_port in enp_conf.OVN_NETWORK_SERVICE_PORTS:
             testflow.step(
                 "Test connection to the OVN {service} port".format(
                     service=service
@@ -145,7 +151,7 @@ class TestOVNAuthorization(NetworkTest):
     ldap_services = ["ad"]
 
     # Provider name to be used in authorization tests
-    provider_name = "%s-auth-test" % ovn_conf.OVN_PROVIDER_NAME
+    provider_name = "%s-auth-test" % enp_conf.OVN_PROVIDER_NAME
 
     # Test case parameters = [
     #   Username to be used in authentication,
@@ -156,26 +162,26 @@ class TestOVNAuthorization(NetworkTest):
 
     # JDBC username test case parameters
     jdbc_group_with_user = [
-        ovn_conf.OVN_JDBC_USERNAME, ovn_conf.OVN_JDBC_USERNAME_PASSWORD,
-        ovn_conf.OVN_JDBC_GROUP, "JDBC", True
+        enp_conf.OVN_JDBC_USERNAME, enp_conf.OVN_JDBC_USERNAME_PASSWORD,
+        enp_conf.OVN_JDBC_GROUP, "JDBC", True
     ]
 
     # NEGATIVE: JDBC username with wrong password test case parameters
     jdbc_group_with_wrong_user = [
-        ovn_conf.OVN_JDBC_USERNAME, ovn_conf.OVN_WRONG_PASSWORD,
-        ovn_conf.OVN_JDBC_GROUP, "JDBC", False
+        enp_conf.OVN_JDBC_USERNAME, enp_conf.OVN_WRONG_PASSWORD,
+        enp_conf.OVN_JDBC_GROUP, "JDBC", False
     ]
 
     # LDAP username test case parameters
     ldap_group_with_user = [
-        ovn_conf.OVN_LDAP_USERNAME, ovn_conf.OVN_LDAP_USERNAME_PASSWORD,
-        ovn_conf.OVN_LDAP_GROUP, "LDAP", True
+        enp_conf.OVN_LDAP_USERNAME, enp_conf.OVN_LDAP_USERNAME_PASSWORD,
+        enp_conf.OVN_LDAP_GROUP, "LDAP", True
     ]
 
     # NEGATIVE: LDAP username with wrong password test case parameters
     ldap_group_with_wrong_user = [
-        ovn_conf.OVN_LDAP_USERNAME, ovn_conf.OVN_WRONG_PASSWORD,
-        ovn_conf.OVN_LDAP_GROUP, "LDAP", False
+        enp_conf.OVN_LDAP_USERNAME, enp_conf.OVN_WRONG_PASSWORD,
+        enp_conf.OVN_LDAP_GROUP, "LDAP", False
     ]
 
     @tier2
@@ -218,10 +224,10 @@ class TestOVNAuthorization(NetworkTest):
             "Testing plugin: %s on network provider: %s", plugin,
             self.provider_name
         )
-        assert ovn_conf.OVN_PROVIDER.update(
+        assert enp_conf.OVN_PROVIDER.update(
             username=username, password=password
         )
-        assert positive == ovn_conf.OVN_PROVIDER.test_connection()
+        assert positive == enp_conf.OVN_PROVIDER.test_connection()
 
 
 @pytest.mark.incremental
@@ -230,6 +236,7 @@ class TestOVNAuthorization(NetworkTest):
     set_auto_sync_time.__name__,
     reinstall_hosts.__name__,
     get_default_ovn_provider.__name__,
+    get_provider_connection.__name__,
     create_ovn_networks_on_provider.__name__,
     remove_vnic_profiles.__name__,
     remove_vnics_from_vms.__name__,
@@ -258,14 +265,14 @@ class TestOVNComponent(NetworkTest):
     15. VM IP assignment on OVN subnet without gateway
     """
     # Common settings
-    provider_name = ovn_conf.OVN_PROVIDER_NAME
+    provider_name = enp_conf.OVN_PROVIDER_NAME
     dc = net_conf.DC_0
     cl = net_conf.CL_0
     vms_ips = []
 
     # create_ovn_networks_on_provider fixture parameters
     add_ovn_networks_to_provider = dict(
-        ovn_conf.OVN_NETS, **ovn_conf.OVN_LONG_NETS
+        enp_conf.OVN_NETS, **enp_conf.OVN_LONG_NETS
     )
     remove_ovn_networks_from_provider = add_ovn_networks_to_provider
 
@@ -273,8 +280,8 @@ class TestOVNComponent(NetworkTest):
     add_vnics_vms_params = {
         net_conf.VM_0: {
             "1": {
-                "name": ovn_conf.OVN_VNIC,
-                "network": ovn_conf.OVN_NET_NO_SUB_1,
+                "name": enp_conf.OVN_VNIC,
+                "network": enp_conf.OVN_NET_NO_SUB_1,
                 "plugged": True
             }
         }
@@ -284,7 +291,7 @@ class TestOVNComponent(NetworkTest):
     remove_vnics_vms_params = {
         net_conf.VM_0: {
             1: {
-                "name": ovn_conf.OVN_VNIC
+                "name": enp_conf.OVN_VNIC
             }
         },
         net_conf.VM_1: {}
@@ -305,7 +312,7 @@ class TestOVNComponent(NetworkTest):
     save_vm_resources_params = [net_conf.VM_0]
 
     # reinstall_hosts fixture parameters
-    hosts_to_reinstall = ovn_conf.OVN_HOSTS_TO_REINSTALL
+    hosts_to_reinstall = enp_conf.OVN_HOSTS_TO_REINSTALL
 
     @tier2
     @polarion("RHEVM-24286")
@@ -315,21 +322,14 @@ class TestOVNComponent(NetworkTest):
         2. Try to attach additional OVN subnet to OVN network
            (only one subnet is allowed per OVN network)
         """
-        net_id = ovn_conf.OVN_PROVIDER.get_network_id(
-            network_name=ovn_conf.OVN_NET_SUB_TO_BE_ATTACHED
-        )
-        assert net_id, (
-            "Unable to get network ID of network: %s" %
-            ovn_conf.OVN_NET_SUB_TO_BE_ATTACHED
-        )
-        assert not ovn_conf.OVN_PROVIDER.create_subnet(
-            subnet={
-                "name": "ovn_subnet_should_not_be_attached",
-                "cidr": "10.1.0.0/24",
-                "enable_dhcp": True,
-                "ip_version": 4,
-                "network_id": net_id
-            }
+        subnet = {
+            "name": "ovn_subnet_should_not_be_attached",
+            "cidr": "10.1.0.0/24",
+            "enable_dhcp": True,
+            "ip_version": 4,
+        }
+        assert not enp_conf.PROVIDER_CLS.add_subnet(
+            subnet=subnet, network=enp_conf.OVN_NET_SUB_TO_BE_ATTACHED
         )
 
     @tier2
@@ -348,15 +348,15 @@ class TestOVNComponent(NetworkTest):
 
         testflow.step(
             "Hot-adding vNIC: %s with OVN network: %s on live VM: %s",
-            ovn_conf.OVN_VNIC, ovn_conf.OVN_NET_NO_SUB_1, net_conf.VM_1
+            enp_conf.OVN_VNIC, enp_conf.OVN_NET_NO_SUB_1, net_conf.VM_1
         )
         assert ll_vms.addNic(
-            positive=True, vm=net_conf.VM_1, name=ovn_conf.OVN_VNIC,
-            network=ovn_conf.OVN_NET_NO_SUB_1, plugged=True
+            positive=True, vm=net_conf.VM_1, name=enp_conf.OVN_VNIC,
+            network=enp_conf.OVN_NET_NO_SUB_1, plugged=True
         )
         # Remove vNIC during teardown
         self.remove_vnics_vms_params[net_conf.VM_1]["1"] = {
-            "name": ovn_conf.OVN_VNIC
+            "name": enp_conf.OVN_VNIC
         }
 
     @tier2
@@ -369,17 +369,17 @@ class TestOVNComponent(NetworkTest):
         """
         for vm_name, net in zip(
             (net_conf.VM_0, net_conf.VM_1),
-            (ovn_conf.OVN_VM_0_NET, ovn_conf.OVN_VM_1_NET)
+            (enp_conf.OVN_VM_0_NET, enp_conf.OVN_VM_1_NET)
         ):
             testflow.step("Setting IP network: %s on VM: %s", net, vm_name)
             assert helper.set_ip_non_mgmt_nic(vm=vm_name, ip_network=net)
 
         testflow.step(
             "Testing ping from VM: %s to IP: %s", net_conf.VM_0,
-            ovn_conf.OVN_VM_1_IP
+            enp_conf.OVN_VM_1_IP
         )
         assert helper.check_ping(
-            vm=net_conf.VM_0, dst_ip=ovn_conf.OVN_VM_1_IP
+            vm=net_conf.VM_0, dst_ip=enp_conf.OVN_VM_1_IP
         )
 
     @tier2
@@ -393,26 +393,26 @@ class TestOVNComponent(NetworkTest):
         """
         testflow.step(
             "Hot-unplugging and hot-plugging vNIC: %s on VM: %s",
-            ovn_conf.OVN_VNIC, net_conf.VM_0
+            enp_conf.OVN_VNIC, net_conf.VM_0
         )
         assert helper.check_hot_unplug_and_plug(
-            vm=net_conf.VM_0, vnic=ovn_conf.OVN_VNIC
+            vm=net_conf.VM_0, vnic=enp_conf.OVN_VNIC
         )
 
         testflow.step(
-            "Setting IP network: %s on VM: %s", ovn_conf.OVN_VM_0_NET,
+            "Setting IP network: %s on VM: %s", enp_conf.OVN_VM_0_NET,
             net_conf.VM_0
         )
         assert helper.set_ip_non_mgmt_nic(
-            vm=net_conf.VM_0, ip_network=ovn_conf.OVN_VM_0_NET
+            vm=net_conf.VM_0, ip_network=enp_conf.OVN_VM_0_NET
         )
 
         testflow.step(
             "Testing ping from VM: %s to IP: %s", net_conf.VM_0,
-            ovn_conf.OVN_VM_1_IP
+            enp_conf.OVN_VM_1_IP
         )
         assert helper.check_ping(
-            vm=net_conf.VM_0, dst_ip=ovn_conf.OVN_VM_1_IP
+            vm=net_conf.VM_0, dst_ip=enp_conf.OVN_VM_1_IP
         )
 
     @tier2
@@ -428,46 +428,46 @@ class TestOVNComponent(NetworkTest):
         """
         testflow.step(
             "Creating vNIC profile: %s attached to network: %s",
-            ovn_conf.OVN_VNIC_PROFILE, ovn_conf.OVN_NET_NO_SUB_1
+            enp_conf.OVN_VNIC_PROFILE, enp_conf.OVN_NET_NO_SUB_1
         )
         assert ll_networks.add_vnic_profile(
-            positive=True, name=ovn_conf.OVN_VNIC_PROFILE,
+            positive=True, name=enp_conf.OVN_VNIC_PROFILE,
             data_center=self.dc, cluster=self.cl,
-            network=ovn_conf.OVN_NET_NO_SUB_1
+            network=enp_conf.OVN_NET_NO_SUB_1
         )
         # Remove vNIC profile during teardown
         self.remove_vnic_profile_params["1"] = {
-            "name": ovn_conf.OVN_VNIC_PROFILE,
-            "network": ovn_conf.OVN_NET_NO_SUB_1,
+            "name": enp_conf.OVN_VNIC_PROFILE,
+            "network": enp_conf.OVN_NET_NO_SUB_1,
             "cluster": self.cl,
             "data_center": self.dc
         }
 
         testflow.step(
             "Hot-unplug vNIC: %s on VM: %s, change vNIC profile to: %s, "
-            "and hot-plug it back", ovn_conf.OVN_VNIC, net_conf.VM_0,
-            ovn_conf.OVN_VNIC_PROFILE
+            "and hot-plug it back", enp_conf.OVN_VNIC, net_conf.VM_0,
+            enp_conf.OVN_VNIC_PROFILE
         )
         assert helper.check_hot_unplug_and_plug(
-            vm=net_conf.VM_0, vnic=ovn_conf.OVN_VNIC,
-            vnic_profile=ovn_conf.OVN_VNIC_PROFILE,
-            network=ovn_conf.OVN_NET_NO_SUB_1
+            vm=net_conf.VM_0, vnic=enp_conf.OVN_VNIC,
+            vnic_profile=enp_conf.OVN_VNIC_PROFILE,
+            network=enp_conf.OVN_NET_NO_SUB_1
         )
 
         testflow.step(
-            "Setting IP network: %s on VM: %s", ovn_conf.OVN_VM_0_NET,
+            "Setting IP network: %s on VM: %s", enp_conf.OVN_VM_0_NET,
             net_conf.VM_0
         )
         assert helper.set_ip_non_mgmt_nic(
-            vm=net_conf.VM_0, ip_network=ovn_conf.OVN_VM_0_NET
+            vm=net_conf.VM_0, ip_network=enp_conf.OVN_VM_0_NET
         )
 
         testflow.step(
             "Testing ping from VM: %s to IP: %s", net_conf.VM_0,
-            ovn_conf.OVN_VM_1_IP
+            enp_conf.OVN_VM_1_IP
         )
         assert helper.check_ping(
-            vm=net_conf.VM_0, dst_ip=ovn_conf.OVN_VM_1_IP
+            vm=net_conf.VM_0, dst_ip=enp_conf.OVN_VM_1_IP
         )
 
     @tier2
@@ -487,55 +487,55 @@ class TestOVNComponent(NetworkTest):
         """
         testflow.step(
             "Hot-unplug vNIC: %s on VM: %s, change vNIC network to: %s, "
-            "and hot-plug it back", ovn_conf.OVN_VNIC, net_conf.VM_0,
-            ovn_conf.OVN_NET_NO_SUB_2
+            "and hot-plug it back", enp_conf.OVN_VNIC, net_conf.VM_0,
+            enp_conf.OVN_NET_NO_SUB_2
         )
         assert helper.check_hot_unplug_and_plug(
-            vm=net_conf.VM_0, vnic=ovn_conf.OVN_VNIC,
-            vnic_profile=ovn_conf.OVN_NET_NO_SUB_2,
-            network=ovn_conf.OVN_NET_NO_SUB_2
+            vm=net_conf.VM_0, vnic=enp_conf.OVN_VNIC,
+            vnic_profile=enp_conf.OVN_NET_NO_SUB_2,
+            network=enp_conf.OVN_NET_NO_SUB_2
         )
 
         testflow.step(
-            "Setting IP network: %s on VM: %s", ovn_conf.OVN_VM_0_NET,
+            "Setting IP network: %s on VM: %s", enp_conf.OVN_VM_0_NET,
             net_conf.VM_0
         )
         assert helper.set_ip_non_mgmt_nic(
-            vm=net_conf.VM_0, ip_network=ovn_conf.OVN_VM_0_NET
+            vm=net_conf.VM_0, ip_network=enp_conf.OVN_VM_0_NET
         )
 
         testflow.step(
             "NEGATIVE: testing ping from VM: %s to IP: %s", net_conf.VM_0,
-            ovn_conf.OVN_VM_1_IP
+            enp_conf.OVN_VM_1_IP
         )
         assert not helper.check_ping(
-            vm=net_conf.VM_0, dst_ip=ovn_conf.OVN_VM_1_IP
+            vm=net_conf.VM_0, dst_ip=enp_conf.OVN_VM_1_IP
         )
 
         testflow.step(
             "Hot-unplug vNIC: %s on VM: %s, change vNIC network to: %s, "
-            "and hot-plug it back", ovn_conf.OVN_VNIC, net_conf.VM_1,
-            ovn_conf.OVN_NET_NO_SUB_2
+            "and hot-plug it back", enp_conf.OVN_VNIC, net_conf.VM_1,
+            enp_conf.OVN_NET_NO_SUB_2
         )
         assert helper.check_hot_unplug_and_plug(
-            vm=net_conf.VM_1, vnic=ovn_conf.OVN_VNIC,
-            network=ovn_conf.OVN_NET_NO_SUB_2
+            vm=net_conf.VM_1, vnic=enp_conf.OVN_VNIC,
+            network=enp_conf.OVN_NET_NO_SUB_2
         )
 
         testflow.step(
-            "Setting IP network: %s on VM: %s", ovn_conf.OVN_VM_1_NET,
+            "Setting IP network: %s on VM: %s", enp_conf.OVN_VM_1_NET,
             net_conf.VM_1
         )
         assert helper.set_ip_non_mgmt_nic(
-            vm=net_conf.VM_1, ip_network=ovn_conf.OVN_VM_1_NET
+            vm=net_conf.VM_1, ip_network=enp_conf.OVN_VM_1_NET
         )
 
         testflow.step(
             "Testing ping from VM: %s to IP: %s", net_conf.VM_0,
-            ovn_conf.OVN_VM_1_IP
+            enp_conf.OVN_VM_1_IP
         )
         assert helper.check_ping(
-            vm=net_conf.VM_0, dst_ip=ovn_conf.OVN_VM_1_IP
+            vm=net_conf.VM_0, dst_ip=enp_conf.OVN_VM_1_IP
         )
 
     @tier2
@@ -547,9 +547,9 @@ class TestOVNComponent(NetworkTest):
         """
         ping_kwargs = {
             "vm": net_conf.VM_1,
-            "dst_ip": ovn_conf.OVN_VM_0_IP,
-            "max_loss": ovn_conf.OVN_MIGRATION_PING_LOSS_COUNT,
-            "count": ovn_conf.OVN_MIGRATION_PING_COUNT
+            "dst_ip": enp_conf.OVN_VM_0_IP,
+            "max_loss": enp_conf.OVN_MIGRATION_PING_LOSS_COUNT,
+            "count": enp_conf.OVN_MIGRATION_PING_COUNT
         }
         migrate_kwargs = {
             "vms_list": [net_conf.VM_0],
@@ -576,8 +576,8 @@ class TestOVNComponent(NetworkTest):
         Copy big file between two VM's with OVN network that hosted on
         different hosts
         """
-        vm_0_rsc = ovn_conf.OVN_VMS_RESOURCES[net_conf.VM_0]
-        vm_1_rsc = ovn_conf.OVN_VMS_RESOURCES[net_conf.VM_1]
+        vm_0_rsc = enp_conf.OVN_VMS_RESOURCES[net_conf.VM_0]
+        vm_1_rsc = enp_conf.OVN_VMS_RESOURCES[net_conf.VM_1]
 
         # On OVN tunnel connections, MTU should be set to 1400 for TCP transfer
         # to work successfully over tunnel
@@ -586,14 +586,14 @@ class TestOVNComponent(NetworkTest):
 
         testflow.step(
             "Copying file of size: %s MB from source VM: %s "
-            "to destination VM: %s on IP: %s", ovn_conf.OVN_COPY_FILE_SIZE_MB,
-            vm_0_rsc, vm_1_rsc, ovn_conf.OVN_VM_1_IP
+            "to destination VM: %s on IP: %s", enp_conf.OVN_COPY_FILE_SIZE_MB,
+            vm_0_rsc, vm_1_rsc, enp_conf.OVN_VM_1_IP
         )
         assert helper.check_ssh_file_copy(
-            src_host=ovn_conf.OVN_VMS_RESOURCES[net_conf.VM_0],
-            dst_host=ovn_conf.OVN_VMS_RESOURCES[net_conf.VM_1],
-            dst_ip=ovn_conf.OVN_VM_1_IP,
-            size=ovn_conf.OVN_COPY_FILE_SIZE_MB
+            src_host=enp_conf.OVN_VMS_RESOURCES[net_conf.VM_0],
+            dst_host=enp_conf.OVN_VMS_RESOURCES[net_conf.VM_1],
+            dst_ip=enp_conf.OVN_VM_1_IP,
+            size=enp_conf.OVN_COPY_FILE_SIZE_MB
         )[0]
 
         for vm in [vm_0_rsc, vm_1_rsc]:
@@ -624,12 +624,12 @@ class TestOVNComponent(NetworkTest):
 
             testflow.step(
                 "Hot-unplug vNIC: %s on VM: %s, change vNIC network to: %s, "
-                "and hot-plug it back", ovn_conf.OVN_VNIC, vm_name,
-                ovn_conf.OVN_NET_SUB
+                "and hot-plug it back", enp_conf.OVN_VNIC, vm_name,
+                enp_conf.OVN_NET_SUB
             )
             assert helper.check_hot_unplug_and_plug(
-                vm=vm_name, vnic=ovn_conf.OVN_VNIC,
-                vnic_profile=ovn_conf.OVN_NET_SUB, network=ovn_conf.OVN_NET_SUB
+                vm=vm_name, vnic=enp_conf.OVN_VNIC,
+                vnic_profile=enp_conf.OVN_NET_SUB, network=enp_conf.OVN_NET_SUB
             )
 
             testflow.step("Requesting IP from DHCP on VM: %s", vm_name)
@@ -639,7 +639,7 @@ class TestOVNComponent(NetworkTest):
                 "Verifying that VM: %s received valid IP: %s", vm_name, ip
             )
             assert netaddr.IPAddress(ip) in netaddr.IPNetwork(
-                ovn_conf.OVN_NETS_CIDR
+                enp_conf.OVN_NETS_CIDR
             )
             self.vms_ips.append(ip)
 
@@ -654,10 +654,10 @@ class TestOVNComponent(NetworkTest):
         for vm_name in (net_conf.VM_0, net_conf.VM_1):
             testflow.step(
                 "Verifying that VM: %s has DNS server: %s configured", vm_name,
-                ovn_conf.OVN_NETS_DNS[0]
+                enp_conf.OVN_NETS_DNS[0]
             )
             assert helper.check_dns_resolver(
-                vm=vm_name, ip_address=ovn_conf.OVN_NETS_DNS[0]
+                vm=vm_name, ip_address=enp_conf.OVN_NETS_DNS[0]
             )
 
         testflow.step("Verifying that IP: %s is unique", self.vms_ips[0])
@@ -682,8 +682,8 @@ class TestOVNComponent(NetworkTest):
         network connectivity
         """
         assert helper.check_hot_unplug_and_plug(
-            vm=net_conf.VM_0, vnic=ovn_conf.OVN_VNIC,
-            mac_address=ovn_conf.OVN_ARBITRARY_MAC_ADDRESS
+            vm=net_conf.VM_0, vnic=enp_conf.OVN_VNIC,
+            mac_address=enp_conf.OVN_ARBITRARY_MAC_ADDRESS
         )
 
         testflow.step("Requesting IP from DHCP on VM: %s", net_conf.VM_0)
@@ -711,8 +711,8 @@ class TestOVNComponent(NetworkTest):
         ping_kwargs = {
             "vm": net_conf.VM_1,
             "dst_ip": self.vms_ips[0],
-            "max_loss": ovn_conf.OVN_MIGRATION_PING_LOSS_COUNT,
-            "count": ovn_conf.OVN_MIGRATION_PING_COUNT
+            "max_loss": enp_conf.OVN_MIGRATION_PING_LOSS_COUNT,
+            "count": enp_conf.OVN_MIGRATION_PING_COUNT
         }
         migrate_kwargs = {
             "vms_list": [net_conf.VM_0],
@@ -745,11 +745,11 @@ class TestOVNComponent(NetworkTest):
             testflow.step(
                 "Hot-unplug vNIC: %s on VM: %s, "
                 "change vNIC network to: %s, and hot-plug it back",
-                ovn_conf.OVN_VNIC, vm, ovn_conf.OVN_LONG_NET_256_CHARS_SPECIAL
+                enp_conf.OVN_VNIC, vm, enp_conf.OVN_LONG_NET_256_CHARS_SPECIAL
             )
             assert helper.check_hot_unplug_and_plug(
-                vm=vm, vnic=ovn_conf.OVN_VNIC,
-                network=ovn_conf.OVN_LONG_NET_256_CHARS_SPECIAL
+                vm=vm, vnic=enp_conf.OVN_VNIC,
+                network=enp_conf.OVN_LONG_NET_256_CHARS_SPECIAL
             )
 
             testflow.step("Requesting IP from DHCP on VM: %s", vm)
@@ -772,13 +772,13 @@ class TestOVNComponent(NetworkTest):
         """
         testflow.step(
             "Hot-unplug vNIC: %s on VM: %s, change vNIC network to: %s, "
-            "and hot-plug it back", ovn_conf.OVN_VNIC, net_conf.VM_0,
-            ovn_conf.OVN_NET_SUB_NO_GW
+            "and hot-plug it back", enp_conf.OVN_VNIC, net_conf.VM_0,
+            enp_conf.OVN_NET_SUB_NO_GW
         )
         assert helper.check_hot_unplug_and_plug(
-            vm=net_conf.VM_0, vnic=ovn_conf.OVN_VNIC,
-            vnic_profile=ovn_conf.OVN_NET_SUB_NO_GW,
-            network=ovn_conf.OVN_NET_SUB_NO_GW
+            vm=net_conf.VM_0, vnic=enp_conf.OVN_VNIC,
+            vnic_profile=enp_conf.OVN_NET_SUB_NO_GW,
+            network=enp_conf.OVN_NET_SUB_NO_GW
         )
 
         testflow.step("Requesting IP from DHCP on VM: %s", net_conf.VM_0)
@@ -790,7 +790,7 @@ class TestOVNComponent(NetworkTest):
             "Verifying that VM: %s received valid IP: %s", net_conf.VM_0, ip
         )
         assert netaddr.IPAddress(ip) in netaddr.IPNetwork(
-            ovn_conf.OVN_NETS_CIDR
+            enp_conf.OVN_NETS_CIDR
         )
 
 
@@ -813,25 +813,25 @@ class TestOVNPerformance(NetworkTest):
     Test OVN performance over OVN tunneling protocol
     """
     # Common settings
-    provider_name = ovn_conf.OVN_PROVIDER_NAME
+    provider_name = enp_conf.OVN_PROVIDER_NAME
     dc = net_conf.DC_0
     cl = net_conf.CL_0
 
     # create_ovn_networks_on_provider fixture parameters
-    add_ovn_networks_to_provider = ovn_conf.OVN_NETS_PERF
+    add_ovn_networks_to_provider = enp_conf.OVN_NETS_PERF
 
     # add_vnics_to_vms fixture parameters
     add_vnics_vms_params = {
         net_conf.VM_0: {
             "1": {
-                "name": ovn_conf.OVN_VNIC,
-                "network": ovn_conf.OVN_NET_PERF
+                "name": enp_conf.OVN_VNIC,
+                "network": enp_conf.OVN_NET_PERF
             }
         },
         net_conf.VM_1: {
             "1": {
-                "name": ovn_conf.OVN_VNIC,
-                "network": ovn_conf.OVN_NET_PERF
+                "name": enp_conf.OVN_VNIC,
+                "network": enp_conf.OVN_NET_PERF
             }
         }
     }
@@ -851,8 +851,8 @@ class TestOVNPerformance(NetworkTest):
 
     # setup_vms_ovn_interface fixture parameters
     set_vms_ips = {
-        net_conf.VM_0: ovn_conf.OVN_VM_0_NET,
-        net_conf.VM_1: ovn_conf.OVN_VM_1_NET
+        net_conf.VM_0: enp_conf.OVN_VM_0_NET,
+        net_conf.VM_1: enp_conf.OVN_VM_1_NET
     }
 
     # save_vm_resources fixture parameters
@@ -862,7 +862,7 @@ class TestOVNPerformance(NetworkTest):
     test_provider_connection = True
 
     # reinstall_hosts fixture parameters
-    hosts_to_reinstall = ovn_conf.OVN_HOSTS_TO_REINSTALL
+    hosts_to_reinstall = enp_conf.OVN_HOSTS_TO_REINSTALL
 
     @tier3
     @polarion("RHEVM-22061")
@@ -873,15 +873,15 @@ class TestOVNPerformance(NetworkTest):
         2. Compare VM-to-VM and Host-to-Host benchmarks
         """
         copy_file_res, hosts_perf = helper.copy_file_benchmark(
-            src_host=ovn_conf.OVN_VMS_RESOURCES[net_conf.VM_0],
-            dst_host=ovn_conf.OVN_VMS_RESOURCES[net_conf.VM_1],
-            dst_ip=ovn_conf.OVN_VM_1_IP, size=1000
+            src_host=enp_conf.OVN_VMS_RESOURCES[net_conf.VM_0],
+            dst_host=enp_conf.OVN_VMS_RESOURCES[net_conf.VM_1],
+            dst_ip=enp_conf.OVN_VM_1_IP, size=1000
         )
         assert copy_file_res[0], "Failed to copy file over OVN tunnel"
 
         # 1. CPU usage should be at lower than maximum 150% of baseline
         # In total, CPU usage should be lower than 70% usage
-        cpu_value = round(ovn_conf.OVN_HOST_PERF_COUNTERS[0] * 1.5)
+        cpu_value = round(enp_conf.OVN_HOST_PERF_COUNTERS[0] * 1.5)
         cpu_baseline_value = max(min(cpu_value, 70), cpu_value)
         testflow.step(
             "Checking if CPU benchmark value: %s <= expected value: %s ",
@@ -894,7 +894,7 @@ class TestOVNPerformance(NetworkTest):
 
         # 2. Memory usage should be at maximum 120% of baseline
         # In total, memory usage CPU usage should be lower than 90% usage
-        mem_value = round(ovn_conf.OVN_HOST_PERF_COUNTERS[1] * 1.2)
+        mem_value = round(enp_conf.OVN_HOST_PERF_COUNTERS[1] * 1.2)
         mem_baseline_value = max(min(mem_value, 90), mem_value)
         testflow.step(
             "Checking if memory benchmark value: %s <= expected value: %s ",
@@ -906,7 +906,7 @@ class TestOVNPerformance(NetworkTest):
         )
 
         # 3. VM-to-VM transfer rate should be at minimum 80% of baseline
-        min_transfer_rate = round(ovn_conf.OVN_HOST_PERF_COUNTERS[2] * 0.8)
+        min_transfer_rate = round(enp_conf.OVN_HOST_PERF_COUNTERS[2] * 0.8)
         testflow.step(
             "Checking if transfer benchmark value: %s >= expected value: %s ",
             copy_file_res[1], min_transfer_rate

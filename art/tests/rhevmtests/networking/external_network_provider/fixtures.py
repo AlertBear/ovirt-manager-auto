@@ -11,14 +11,22 @@ import pytest
 
 import config as enp_conf
 import helper
-import rhevmtests.config as global_config
-import rhevmtests.helpers as global_helper
-import rhevmtests.networking.config as net_config
-import rhevmtests.networking.helper as network_helper
+from rhevmtests import (
+    config as global_config,
+    helpers as global_helper
+)
+from rhevmtests.networking import (
+    config as net_config,
+    helper as network_helper
+)
 from art.rhevm_api.tests_lib.low_level import (
     clusters as ll_clusters,
     hosts as ll_hosts,
     external_providers
+)
+from art.rhevm_api.tests_lib.high_level import (
+    extrenal_providers as hl_extrenal_providers,
+    clusters as hl_clusters
 )
 from art.unittest_lib import testflow
 from rhevmtests.networking import config_handler
@@ -145,49 +153,39 @@ def create_ovn_networks_on_provider(request):
     """
     add_networks = getattr(request.cls, "add_ovn_networks_to_provider", {})
     remove_networks = getattr(
-        request.cls, "remove_ovn_networks_from_provider", {}
+        request.cls, "remove_ovn_networks_from_provider", add_networks
     )
-    networks_and_subnets = remove_networks or add_networks
 
     def fin2():
         """
         Wait for auto-sync changes
         """
-        assert helper.wait_for_auto_sync(networks=networks_and_subnets.keys())
+        assert helper.wait_for_auto_sync(networks=remove_networks.keys())
     request.addfinalizer(fin2)
 
     def fin1():
         """
         Remove OVN networks and associated subnets
         """
-        result_list = []
-
-        for net, subnet in networks_and_subnets.items():
-            if subnet:
-                subnet_name = subnet.get("name")
-                testflow.teardown(
-                    "Removing OVN subnet: %s from provider", subnet_name
-                )
-                result_list.append(
-                    enp_conf.OVN_PROVIDER.remove_subnet(
-                        subnet_name=subnet_name
-                    )
-                )
-
-            testflow.teardown("Removing OVN network: %s from provider", net)
-            result_list.append(
-                enp_conf.OVN_PROVIDER.remove_network(network_name=net)
-            )
-
-        assert all(result_list)
+        s_ids = [i.get("id") for i in enp_conf.PROVIDER_CLS.get_all_subnets()]
+        n_ids = [i.get("id") for i in enp_conf.PROVIDER_CLS.get_all_networks()]
+        [enp_conf.PROVIDER_CLS.delete_subnet(i) for i in s_ids]
+        [enp_conf.PROVIDER_CLS.delete_network(i) for i in n_ids]
     request.addfinalizer(fin1)
 
-    for net, subnet in add_networks.items():
+    for network_name, subnet in add_networks.items():
         txt = " with subnet: %s" % subnet.get("name") if subnet else ""
-        testflow.setup("Adding network: %s%s to OVN provider", net, txt)
-        assert enp_conf.OVN_PROVIDER.add_network(
-            network_name=net, subnet_dict=subnet
+        testflow.setup(
+            "Adding network: %s%s to OVN provider", network_name, txt
         )
+
+        assert enp_conf.PROVIDER_CLS.add_network(
+            network={"name": network_name}
+        )
+        if subnet:
+            assert enp_conf.PROVIDER_CLS.add_subnet(
+                subnet=subnet, network=network_name
+            )
 
     assert helper.wait_for_auto_sync(
         networks=add_networks.keys(), removal=False
@@ -374,7 +372,7 @@ def skip_10g_env(request):
         the env
     """
     for host in net_config.VDS_HOSTS_LIST[:2]:
-        mgmt_iface = host.network.find_int_by_bridge("ovirtmgmt")
+        mgmt_iface = host.network.find_int_by_bridge(net_config.MGMT_BRIDGE)
         iface_speed = host.network.get_interface_speed(interface=mgmt_iface)
         assert iface_speed, (
             "Failed to get interface: %s speed on host: %s"
@@ -386,3 +384,49 @@ def skip_10g_env(request):
                 "bandwidth performance issue with 10GBE for now."
                 % (mgmt_iface, host.fqdn)
             )
+
+
+@pytest.fixture(scope="class")
+def get_provider_connection(request):
+    """
+    Get connection object to OVN provider
+    """
+    username = enp_conf.OVN_EXTERNAL_PROVIDER_PARAMS.get("username")
+    password = enp_conf.OVN_EXTERNAL_PROVIDER_PARAMS.get("password")
+    enp_conf.PROVIDER_CLS = hl_extrenal_providers.OvnProvider(
+        username=username,
+        password=password,
+        auth_url=enp_conf.OVN_EXTERNAL_PROVIDER_KEYSTONE_URL
+    )
+    assert enp_conf.PROVIDER_CLS
+
+
+@pytest.fixture(scope="module", autouse=True)
+def disable_provider_on_default_cluster(request):
+    """
+    Disable OVN provider on default cluster
+    """
+    cluster = "Default"
+    cluster_provider = hl_clusters.get_external_network_provider_names(
+        cluster=cluster
+    )
+    cluster_provider = cluster_provider[0] if cluster_provider else ""
+
+    def fin():
+        """
+        Set cluster OVN provider to default
+        """
+        if cluster_provider:
+            assert ll_clusters.updateCluster(
+                positive=True,
+                cluster=cluster,
+                external_network_provider=cluster_provider
+            )
+    request.addfinalizer(fin)
+
+    if cluster_provider:
+        assert ll_clusters.updateCluster(
+            positive=True,
+            cluster=cluster,
+            external_network_provider=""
+        )

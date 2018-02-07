@@ -8,6 +8,9 @@ External Network Provider config file
 import rhevmtests.config as global_conf
 import rhevmtests.networking.config as conf
 
+# OVN provider connection
+PROVIDER_CLS = None
+
 # OVN provider parameters
 OVN_PROVIDER_NAME = "ovirt-provider-ovn"
 OVN_PROVIDER_PROTOCOL = "https"

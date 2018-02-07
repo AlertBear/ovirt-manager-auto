@@ -1,34 +1,42 @@
 import logging
 
-import art.rhevm_api.tests_lib.low_level.templates as ll_templates
-import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
-import art.rhevm_api.tests_lib.low_level.clusters as ll_clusters
+from art.rhevm_api.tests_lib.low_level import (
+    templates as ll_templates,
+    hosts as ll_hosts,
+    clusters as ll_clusters,
+    general as ll_general
+)
 
 logger = logging.getLogger("art.hl_lib.cls")
 
 
-def remove_templates_connected_cluster(cluster_name):
+@ll_general.generate_logs(step=True, error=False, warn=True)
+def remove_templates_connected_cluster(cluster):
     """
-    Description: filter templates connected to cluster and remove them
-    :param cluster: cluster name
-    :type cluster: str
+    Remove templates that are connected to cluster
+
+    Args:
+        cluster (str): cluster name
     """
-    templates_in_cluster = ll_templates.get_template_from_cluster(cluster_name)
+    templates_in_cluster = ll_templates.get_template_from_cluster(cluster)
     for template in templates_in_cluster:
         logger.info(
-            'Remove Template: %s from cluster: %s', template, cluster_name
+            'Remove Template: %s from cluster: %s', template, cluster
         )
         if not ll_templates.remove_template(True, template):
             logger.error("Remove template:%s failed", template)
 
 
+@ll_general.generate_logs(step=True, error=False, warn=True)
 def get_hosts_connected_to_cluster(cluster_id):
     """
-    Description: get list of hosts connected to cluster
-    :param cluster: cluster id
-    :type cluster: uuid str
-    :returns: list of hosts
-    :rtype: list
+    Get list of hosts connected to cluster
+
+    Args:
+        cluster_id (str): cluster id
+
+    Returns:
+        list: All hosts connected to the cluster
     """
     all_hosts = ll_hosts.HOST_API.get(abs_link=False)
     return filter(
@@ -37,17 +45,18 @@ def get_hosts_connected_to_cluster(cluster_id):
     )
 
 
-def get_external_network_provider_names(cluster_name):
+@ll_general.generate_logs(step=True, error=False, warn=True)
+def get_external_network_provider_names(cluster):
     """
-    Get external network providers names
+    Get cluster external network providers names
 
     Args:
-        cluster_name (str): By cluster name
+        cluster (str): By cluster name
 
     Returns:
         list: List of external network provider names
     """
-    cluster_obj = ll_clusters.get_cluster_object(cluster_name=cluster_name)
+    cluster_obj = ll_clusters.get_cluster_object(cluster_name=cluster)
     enp_objs = ll_clusters.get_external_network_providers_objects(
         cluster_object=cluster_obj
     )

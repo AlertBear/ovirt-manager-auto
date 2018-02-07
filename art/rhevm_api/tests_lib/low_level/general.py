@@ -327,6 +327,9 @@ def get_log_msg(
         re.sub('[^0-9a-zA-Z|_]+', "", i) for i in log_action.lower().split()
     ]
     for k, v in kwargs.items():
+        if k == "self":
+            kwargs_to_pop.append(k)
+
         if k.lower() in log:
             if isinstance(v, bool):
                 continue
