@@ -125,7 +125,7 @@ class TestCase18258(BaseTestCase):
     polarion_test_case = '18258'
     add_file_on_each_disk = True
 
-    @polarion("RHEVM3-18258")
+    @polarion("RHEVM3-%s" % polarion_test_case)
     @tier1
     def test_floating_disks_matrix_downloads(self, storage):
         self.basic_disk_download_flow(storage)
@@ -146,7 +146,7 @@ class TestCase18259(BaseTestCase):
     polarion_test_case = '18259'
     add_file_on_each_disk = True
 
-    @polarion("RHEVM3-18259")
+    @polarion("RHEVM3-%s" % polarion_test_case)
     @tier2
     def test_download_disk_on_running_vm(self, storage):
         sapi_obj = hl_sapi.StreamingApiHl(
@@ -176,7 +176,7 @@ class TestCase18829(BaseTestCase):
     """
     polarion_test_case = '18829'
 
-    @polarion("RHEVM3-18829")
+    @polarion("RHEVM3-%s" % polarion_test_case)
     @tier2
     def test_download_disk_on_running_vm(self, storage):
         self.basic_disk_download_flow(storage, snapshot=True)
@@ -219,7 +219,7 @@ class TestCase18275(BaseTestCase):
     """
     polarion_test_case = '18275'
 
-    @polarion("RHEVM3-18275")
+    @polarion("RHEVM3-%s" % polarion_test_case)
     @tier2
     def test_download_pause_resume_disks(self, storage):
         self.basic_disk_download_flow(storage, pause=True)
@@ -242,7 +242,7 @@ class TestCase19265(BaseTestCase):
     """
     polarion_test_case = '19265'
 
-    @polarion("RHEVM3-19265")
+    @polarion("RHEVM3-%s" % polarion_test_case)
     @tier2
     def test_attach_disks_during_downloads(self, storage):
         self.basic_disk_download_flow(storage, interrupt=True)

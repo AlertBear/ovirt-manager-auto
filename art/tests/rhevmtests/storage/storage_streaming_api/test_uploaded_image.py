@@ -8,9 +8,10 @@ Storage_4_0/4_1_Storage_Upload_Disk_Image_Through_REST_AP
 import config
 import pytest
 from art.test_handler.tools import polarion, bz
+import rhevmtests.helpers as global_helper
 
 from art.unittest_lib import (
-    tier1,
+    tier1, tier2
 )
 
 from art.unittest_lib import StorageTest as TestCase, testflow
@@ -40,21 +41,34 @@ from art.rhevm_api.tests_lib.high_level import (
     delete_disks.__name__,
     add_disks_for_upload.__name__,
 )
-class TestCase17322(TestCase):
+class TestUploadImages(TestCase):
     """
-    Upload images - upload disks matrix
+    Upload images - upload disks matrix with optional pause during upload
 
-    1. Upload disk images (raw,qcow2_v3,qcow2_v3) from localhost
-    2. Verify data correctness via md5sum of original and uploaded images
-
+    1. Uploads of disk images (raw,qcow2_v3,qcow2_v3) from localhost
+    2. Only If pause is enabled than Reaching 50% upload initiate pause wait
+        for a defined timeout & resume uploads
+    3. Verify data correctness via md5sum of original and uploaded images
     """
-
-    polarion_test_case = '17322'
-
     @bz({'1532537': {}})
-    @polarion("RHEVM3-17322")
-    @tier1
-    def test_disks_matrix_uploads(self, storage):
+    @pytest.mark.parametrize(
+        "pause",
+        [
+            pytest.param(False, marks=(polarion("RHEVM3-17322"), tier1)),
+            pytest.param(True, marks=(polarion("RHEVM3-17323"), tier2))
+
+        ],
+        ids=[
+            "UPLOAD_DISK_MATRIX",
+            "UPLOAD_DISK_MATRIX_WITH_PAUSE_RESUME",
+        ]
+    )
+    def test_base_disks_matrix_uploads(self, storage, pause):
+        _id = global_helper.get_test_parametrize_ids(
+            item=self.test_base_disks_matrix_uploads.parametrize,
+            params=[pause]
+        )
+        testflow.step(_id)
         disks_objs = [ll_vms.get_disk_obj(
             disks_id, attribute='id'
         ) for disks_id in self.disks_ids]
@@ -69,7 +83,7 @@ class TestCase17322(TestCase):
             "Starting parallel upload of disks %s", self.disk_names
         )
         sapi_obj.transfer_multiple_disks(
-            self.disk_names, sizes_before
+            self.disk_names, sizes_before, pause=pause
         )
 
         testflow.step("Comparing md5sum before and after download")

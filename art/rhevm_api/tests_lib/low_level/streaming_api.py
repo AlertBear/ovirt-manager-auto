@@ -67,7 +67,9 @@ UPLOAD = 'upload'
 COW_FORMAT = 'cow'
 STATE_TIMEOUT = 60
 PAUSE_SLEEP = 60
-PAUSE_TRANSFER_PER = 50
+PAUSE_TRANSFER_PER = 50.00
+PAUSED_USER = types.ImageTransferPhase.PAUSED_USER
+RESUMING = types.ImageTransferPhase.RESUMING
 
 
 class StreamingApi(object):
@@ -533,8 +535,91 @@ class StreamingApi(object):
         return prepare_transfer_args
 
     @staticmethod
+    def check_for_timeout(start_time, state):
+        """
+        If the time it took to change to the required state took more than the
+            designated timeout fail the test
+
+        Args:
+            start_time (float): Start time in seconds of an operation like
+                pause or resume image transfer
+            state (str): State of the the transfer_service object like
+                "paused_user" or "resuming"
+
+        """
+        now = time.time()
+        assert now - start_time < STATE_TIMEOUT, (
+            "Waiting for %s state for more than %s seconds" % (
+                state, STATE_TIMEOUT
+            )
+        )
+
+    def resume(self, transfer_service, image_indicator=None):
+        """
+        Perform resume after disks have been paused
+
+        Args:
+            transfer_service (Service): Get a reference to the service that
+                manages the image transfer that was added in the previous
+            image_indicator (str): For download its the id of the disk image,
+                for upload its the image location on the local host
+        """
+
+        # Resume disk transfer
+        logger.info("Resume transfer on image %s" % image_indicator)
+        start = time.time()
+        transfer = transfer_service.get()
+        transfer_service.resume()
+        # Check the transfer phase until it changes to "resuming"
+        while transfer.phase == RESUMING:
+            time.sleep(1)
+            transfer = transfer_service.get()
+            logger.info(
+                "Image %s is in phase %s", image_indicator,
+                transfer.phase
+            )
+            self.check_for_timeout(start, RESUMING)
+
+    def pause(
+        self, transfer_service, pos=None, size=None, image_indicator=None
+    ):
+
+        """
+        Perform pause during disks transfer
+
+        Args:
+            transfer_service (Service): Get a reference to the service that
+                manages the image transfer that was added in the previous
+            pos (int): The position in bytes of the current disk transfer
+            size (int): Actual size of the transferred image in bytes
+            image_indicator (str): For download its the id of the disk image,
+                for upload its the image location on the local host
+        """
+        logger.info("Pause transfer on image %s", image_indicator)
+        transfer_service.pause()
+        start = time.time()
+        transfer = transfer_service.get()
+        # Check the transfer phase until it changes to "paused_user"
+        while transfer.phase != PAUSED_USER:
+            time.sleep(1)
+            logger.info(
+                "Current Image %s transfer phase is not paused_user yet "
+                "but in phase: %s", image_indicator, transfer.phase
+            )
+            transfer = transfer_service.get()
+            if transfer.phase == PAUSED_USER:
+                logger.info(
+                    "Image %s phase is %s", image_indicator, transfer.phase
+                )
+                break
+            self.check_for_timeout(start, PAUSED_USER)
+        # Now that disk transfer is paused , sleep for a while , in this
+        # case for PAUSE_SLEEP
+        logger.info("Sleeping for 1min on image %s", image_indicator)
+        sleep(PAUSE_SLEEP)
+
     def download_disk(
-        connection=None, transfer_service=None, transfer_headers=None,
+        self, connection=None, transfer_service=None, transfer_headers=None,
         proxy_url=None, proxy_connection=None, image_path=None,
         transfer_size=None, image_id=None, pause=False, interrupt=False,
         vm_name=None, disk_name=None
@@ -565,7 +650,6 @@ class StreamingApi(object):
             bool: True if download succeeded False if failed
         """
         status = True
-        transfer = None
 
         try:
             path = image_path
@@ -576,6 +660,7 @@ class StreamingApi(object):
                 chunk_size = 64 * 1024 * 1024
                 pos = 0
                 while pos < size:
+                    completed_transfer_per = pos / float(size) * 100
                     # Extend the transfer session.
                     transfer_service.extend()
                     # Set the range, according to the downloaded chunk .
@@ -600,78 +685,17 @@ class StreamingApi(object):
                     # Write the content to file:
                     mydisk.write(r.read())
                     logger.info("Completed: %s%% on disk id %s", int(
-                        pos / float(size) * 100), image_id)
+                        completed_transfer_per), image_id)
 
-                    if pause:
-                        # If transfer size is PAUSE_PER perform pause
-                        if int(pos / float(size) * 100) == PAUSE_TRANSFER_PER:
-                            logger.info(
-                                "Pause transfer on disk id %s", image_id
-                            )
-                            transfer_service.pause()
-                            start = time.time()
-                            transfer = transfer_service.get()
-                            # Check the transfer phase until it changes to
-                            # "paused_user"
-                            while transfer.phase != (
-                                types.ImageTransferPhase.PAUSED_USER
-                            ):
-                                time.sleep(1)
-                                logger.info(
-                                    "Current Image id %s transfer phase is not"
-                                    "paused_user yet but: %s",
-                                    transfer.phase, image_id
-                                )
-                                transfer = transfer_service.get()
-                                if transfer.phase == (
-                                    types.ImageTransferPhase.PAUSED_USER
-                                ):
-                                    logger.info(
-                                        "Image %s phase is %s",
-                                        image_id, transfer.phase
-                                    )
-                                    break
-                                now = time.time()
-                                # If the time it took to change to
-                                # "paused_user" state took more than the
-                                # designated timeout fail the test
-                                if now - start > STATE_TIMEOUT:
-                                    assert True, (
-                                        "Waiting for paused_user state for"
-                                        "more than %s" % STATE_TIMEOUT
-                                    )
-                            # Now that disk transfer is paused , sleep for
-                            # a while , in this case for PAUSE_SLEEP
-                            logger.info(
-                                "Sleeping for 1min on disk id %s", image_id)
-                            sleep(PAUSE_SLEEP)
-                            # Resume disk transfer
-                            logger.info(
-                                "Resume transfer on disk id %s", image_id
-                            )
-                            transfer = transfer_service.get()
-                            transfer_service.resume()
-                            # Check the transfer phase is
-                            while transfer.phase == (
-                                types.ImageTransferPhase.RESUMING
-                            ):
-                                time.sleep(1)
-                                transfer = transfer_service.get()
-                                logger.info(
-                                    "Image %s phase is %s", image_id,
-                                    transfer.phase
-                                )
-                                now = time.time()
-                                # If the time it took to change to
-                                # "resuming" state took more than the
-                                # designated timeout fail the test
-                                if now - start > STATE_TIMEOUT:
-                                    assert True, (
-                                        "Waiting for 'resuming' state for"
-                                        "more than %s" % STATE_TIMEOUT
-                                    )
+                    if pause and completed_transfer_per == PAUSE_TRANSFER_PER:
+                        self.pause(
+                            transfer_service, pos=pos, size=size,
+                            image_indicator=image_id
+                        )
+                        self.resume(transfer_service, image_indicator=image_id)
+
                     if interrupt:
-                        if int(pos / float(size) * 100) == 50:
+                        if int(completed_transfer_per) == 50:
                             logger.info(
                                 "Start additonal action during transfer on "
                                 "disk %s", disk_name
@@ -793,11 +817,10 @@ class StreamingApi(object):
 
         return status
 
-    @staticmethod
     def upload_disk(
-        connection=None, transfer_service=None, proxy_url=None,
+        self, connection=None, transfer_service=None, proxy_url=None,
         proxy_connection=None, transfer=None, image_path=None,
-        transfer_size=None
+        transfer_size=None, pause=False
     ):
         """
         Upload disk from localhost to a VDSM host
@@ -817,6 +840,7 @@ class StreamingApi(object):
                 to transfer data to/from
             image_path (str): Image location before transfer on localhost
             transfer_size (int): Actual size of the transferred image in bytes
+            pause (bool): True performing pause during transfer,False otherwise
 
          Returns:
             bool: True if upload succeeded False if failed
@@ -853,14 +877,16 @@ class StreamingApi(object):
 
         with open(path, "rb") as disk:
             pos = 0
+
             while pos < size:
+                completed_transfer_per = pos / float(size) * 100
                 # Extend the transfer session once per minute.
                 now = time.time()
 
                 # Report progress every 10 seconds
                 if now - last_progress > 10:
                     logger.info(
-                        "Uploaded %.2f%%" % (float(pos) / size * 100)
+                        "Uploaded %.2f%%" % completed_transfer_per
                     )
                     last_progress = now
 
@@ -878,6 +904,13 @@ class StreamingApi(object):
 
                 proxy_connection.send(chunk)
                 pos += len(chunk)
+
+                if pause and completed_transfer_per == PAUSE_TRANSFER_PER:
+                    self.pause(
+                        transfer_service, pos=pos, size=size,
+                        image_indicator=image_path
+                    )
+                    self.resume(transfer_service, image_indicator=image_path)
 
         # Get the response
         response = proxy_connection.getresponse()

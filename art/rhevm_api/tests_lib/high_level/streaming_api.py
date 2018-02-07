@@ -308,7 +308,7 @@ class StreamingApiHl(ll_streaming_api.StreamingApi):
                 assert self.upload_disk(
                     connection, transfer_service, proxy_url,
                     proxy_connection, transfer, image_path=image_path,
-                    transfer_size=transfer_size
+                    transfer_size=transfer_size, pause=pause
                 ), "Upload disk %s failed" % image_path
             else:
                 logger.info(
@@ -317,7 +317,7 @@ class StreamingApiHl(ll_streaming_api.StreamingApi):
                 assert not self.upload_disk(
                     connection, transfer_service, proxy_url,
                     proxy_connection, transfer, image_path=image_path,
-                    transfer_size=transfer_size
+                    transfer_size=transfer_size, pause=pause
                 ), "Upload disk %s succeeded" % image_path
 
         logger.info("Waiting for disk %s to go back to 'OK' state", image_id)
@@ -459,7 +459,7 @@ class StreamingApiHl(ll_streaming_api.StreamingApi):
                         executor.submit(
                             self.transfer_image, disk_ids[index],
                             output_path[index], sizes_before[index],
-                            positive=positive
+                            positive=positive, pause=pause
                         )
                     )
             self.transfer_results(positive, results, disk_ids)

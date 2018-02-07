@@ -30,7 +30,6 @@ CA_FILE_ORIG = '/var/tmp/ca.crt'
 CA_FILE = "ca.crt"
 WORKSPACE_PATH = os.getenv('WORKSPACE', '~/')
 CA_FILE_NEW = os.path.expanduser(os.path.join(WORKSPACE_PATH, CA_FILE))
-MOVE_CERT_CMD = 'mv -f %s %s'
 DISK_RESIZE_TIMEOUT = 1200
 DOWNLOAD_DIR_PATH = '~/download/'
 FILE_PATH = os.path.expanduser(DOWNLOAD_DIR_PATH)
