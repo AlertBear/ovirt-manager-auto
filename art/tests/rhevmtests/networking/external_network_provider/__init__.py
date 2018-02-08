@@ -11,4 +11,8 @@ https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/Network/
 Unmanaged provider test cases:
 https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/Network/
 4_2_Network_Unmanaged_External_Provider
+
+OVN auto-sync test cases:
+https://polarion.engineering.redhat.com/polarion/#/project/RHEVM3/wiki/Network/
+4_2_Network_Auto_Sync_OVN_Networks
 """

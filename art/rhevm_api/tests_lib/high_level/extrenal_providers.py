@@ -125,6 +125,51 @@ class OvnProvider(client.Client):
         return self.get_subnet_id(subnet=subnet_name)
 
     @ll_general.generate_logs(step=True)
+    def update_network_properties(self, network, properties):
+        """
+        Update network with properties
+
+        Args:
+            network (str): Network name
+            properties (dict): Network properties to update
+
+        Returns:
+            bool: True if updated successfully, False otherwise
+        """
+        network_id = self.get_network_id(network=network)
+        if not network_id:
+            return False
+
+        try:
+            self.update_network(
+                network=network_id, body={"network": properties}
+            )
+        except BadRequest:
+            return False
+        return True
+
+    @ll_general.generate_logs(step=True)
+    def delete_network_by_name(self, network):
+        """
+        Delete network by name
+
+        Args:
+            network (str): Network name
+
+        Returns:
+            bool: True if deleted successfully, False otherwise
+        """
+        network_id = self.get_network_id(network=network)
+        if not network_id:
+            return False
+
+        try:
+            self.delete_network(network=network_id)
+        except BadRequest:
+            return False
+        return True
+
+    @ll_general.generate_logs(step=True)
     def get_network_id(self, network):
         """
         Get network ID

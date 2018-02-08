@@ -16,6 +16,7 @@ import config as ovn_conf
 import rhevmtests.helpers as global_helper
 import rhevmtests.networking.config as net_conf
 import rhevmtests.networking.helper as net_helper
+import art.rhevm_api.tests_lib.low_level.networks as ll_networks
 from art.core_api.apis_utils import TimeoutingSampler
 from art.rhevm_api.tests_lib.high_level import (
     vms as hl_vms,
@@ -611,13 +612,15 @@ def check_ldap_availability(server, ports):
 
 @ll_general.generate_logs(step=True)
 def wait_for_auto_sync(
-    networks, removal=True, timeout=ovn_conf.AUTO_SYNC_WAIT
+    networks, cluster=None, removal=True, timeout=ovn_conf.AUTO_SYNC_WAIT
 ):
     """
     Wait for networks changes to be synced by auto-sync
 
     Args:
         networks (list): List of network names to expect
+        cluster (str): Cluster name to search for networks or None to search
+            networks in all clusters
         removal (bool): True to wait for removal of networks, False for
             creation of networks
         timeout (int): Timeout in seconds for auto-sync
@@ -625,14 +628,34 @@ def wait_for_auto_sync(
     Returns:
         bool: True if operation was successful, False otherwise
     """
-    sample = TimeoutingSampler(
-        timeout=timeout, sleep=1,
-        func=lambda:
-            all(
-                n not in hl_networks.get_network_names()
-                if removal else
-                n in hl_networks.get_network_names()
-                for n in networks
+
+    def check_networks(networks, cluster=cluster, removal=removal):
+        """
+        Check if networks exists on engine
+
+        Args:
+            networks (list): List of network names to expect
+            cluster (str): Specific Cluster name to search for networks in or
+                None to search all clusters
+            removal (bool): True to check for removal of networks, False for
+                creation of networks
+
+        Returns:
+            bool: True for success, False otherwise
+        """
+        if cluster:
+            engine_networks = ll_networks.get_cluster_networks(
+                cluster=cluster, href=False
             )
+            engine_networks = [net.get_name() for net in engine_networks]
+        else:
+            engine_networks = hl_networks.get_network_names()
+
+        if removal:
+            return all([n not in engine_networks for n in networks])
+        return all([n in engine_networks for n in networks])
+
+    sample = TimeoutingSampler(
+        timeout=timeout, sleep=1, func=check_networks, networks=networks
     )
     return sample.waitForFuncStatus(result=True)

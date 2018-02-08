@@ -165,9 +165,10 @@ def update_datacenter(positive, datacenter, **kwargs):
     return status
 
 
+@ll_general.generate_logs(step=True)
 def remove_datacenter(positive, datacenter, force=False):
     """
-    Remove existed data center
+    Remove datacenter from setup
 
     Args:
         positive (bool): Expected result
@@ -177,20 +178,12 @@ def remove_datacenter(positive, datacenter, force=False):
     Returns:
         bool: True if data center was removed properly, False otherwise
     """
-    log_info, log_error = ll_general.get_log_msg(
-        log_action="Remove", obj_type="datacenter", obj_name=datacenter,
-        positive=positive
-    )
-    logger.info(log_info)
     dc = util.find(datacenter)
     href_params = []
     if force:
         href_params.append("force=true")
 
-    res = util.delete(dc, positive, operations=href_params)
-    if not res:
-        logger.error(log_error)
-    return res
+    return util.delete(dc, positive, operations=href_params)
 
 
 def searchForDataCenter(positive, query_key, query_val, key_name, **kwargs):

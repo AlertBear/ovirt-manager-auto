@@ -284,3 +284,81 @@ UNMANAGED_PROVIDER = None
 AUTO_SYNC_RATE = 3
 # Wait time for auto-sync
 AUTO_SYNC_WAIT = 30
+
+# OVN auto-sync test networks
+OVN_AUTO_SYNC_DCS = ["ovn_autosync_dc_%s" % i for i in range(4)]
+OVN_AUTO_SYNC_NO_DEFAULT_PROV_CL = [
+    "ovn_autosync_dc_%s_no_def_prov_cl" % i for i in range(4)
+]
+OVN_AUTO_SYNC_DEFAULT_PROV_CL = [
+    "ovn_autosync_dc_%s_def_prov_cl" % i for i in range(3)
+]
+
+# OVN auto-sync edit external network provider test
+OVN_AUTO_SYNC_EDIT_ENP_TEST_CL = OVN_AUTO_SYNC_NO_DEFAULT_PROV_CL[2]
+OVN_AUTO_SYNC_EDIT_ENP_TEST_DC = OVN_AUTO_SYNC_DCS[3]
+
+OVN_AUTO_SYNC_DCS_SETUP = {
+    OVN_AUTO_SYNC_DCS[0]: {
+        "name": OVN_AUTO_SYNC_DCS[0],
+        "version": conf.COMP_VERSION,
+    },
+    OVN_AUTO_SYNC_DCS[1]: {
+        "name": OVN_AUTO_SYNC_DCS[1],
+        "version": conf.COMP_VERSION,
+    },
+    OVN_AUTO_SYNC_DCS[2]: {
+        "name": OVN_AUTO_SYNC_DCS[2],
+        "version": conf.COMP_VERSION,
+    },
+    OVN_AUTO_SYNC_EDIT_ENP_TEST_DC: {
+        "name": OVN_AUTO_SYNC_EDIT_ENP_TEST_DC,
+        "version": conf.COMP_VERSION,
+    }
+}
+OVN_AUTO_SYNC_CLUSTERS_SETUP = {
+    OVN_AUTO_SYNC_DEFAULT_PROV_CL[0]: {
+        "name": OVN_AUTO_SYNC_DEFAULT_PROV_CL[0],
+        "data_center": OVN_AUTO_SYNC_DCS[0],
+        "cpu": conf.CPU_NAME,
+        "version": conf.COMP_VERSION,
+        "external_network_provider": OVN_PROVIDER_NAME
+    },
+    OVN_AUTO_SYNC_NO_DEFAULT_PROV_CL[0]: {
+        "name": OVN_AUTO_SYNC_NO_DEFAULT_PROV_CL[0],
+        "data_center": OVN_AUTO_SYNC_DCS[0],
+        "cpu": conf.CPU_NAME,
+        "version": conf.COMP_VERSION
+    },
+    OVN_AUTO_SYNC_DEFAULT_PROV_CL[1]: {
+        "name": OVN_AUTO_SYNC_DEFAULT_PROV_CL[1],
+        "data_center": OVN_AUTO_SYNC_DCS[1],
+        "cpu": conf.CPU_NAME,
+        "version": conf.COMP_VERSION,
+        "external_network_provider": OVN_PROVIDER_NAME
+    },
+    OVN_AUTO_SYNC_NO_DEFAULT_PROV_CL[1]: {
+        "name": OVN_AUTO_SYNC_NO_DEFAULT_PROV_CL[1],
+        "data_center": OVN_AUTO_SYNC_DCS[2],
+        "cpu": conf.CPU_NAME,
+        "version": conf.COMP_VERSION
+    },
+    OVN_AUTO_SYNC_EDIT_ENP_TEST_CL: {
+        "name": OVN_AUTO_SYNC_EDIT_ENP_TEST_CL,
+        "data_center": OVN_AUTO_SYNC_EDIT_ENP_TEST_DC,
+        "cpu": conf.CPU_NAME,
+        "version": conf.COMP_VERSION
+    },
+}
+
+OVN_AUTO_SYNC_NET = "ovn_auto_sync_net"
+OVN_AUTO_SYNC_SUBNET = {
+    "name": "%s_subnet" % OVN_AUTO_SYNC_NET,
+    "cidr": "10.0.0.0/24",
+    "enable_dhcp": True,
+    "network_id": None,
+    "ip_version": 4
+}
+OVN_AUTO_SYNC_30_NET_NAMES = [
+    "ovn_autosync_bulk_test_net_%s" % i for i in range(30)
+]
