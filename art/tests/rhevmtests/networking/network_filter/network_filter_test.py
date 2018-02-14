@@ -35,7 +35,6 @@ from rhevmtests.networking.fixtures import (  # noqa: F401
     remove_all_networks,
     setup_networks_fixture,
     clean_host_interfaces,
-    add_vnic_profiles,
     remove_vnic_profiles,
     add_vnics_to_vms,
     remove_vnics_from_vms
@@ -578,68 +577,3 @@ class TestNetworkFilterCase08(NetworkTest):
             assert ll_vms.delete_vnic_network_filter_parameters(
                 nf_object=filter_object
             )
-
-
-@pytest.mark.usefixtures(
-    remove_vnic_profiles.__name__,
-    add_vnic_profiles.__name__,
-    remove_vnics_from_vms.__name__
-)
-@pytest.mark.skip(msg="We will skip the test until the bug 1475790 reopen")
-class TestNetworkFilterCase09(NetworkTest):
-    """
-    1. Add vNIC with network filter parameters to VM
-    """
-    # General params
-    vm = conf.VM_0
-    vnic = nf_conf.VNICS[9][0]
-    vnic_profile = nf_conf.VNIC_PROFILES[9][0]
-    net = conf.MGMT_BRIDGE
-
-    # add_vnic_profiles params
-    add_vnic_profile_params = {
-        vnic_profile: {
-            "name": vnic_profile,
-            "network": net,
-            "data_center": conf.DC_0,
-            "network_filter": "clean-traffic"
-        }
-    }
-
-    # remove_vnic_profiles params
-    remove_vnic_profile_params = add_vnic_profile_params
-
-    # remove_vnics_from_vms fixture parameters
-    remove_vnics_vms_params = {
-        vm: {
-            "1": {
-                "name": vnic
-            }
-        }
-    }
-
-    @tier2
-    @bz({"1475790": {}})
-    def test_add_vnic_to_vm_with_parameters(self):
-        """
-        Add vNIC with network filter parameters to VM
-        """
-        add_nic_kwargs = {
-            "name": self.vnic,
-            "network": self.net,
-            "vnic_profile": self.vnic_profile,
-            "network_filter": {
-                "name": nf_conf.IP_NAME,
-                "value": nf_conf.FAKE_IP_1
-            }
-        }
-        assert ll_vms.addNic(
-            positive=True, vm=self.vm, **add_nic_kwargs
-        )
-        filter_params = ll_vms.get_vnic_network_filter_parameters(
-            vm=self.vm, nic=self.vnic
-        )
-        assert filter_params
-        filter_params = filter_params[0]
-        assert filter_params.name != nf_conf.IP_NAME
-        assert filter_params.value != nf_conf.FAKE_IP_1
