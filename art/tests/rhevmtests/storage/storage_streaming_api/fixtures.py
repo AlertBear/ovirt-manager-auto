@@ -22,9 +22,10 @@ logger = logging.getLogger(__name__)
 
 DISK_SIZE = 10 * GB
 DISK_ALLOCATIONS = [
-    ('qcow2_v2', True, 'thin'),
-    ('qcow2_v3', True, 'thin'),
-    ('raw', False, 'preallocated')
+    ('qcow2_v2', True, 'thin', 'data'),
+    ('qcow2_v3', True, 'thin', 'data'),
+    ('raw', False, 'preallocated', 'data'),
+    ('raw', False, 'preallocated', 'iso')
 ]
 
 
@@ -201,7 +202,7 @@ def add_disks_for_upload(request, storage):
 
     self.disk_names = []
     self.disks_ids = []
-    for name, spares, allocation_policy in DISK_ALLOCATIONS:
+    for name, spares, allocation_policy, content_types in DISK_ALLOCATIONS:
         disk_params = config.disk_args.copy()
         disk_name = storage_helpers.create_unique_object_name(
             '%s' % name, config.OBJECT_TYPE_DISK
@@ -218,6 +219,7 @@ def add_disks_for_upload(request, storage):
         disk_params['format'] = config.DISK_FORMAT_RAW if not spares else (
             config.DISK_FORMAT_COW
         )
+        disk_params['content_type'] = content_types
         assert ll_disks.addDisk(True, **disk_params), (
             "Failed to create disk %s" % disk_name
         )

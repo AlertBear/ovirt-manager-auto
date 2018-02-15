@@ -34,7 +34,10 @@ UPLOAD_FILES_LOCALHOST = [
         UPLOAD_DIR_PATH + 'qcow2_v2_rhel7.4_ovirt4.2_guest_disk_1G'
     ),
     os.path.expanduser(UPLOAD_DIR_PATH + 'qcow2_v3_cow_sparse_disk_1G'),
-    os.path.expanduser(UPLOAD_DIR_PATH + 'test_raw_to_delete')
+    os.path.expanduser(UPLOAD_DIR_PATH + 'test_raw_to_delete'),
+    os.path.expanduser(
+        UPLOAD_DIR_PATH + '1G_Fedora-Workstation-Live-x86_64-25-1.3.iso'
+    )
 ]
 DOWNLOAD = 'download'
 UPLOAD = 'upload'

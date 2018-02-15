@@ -45,7 +45,7 @@ class TestUploadImages(TestCase):
     """
     Upload images - upload disks matrix with optional pause during upload
 
-    1. Uploads of disk images (raw,qcow2_v3,qcow2_v3) from localhost
+    1. Uploads of disk images (raw, qcow2_v3, qcow2_v3, ISO) from localhost
     2. Only If pause is enabled than Reaching 50% upload initiate pause wait
         for a defined timeout & resume uploads
     3. Verify data correctness via md5sum of original and uploaded images
