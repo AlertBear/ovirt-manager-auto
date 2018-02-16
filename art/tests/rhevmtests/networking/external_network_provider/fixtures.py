@@ -73,14 +73,14 @@ def remove_unmanaged_provider(request):
     """
     Remove unmanaged external network provider
     """
-    provider_name_to_remove = request.node.cls.remove_provider_name
+    provider_name = request.node.cls.remove_provider_name
 
     def fin():
         """
-        Remove unmanaged external network provider
+        Remove unmanaged external network provider if exists
         """
-        if provider_name_to_remove:
-            assert enp_conf.UNMANAGED_PROVIDER.remove(provider_name_to_remove)
+        if enp_conf.UNMANAGED_PROVIDER.get(openstack_ep=provider_name):
+            assert enp_conf.UNMANAGED_PROVIDER.remove(provider_name)
     request.addfinalizer(fin)
 
 

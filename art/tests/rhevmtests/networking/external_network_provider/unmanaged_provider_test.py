@@ -13,14 +13,16 @@ from art.rhevm_api.tests_lib.low_level import (
     external_providers,
     networks as ll_networks
 )
-from art.test_handler.tools import bz, polarion
+from rhevmtests.networking.fixtures import remove_all_networks
+from art.test_handler.tools import polarion
 from art.unittest_lib import NetworkTest, tier2, testflow
 from fixtures import remove_unmanaged_provider
 
 
 @pytest.mark.incremental
 @pytest.mark.usefixtures(
-    remove_unmanaged_provider.__name__
+    remove_unmanaged_provider.__name__,
+    remove_all_networks.__name__
 )
 class TestUnmanagedProvider(NetworkTest):
     """
@@ -33,9 +35,16 @@ class TestUnmanagedProvider(NetworkTest):
     # Common parameters
     unmanaged_provider_name = "unmanaged_provider_test"
     unmanaged_network_name = "unmanaged_provider_network"
+    dc = net_config.DC_0
+
+    # Update network name test
+    unmanaged_network_new_name = "unmanaged_provider_network_new"
 
     # remove_unmanaged_provider fixture parameters
     remove_provider_name = unmanaged_provider_name
+
+    # remove_all_networks fixture parameters
+    remove_dcs_networks = [dc]
 
     @tier2
     @polarion("RHEVM-24983")
@@ -54,7 +63,6 @@ class TestUnmanagedProvider(NetworkTest):
         assert ovn_conf.UNMANAGED_PROVIDER.add()
 
     @tier2
-    @bz({"1535573": {}})
     @polarion("RHEVM-24976")
     def test_create_unmanaged_network(self):
         """
@@ -62,7 +70,7 @@ class TestUnmanagedProvider(NetworkTest):
         """
         assert ll_networks.add_network(
             positive=True, name=self.unmanaged_network_name,
-            data_center=net_config.DC_0,
+            data_center=self.dc,
             external_network_provider_name=self.unmanaged_provider_name
         )
 
@@ -72,12 +80,10 @@ class TestUnmanagedProvider(NetworkTest):
         """
         Update unmanaged network
         """
-        new_name = "".join([self.unmanaged_network_name, "_new"])
         assert ll_networks.update_network(
             positive=True, network=self.unmanaged_network_name,
-            data_center=net_config.DC_0, name=new_name
+            data_center=self.dc, name=self.unmanaged_network_new_name
         )
-        self.unmanaged_provider_name = new_name
 
     @tier2
     @polarion("RHEVM-25041")
@@ -86,8 +92,8 @@ class TestUnmanagedProvider(NetworkTest):
         Remove unmanaged network
         """
         assert ll_networks.remove_network(
-            positive=True, network=self.unmanaged_network_name,
-            data_center=net_config.DC_0
+            positive=True, network=self.unmanaged_network_new_name,
+            data_center=self.dc
         )
 
     @tier2
@@ -99,4 +105,3 @@ class TestUnmanagedProvider(NetworkTest):
         assert ovn_conf.UNMANAGED_PROVIDER.remove(
             openstack_ep=self.unmanaged_provider_name
         )
-        self.remove_provider_name = ""
