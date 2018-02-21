@@ -9,7 +9,7 @@ import pytest
 
 import config
 import rhevmtests.compute.virt.virt_executor as executor
-from art.test_handler.tools import polarion, bz
+from art.test_handler.tools import polarion
 from art.unittest_lib import (
     VirtTest,
     tier2,
@@ -22,11 +22,10 @@ from fixtures import (
 
 @pytest.mark.skipif(config.PPC_ARCH, reason=config.PPC_SKIP_MESSAGE)
 @pytest.mark.skipif(
-    config.NO_HYPERCONVERGED_SUPPORT,
+    not config.NO_HYPERCONVERGED_SUPPORT,
     reason=config.NO_HYPERCONVERGED_SUPPORT_SKIP_MSG
 )
 @pytest.mark.usefixtures(class_setup_vm_cases.__name__)
-@bz({'1498078': {}})
 class TestGuestImageVMs(VirtTest):
     """
     Testing VM created from guest image templates

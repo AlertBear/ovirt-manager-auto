@@ -1561,7 +1561,6 @@ def check_cloud_init_parameters(
     Returns:
         bool: True if all checks pass Else False
     """
-    assert wait_for_vm_fqdn(vm_name), "Failed to get FQDN"
     logger.info('Get ip for VM: %s', vm_name)
     config_virt.VM_IP = hl_vms.get_vm_ip(
         vm_name=vm_name, start_vm=False
